@@ -48,3 +48,103 @@ Out of scope: escaping (002), the return-stack contents beyond schema shape,
 and =dbg=.
 
 * Log
+
+** 2026-11-21 harness notes (before any gated run)
+
+- Test: =pbt/test_001_stacks_roundtrip.py=. Properties are separate tests,
+  so a red P2 float does not cut P1's example count: =test_p1_noninterference=,
+  =test_p2_data=, =test_p2_float=, =test_p2_schema=, each parametrized over
+  path (=dotstacks= = =.stacks= at the interpreter, =tilde3= = =~~~= in a
+  colon definition, =tilde2all= = plain =~~= after =all-~~=) x engine. Plus
+  =test_p2_float_corpus=: a fixed list of 20 edge floats, so every mismatch
+  class is counted, not only the first one Hypothesis shrinks to.
+- One Hypothesis example is a batch of 1 to 12 cases run in one gforth
+  process; data depth 0..20 of full-range 64-bit cells, float depth 0..8
+  built from bit patterns in Forth (=$bits fbits ! fbits f@=), drawn from
+  -0, +-inf, quiet / negative / signalling NaN, subnormals, DBL_MAX,
+  17-digit values, any binary64, and any 64-bit pattern.
+- The independent read is raw: =depth= / =i pick= / =hex u.=, and
+  =fp@ i floats + @ hex u.=. Layout checked by hand in all three engines:
+  64-bit cells and floats, =fp@= is the top float and the bottom is at
+  higher addresses; NaN payloads survive =f@= and the read.
+  For =tilde3= / =tilde2all= the read runs inside the colon definition,
+  immediately before and after the inspector word.
+- Mismatch classes: =sign= (same magnitude, other sign; in practice -0e),
+  =precision= (finite, different value), =non-finite= (null where a number
+  was due, a number where null was due, or a finite value whose literal
+  decodes to inf).
+- Seed: =PBT_SEED=; when unset one is drawn and printed in the summary
+  (=001: inspect.fs ... seed N=). =database=None= so runs replay exactly.
+- =where= / =src= are not asserted (issue #2: =~~= under =all-~~= logs them
+  as null by design). The summary counts what was observed per path.
+
+** 2026-11-21 BEFORE: =INSPECT_REF=18ebe2d=, seed 1121, PROFILE=ci
+
+Command: =INSPECT_REF=18ebe2d PBT_SEED=1121 gmake -C pbt check PROFILE=ci=
+on commit 55490ba. Provenance line: =ref:18ebe2d@18ebe2d blob:76d34db7cd61=.
+Wall time 2146.7 s (35m46s) for 45 tests; result 18 failed, 27 passed.
+
+| test                         | per (path, engine)                          | result                    |
+|------------------------------+---------------------------------------------+---------------------------|
+| =test_p1_noninterference=    | 1000 Hypothesis examples, 5384 stack cases  | pass, all 9 pairs         |
+| =test_p2_data=               | 1000 examples, 5384 cases                   | pass, all 9 pairs         |
+| =test_p2_schema=             | 1000 examples, 5384 cases (every log line)  | pass, all 9 pairs         |
+| =test_p2_float=              | red after 26 generated examples, 168 cases  | FAIL, all 9 pairs         |
+| =test_p2_float_corpus=       | 20 edge floats                              | FAIL, all 9 pairs         |
+
+Shrunk =test_p2_float= case, identical in all 9 pairs: a single float
+=0x430C6BF526340008= (1000000000000001.0) logged as =1.00000000000000E15=
+(precision). Reproducer:
+
+: gforth inspect.fs -e 'create fb 8 allot log-on $430C6BF526340008 fb ! fb f@ .stacks depth . fdepth . log-off bye'
+
+(for =~~~=: =... : p ~~~ ; log-on ... p ...=; for =~~=: =... all-~~ : p ~~ ; log-on ... p ...=).
+
+Corpus classes, identical in every (path, engine): 10 exact, 1 sign,
+8 precision, 1 non-finite.
+
+| bits                 | value                  | logged (decoded)       | class      | issue                        |
+|----------------------+------------------------+------------------------+------------+------------------------------|
+| =0x8000000000000000= | -0.0                   | 0.0                    | sign       | matches #1 (item 1)          |
+| =0x7FEFFFFFFFFFFFFF= | DBL_MAX                | inf                    | non-finite | matches #1 (item 2)          |
+| =0x000FFFFFFFFFFFFF= | greatest subnormal     | 2.2250738585072e-308   | precision  | matches #1 (Expected clause) |
+| =0x0010000000000000= | least normal           | 2.2250738585072e-308   | precision  | matches #1 (Expected clause) |
+| =0x3FF0000000000001= | 1 + ulp                | 1.0                    | precision  | matches #1 (Expected clause) |
+| =0x3FD3333333333334= | 0.1 + 0.2              | 0.3                    | precision  | matches #1 (Expected clause) |
+| 1/3, 2/3, pi, -e     | 17-digit values        | 15-digit roundings     | precision  | matches #1 (Expected clause) |
+
+Exact: +0, +-inf and three NaNs (all null, as the contract says), the
+least subnormal and its negative (4.94065645841247E-324 happens to round
+back), 0.1 and 1.
+
+Reproducer for the corpus findings in one line:
+
+: gforth inspect.fs -e 'create fb 8 allot log-on $8000000000000000 fb ! fb f@ $7FEFFFFFFFFFFFFF fb ! fb f@ $3FF0000000000001 fb ! fb f@ .stacks log-off bye'
+
+which logs ="float":[0.00000000000000E0 ,1.79769313486232E308 ,1.00000000000000E0 ]=.
+
+Notes:
+- The greatest subnormal and the least normal log the same literal, and
+  that literal decodes to a value just under the least normal (so a normal
+  number comes back subnormal). Same root cause as #1: 15 digits.
+- Observed, not asserted (issue #2): =where= and =src= are null on every
+  =dotstacks= snapshot (by contract) and every =tilde2all= snapshot
+  (49020 each, summed over properties and engines), set on every =tilde3=
+  snapshot.
+- P1 held in 48 456 batched cases per path (5384 x 9 pairs / 3 paths x 3),
+  P2 data and schema likewise; no engine difference anywhere.
+
+Calibration (=INSPECT_REF=18ebe2d gmake -C pbt calibrate=, 3m38s), each with
+a clean-copy control run that must pass first:
+- (a) =.stacks= leaves =0= on the data stack: red on exactly
+  =test_p1_noninterference[dotstacks-*]= (3), message =P1 data stack
+  changed by dotstacks ... before [] after ['0x0']=.
+- (b) =(~~~)= ends with =fdepth IF fdrop THEN=: red on exactly
+  =test_p1_noninterference[tilde3-*]= (3), message =P1 float stack changed
+  by tilde3 ... before ['0x0'] after []=.
+- (c) =json-data= uses =i pick= (top first): red on exactly all 9
+  =test_p2_data[*]=, message =P2 data mismatch ... logged [1, 0] read [0, 1]=.
+
+Verdict, before: P1 holds; P2 data holds; P2 schema holds; P2 float
+refuted on every path and engine (sign, precision and non-finite all
+present). The prediction held, and the DBL_MAX overflow was not predicted.
