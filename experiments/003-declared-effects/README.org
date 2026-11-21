@@ -42,3 +42,130 @@ Out of scope: words that need a sandbox to run (file words, =system=,
 =allocate=). Those get a count, not tests.
 
 * Log
+
+** 2026-11-21 first full sweep (commit 7e456e8, model 5e3eede, gforth 0.7.3)
+
+Run: =gmake -C pbt check= (default profile, 20 inputs per word) and
+=gmake -C pbt check PROFILE=ci= (200 inputs per word), both on the
+committed tree 7e456e8, seed =EFFECTS_SEED=3=. Both 5 passed. Wall time of
+the sweep: 32.8 s default, 52.9 s ci (whole =check=: 37 s and 54 s). Most of
+the default time is the two hangers waiting out their 3 s timeout.
+=gmake -C pbt calibrate=: red as expected, on exactly =dup= (34.7 s).
+
+How the declared effect is read: the model's =effect= lists, literally.
+Markers (=...= =..= =|= =/= =??= =i*x= =j*x=) count 0 cells; =d= =ud= =xd=
+=+d= =dquot= =udquot= count 2; every other item counts 1; float lists count
+1 per item. Inputs: =n u +n len count ...= 1..8, =w x= from a fixed set
+that includes 0, =f flag= 0/-1, =c char xc= 33..126, addresses
+=(base) 16k += in an 8 KiB scratch buffer (16-aligned, erased before each
+call), doubles =k 0=, floats positive, =xt= =' noop=, =nt= of =noop=,
+=wid= =forth-wordlist=. Per call the harness runs =decimal clearstack=, an
+fdrop loop, the erase and =<#=, then =depth fdepth=, =' w catch=, =depth fdepth=.
+
+*** Coverage (gate 1)
+
+| what                                                    | words |
+|---------------------------------------------------------+-------|
+| live (wordlist, name) pairs in the model                 |  2018 |
+| excluded before running (14 reasons, below)              |  1173 |
+| run                                                      |   845 |
+| excluded by measurement: crashed / hung / broke harness  |    12 |
+| excluded by measurement: threw on typed inputs           |    32 |
+| excluded by measurement: printed (6, 1 also threw)       |     5 |
+| *tested*                                                 | *796* |
+
+| static reason                                   | words |
+|-------------------------------------------------+-------|
+| not-in-search-order (esc-sequences, environment, locals-types, libcc-types) | 251 |
+| file (file/block wordset or reaches a file word) |  216 |
+| immediate                                        |  119 |
+| no-declared-effect                               |  109 |
+| allocates (heap, or allot/, in the call graph)   |  105 |
+| untypable-input (could not be typed)             |   98 |
+| parsing (quoted item, reaches parse/word/refill..., or assertn) | 64 |
+| defining-or-dual-semantics                       |   44 |
+| return-stack-or-compile-time items               |   41 |
+| io (reaches type/emit/key...)                    |   38 |
+| inline-argument (threaded-code primitives)       |   35 |
+| mutates-interpreter-state (sp! only seal is ...) |   25 |
+| same-name-in-root (Root duplicates of Forth words) | 14 |
+| system-or-throws (system bye quit throw abort ...) | 14 |
+
+Crashed (excluded, never retried): =open-lib= (abort, exit 134);
+=clearhash= =del-string= =compile-only= =restrict= =(does>2)= =!does=
+(gforth exit 1; =compile-only= and =restrict= flag the harness's own last
+word); =(;code)= =(endtry)= (hang); =unkey= =unkeys= =(reveal)= (pass alone,
+break a later word in the same process; found by bisection). Threw: 32
+internal words (mostly compiler checks =?struc orig? dest? ...= with -2/-22,
+=interpreter1= =parser= ... -13, =lib-sym= =wcall= -9). Printed: =. ? dec.
+vlist dobacktrace c-source-file= (=.= reaches =type= but the model's call
+list for =.= stops at =s>d=, so the call-graph filter missed it).
+
+*** Agreement (gate 2): HELD
+
+766 of 796 tested words agree on every one of their inputs in =gforth=:
+*96.2%*, both profiles. The 30 disagreeing words, run again in
+=gforth-fast= and =gforth-itc=, give the same measured deltas as in gforth.
+
+*** Classification (gate 3): every disagreement has one class
+
+/model parse (27)/
+- alternatives summed as one list: =(BranchAddr?)= =CheckEnd=
+  =MoreBranchAddr?= =(search-wordlist)= =search-wordlist= =find=
+  =find-name= =sfind= =sfnumber= =snumber?= =environment?= =last?=
+- variadic outputs: =(save-input)= =get-order= =save-see-flags= (=n*=)
+- width only in the name, none in the model: =utime= (=dtime=),
+  =cputime= (=duser dsystem=)
+- synthesized =( -- w )= for end-struct names, which push two cells:
+  =buffer%= =buffer-struct= =c-lib%= =c-prefix%= =cff%=
+  =interpret/compile-struct= =list%= =wordlist-map-struct= =wordlist-struct=.
+  Reproducer: =gforth -e 'buffer% depth . bye'= prints 2.
+- the r* -> float heuristic on a Forth-source comment: =scratch ( r -- addr len )=
+  takes no float. Reproducer: =gforth -e '1e scratch depth . fdepth . bye'= prints =2 1=.
+
+/gforth differs from its own comment (1)/
+- =uallot ( n -- )= leaves the old =udp= (=udp @ swap udp +!=, comp.fs:484).
+  Reproducer: =gforth -e '1 uallot depth . bye'= prints 1.
+
+/data-dependent effect (2)/
+- =?dup=: =gforth -e '0 ?dup depth . clearstack 5 ?dup depth . bye'= prints =1 2=.
+- =digit?= (=char -- digit true / false=): one or two cells by char.
+
+/harness typing (0)/: none among the disagreements; but see the =<#= and
+=assertn= notes below, both harness-state findings.
+
+*** Calibration (gate 4): HELD
+
+=pbt/calibrate/003-declared-effects.sh= declares =dup ( x -- )= in a temp
+copy of words.json (=WORDS_JSON=); the sweep goes red and the only
+unclassified disagreement is =dup= (declared -1, measured +1). Inputs are
+seeded per (seed, word name), so the planted word changes no other word's inputs.
+
+*** No crash is a pass (gate 5): HELD
+
+The 12 crashers are excluded with their reason (above) and asserted as a
+fixed set; the test never retries them.
+
+*** Prediction
+
+At least 95% agree: held (96.2%). Most disagreements from the model's parse:
+held, 27 of 30, mostly alternatives and the end-struct synthesis.
+
+*** Things learned on the way
+
+- The ci profile first failed: 200 calls of =hold= =xhold= =#= =#s= =<<#=
+  without =<#= overflow the shared hold area and gforth exits (exit 2).
+  The harness now runs =<#= before every call (commit 7e456e8). Shared
+  interpreter state, not the stacks, is what leaks between calls.
+- =assertn ( n -- )= with n above =assert-level= runs the compilation
+  semantics of =(= and skips input to the next =)=, so it eats the next
+  harness line without crashing. Excluded as parsing by name; a crash
+  detector cannot see it.
+- The model's call graph follows immediate words' compile-time behaviour
+  (=IF= =?DO= =[char]=) as if it were run-time; the filter stops at
+  immediate/compile-only callees and at =char=, otherwise 522 words looked
+  like parsers.
+- Agreement on alternatives is partly luck of typing: addresses point into
+  zeroed memory, so =find= and friends always take the not-found branch.
+  Those words show up as model parse here; with other inputs they would
+  also be data-dependent.
