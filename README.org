@@ -94,7 +94,7 @@ A float that is not finite is logged as =null=.
 
 * Tested
 
-=gmake test= runs 37 golden tests in each of =gforth=, =gforth-fast= and
+=gmake test= runs 39 golden tests in each of =gforth=, =gforth-fast= and
 =gforth-itc=, and validates every log record against the schema. See
 [[file:test/README.org][test/README.org]] for coverage and known limits.
 

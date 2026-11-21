@@ -12,6 +12,7 @@ cross-check each other.
 Exit status 1 on any failure, with one message per bad line on stderr.
 """
 import json
+import re
 import sys
 
 TYPES = {
@@ -25,7 +26,8 @@ TYPES = {
     "number": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
 }
 
-SUPPORTED = {"$schema", "$id", "title", "description", "x-version", "type",
+SUPPORTED = {"$schema", "$id", "title", "description", "x-version",
+             "x-contract", "pattern", "type",
              "const", "enum", "required", "properties",
              "additionalProperties", "items", "oneOf"}
 
@@ -49,6 +51,9 @@ def subset_errors(schema, value, path="$"):
             return ["%s: %r is not of type %s" % (path, value, types)]
     if "const" in schema and not same(schema["const"], value):
         errs.append("%s: %r != const %r" % (path, value, schema["const"]))
+    if "pattern" in schema and isinstance(value, str) \
+            and not re.search(schema["pattern"], value):
+        errs.append("%s: %r does not match %r" % (path, value, schema["pattern"]))
     if "enum" in schema and not any(same(e, value) for e in schema["enum"]):
         errs.append("%s: %r not in %r" % (path, value, schema["enum"]))
     if isinstance(value, dict):

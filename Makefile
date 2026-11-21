@@ -21,6 +21,9 @@ VALIDATE := $(shell uv run -q --with jsonschema python3 -c 'import jsonschema' \
 endif
 export VALIDATE
 
+CONTRACT := $(shell python3 -c 'import json; print(json.load(open("$(SCHEMA)"))["x-contract"])')
+export CONTRACT
+
 RELEASE_FILES := env/inspect.fs env/canvas.fs $(SCHEMA)
 
 .PHONY: test test-contract test-selftest test-goldens test-one goldens \
@@ -32,6 +35,13 @@ test-contract:
 	@echo "== contract: good records validate, bad ones are rejected ($(VALIDATE))"
 	$(VALIDATE) test/validate.py $(SCHEMA) test/contract/good.jsonl
 	$(VALIDATE) test/validate.py --expect-invalid $(SCHEMA) test/contract/bad.jsonl
+	@echo "== consumer rule: newest hello must announce contract $(CONTRACT)"
+	$(VALIDATE) test/validate.py $(SCHEMA) test/contract/streams/*.jsonl
+	@for s in test/contract/streams/ok-*.jsonl; do python3 test/consumer.py $(CONTRACT) $$s; done
+	@for s in test/contract/streams/bad-*.jsonl; do \
+	  python3 test/consumer.py --expect-refused $(CONTRACT) $$s; done
+	@grep -q 's" $(CONTRACT)" ;' env/inspect.fs || \
+	  { echo "contract-version in inspect.fs != schema x-contract $(CONTRACT)"; exit 1; }
 
 test-selftest:
 	@echo "== runner selftest: failures must fail"

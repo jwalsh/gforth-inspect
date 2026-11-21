@@ -35,6 +35,7 @@ shift $((OPTIND - 1))
 if [ $# -gt 0 ]; then TESTS=("$@"); else TESTS=(test/*.fs); fi
 SCHEMA=contract/stacks-log.schema.json
 EXPECTED=${EXPECTED:-test/expected}
+CONTRACT=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["x-contract"])' "$SCHEMA")
 WORK=$(mktemp -d "${TMPDIR:-/tmp}"/gforth-inspect-test.XXXXXX); WORK=${WORK//\/\//\/}
 trap 'rm -rf "$WORK"' EXIT
 
@@ -100,6 +101,8 @@ for t in "${TESTS[@]}"; do
     while read -r j; do
       if ! $VALIDATE test/validate.py "$SCHEMA" "$j" 2> "$tmp/validate"; then
         problems+=("schema: $(grep -v '^validate:' "$tmp/validate" | head -3 | tr '\n' ' ')")
+      elif grep -q '"event":"hello"' "$j" && ! python3 test/consumer.py "$CONTRACT" "$j" 2> "$tmp/consumer"; then
+        problems+=("consumer: $(cat "$tmp/consumer")")
       fi
     done < <(find "$tmp" -name '*.jsonl' | sort)
     base=$EXPECTED/$name.out

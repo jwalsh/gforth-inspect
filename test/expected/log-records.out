@@ -40,9 +40,9 @@ input  test/log-records.fs:8 >in=5
 3 kk drop
      ^
 ## log state/gforth-inspect/stacks.jsonl
-{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0"}
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[1,2],"float":[],"rs":[],"input":{"file":"test/log-records.fs","line":7,"in":12,"text":"1 2 .stacks 2drop"}}
 {"v":1,"event":"snapshot","t":T,"where":"kk","src":"test/log-records.fs:4","data":[3],"float":[],"rs":[],"input":{"file":"test/log-records.fs","line":8,"in":5,"text":"3 kk drop"}}
-{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0"}
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[5],"float":[],"rs":[],"input":{"file":"test/log-records.fs","line":11,"in":17,"text":"log-on 5 .stacks drop log-off"}}
 ## exit 0

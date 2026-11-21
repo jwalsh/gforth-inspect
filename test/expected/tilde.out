@@ -3,7 +3,7 @@
 
 test/tilde.fs:2:<2> 7 8 
 
-test/tilde.fs:2:
+test/tilde.fs:2: in f1 
 data   <2> 7 8 
 float  <1> 2.500000000000E0 
 return <R:41> top first
@@ -12,5 +12,4 @@ return <R:41> top first
 input  test/tilde.fs:5 >in=2
 f1
   ^
-
 ## exit 0

@@ -16,7 +16,9 @@
 \   dbg-fix   make stock dbg work in gforth/gforth-fast (it is ITC-only),
 \             including n (nest) into colon words
 \   dbg+      dbg-fix, and print .s f.s and return words at every step
+\   log-id    ( c-addr u -- )  tag following snapshots with "id"; s" " log-id clears
 \   inspect-version  ( -- c-addr u )  "0.1.0"
+\ The hello record announces "contract":"1.1" (contract/stacks-log.org).
 \
 \ Works in gforth, gforth-fast and gforth-itc 0.7.3.  None of these words
 \ changes BASE or the float PRECISION.  Tests: test/, run with `gmake test'.
@@ -213,8 +215,18 @@ variable n#  variable first?
     [char] { emit  s" v" jkey 1 0 .r  jc s" event" jkey json-str
     jc s" t" jkey utime 1000000 um/mod nip 0 .r ;
 
+: contract-version ( -- c-addr u ) s" 1.1" ;  \ MAJOR.MINOR of the log contract
+
+create snap-id 64 allot  0 snap-id c!
+: log-id ( c-addr u -- )
+    \ every following snapshot carries "id":"<tag>" (at most 63 chars,
+    \ escaped like any JSON string); s" " log-id clears it and the key is
+    \ left out.  Contract 1.1, issue #3.
+    63 min snap-id place ;
+
 : (snapshot) ( -- )
     s" snapshot" json-head
+    snap-id c@ IF jc s" id" jkey snap-id count json-str THEN
     jc s" where" jkey snap-xt @ ?dup IF >head-noprim name>string json-str ELSE ." null" THEN
     jc s" src" jkey snap-xt @ IF
         q snap-file @ loadfilename#>str json-chars [char] : emit snap-line @ 0 .r q
@@ -225,7 +237,8 @@ variable n#  variable first?
     jc s" input" jkey json-input  [char] } emit cr ;
 : (hello) ( -- )
     s" hello" json-head  jc s" gforth" jkey version-string json-str
-    jc s" inspect" jkey inspect-version json-str  [char] } emit cr ;
+    jc s" inspect" jkey inspect-version json-str
+    jc s" contract" jkey contract-version json-str  [char] } emit cr ;
 
 : log-write ( xt -- )
     \ run xt with output to the log, in decimal; BASE is restored after
@@ -287,14 +300,29 @@ variable n#  variable first?
         i @ enclosing ['] .debugline-stderr = IF drop i cell+ UNLOOP EXIT THEN
     cell +LOOP ;
 
-: ~~-stacks ( -- )
-    cr rp@ cell+ past-debugline snap-rp !  snap-rp @ .stacks-from
-    0 snap-xt !  log-snapshot ;
+: ~~-where ( rp -- rp' xt|0 )
+    \ the word containing the ~~ whose printer frames end at rp: the one
+    \ the next return address points into, none at the interpreter.  ~~
+    \ typed at the prompt runs a headerless word compiled right after
+    \ .debugline-stderr, which the backwards scan would name: that frame
+    \ is skipped and there is no word
+    dup rp0 @ u< 0= IF 0 EXIT THEN
+    dup @ dup interp-frame? IF drop 0 EXIT THEN
+    enclosing dup ['] .debugline-stderr = IF drop cell+ 0 THEN ;
+
+: ~~-line ( nfile nline -- )
+    \ .debugline for all-~~: ~~'s own file:line and word, all stacks, and a
+    \ snapshot with where/src filled (issue #2; null for ~~ at the prompt)
+    snap-line !  snap-file !
+    rp@ cell+ past-debugline ~~-where snap-xt !  snap-rp !
+    cr snap-file @ snap-line @ .sourcepos ." :"
+    snap-xt @ ?dup IF ."  in " >head-noprim .name THEN cr
+    snap-rp @ .stacks-from  log-snapshot ;
 
 : all-~~ ( -- )
     \ plain ~~ now prints all stacks; the return stack starts at the word
     \ that contains the ~~, not inside ~~'s printer
-    ['] ~~-stacks IS printdebugdata ;
+    ['] ~~-line IS .debugline ;
 
 \ --- compile-time control-flow stack ---------------------------------
 
