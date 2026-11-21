@@ -1,0 +1,50 @@
+#+TITLE: 001 stacks-roundtrip: non-interference and faithfulness
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+* Hypothesis
+
+These hold for any data stack (depth 0 to 20, any cell value including
+=min-n= / =max-n=) and any float stack (depth 0 to 8, including =-0e=,
+=±inf=, =nan=, subnormals and 17-digit values), in each of three code paths
+(=.stacks= at the interpreter, =~~~= inside a colon definition, and =~~=
+after =all-~~=), with =log-on=, in each of =gforth=, =gforth-fast= and
+=gforth-itc=:
+
+- P1 (non-interference) :: after the inspector word runs, both stacks are
+  bit-identical to before. Read the stacks as raw cells (=depth= / =pick=
+  printed with =hex u.=, and float bits via =fp@= plus an offset and =@=),
+  never through =.s= or =f.s=.
+- P2 (faithfulness) :: the snapshot record's =data= equals the independent
+  read of the data stack. =float= equals the read's values exactly, with
+  each non-finite value as =null=. Every line in =stacks.jsonl= validates
+  against =contract/stacks-log.schema.json=.
+
+* Prediction (written before the first run)
+
+P1 holds. P2 is refuted on floats. =json-f= prints through =fs.= with 15
+significant digits, which drops the sign of =-0e= (seen once by hand,
+=.meta/findings-2026-11-21.org=) and does not round-trip 17-digit values.
+
+* Gate
+
+All runs go through =gmake -C pbt check=. A result counts only if it came
+from a committed test and its log line names the inspect.fs provenance.
+
+1. *Volume.* At least 300 Hypothesis examples per (path, engine) pair: 9
+   pairs. Batch examples into one gforth process where possible. Report
+   the wall time.
+2. *P1.* Refuted by any failure. A failure is reported as the shrunk case
+   plus a one-line =gforth inspect.fs -e '...'= reproducer.
+3. *P2.* Reported per field (=data=, =float=, schema) and per path. A float
+   mismatch is classified as sign, precision or non-finite.
+4. *Calibration.* =pbt/calibrate/001-*.sh= runs the tests against planted
+   faults and must go red on each: (a) =.stacks= leaves an extra cell on the
+   data stack, which red P1; (b) =~~~= drops one float, which reds P1; (c)
+   =json-data= emits the stack in reverse order, which reds P2. Check that
+   each red is the failure you expected.
+
+Out of scope: escaping (002), the return-stack contents beyond schema shape,
+and =dbg=.
+
+* Log

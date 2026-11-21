@@ -1,0 +1,153 @@
+#+TITLE: Contributing
+#+STARTUP: showall
+
+These rules are for people and for coding agents. Each one exists because
+something went wrong without it. The incidents are in [[file:.meta/][.meta/]]. The
+release process is in [[file:RELEASING.org][RELEASING.org]]. [[file:README.org][README.org]] is for end users only,
+so developer notes do not go there.
+
+* Layout
+
+| path                              | what                                                               |
+|-----------------------------------+--------------------------------------------------------------------|
+| =env/inspect.fs=, =env/canvas.fs= | the released Forth                                                 |
+| =contract/=                       | =stacks-log.schema.json= (the source of truth) and its prose          |
+| =test/=                           | golden-file tests, run by =gmake test= in all three engines          |
+| =pbt/=                            | property tests (Python + Hypothesis), run by =gmake -C pbt check=   |
+| =experiments/NNN-slug/=           | one hypothesis each, with its gate and a dated log                 |
+| =.meta/=                          | findings meant for the next project                                |
+| =scripts/=                        | repo tooling (=privacy-scan.sh=)                                   |
+
+* Setup
+
+You need gforth 0.7.3 (=brew install gforth=), =uv= and GNU make (=gmake=).
+Python dependencies are fetched per run by =uv run --with=, so there is no
+virtualenv to manage.
+
+* The verify baseline
+
+=gmake verify= is the one command that says a tree is good. Run it before
+every commit and every PR. It runs, in order:
+
+1. =scripts/privacy-scan.sh --calibrate= and then =scripts/privacy-scan.sh=
+2. =gmake test=: the goldens in =gforth=, =gforth-fast= and =gforth-itc=,
+   with every record validated against the schema
+3. =gmake -C pbt check=, then =gmake -C pbt calibrate=
+
+Keep a baseline. Record the summary line of a green =gmake verify= on
+=main= in the PR description: engines, golden count, Hypothesis examples
+and seed. A PR that changes the counts has to say why. A suite that
+suddenly runs fewer cases is just as suspicious as one that fails.
+
+* Forth style
+
+- Every colon definition has a stack comment, ( =before -- after= ), and
+  uses =F:= for float effects. The comment is the contract that =pbt/=
+  tests against.
+- Each word does one thing. Factor a definition before it reaches about
+  seven lines.
+- Use descriptive names. Avoid single letters except for the conventional
+  =n u x addr c-addr u r=. Mark private helpers with parentheses:
+  =(snapshot)=.
+- Use =\= for comments that run to the end of the line, and =( )= only for
+  stack comments.
+- Prefer =[undefined] word [IF] ... [THEN]= to redefining words gforth
+  already has. Do not =require= files that are already in the 0.7.3 image
+  (=debugs.fs=, =debug.fs=): doing so redefines half the system.
+- Variables that hold inspector state stay private to the inspector, and
+  an inspector word never leaves anything on a user stack.
+- Python in =pbt/=: standard library plus hypothesis, jsonschema and pytest.
+  No other dependencies. Use descriptive variable names.
+
+* Emacs
+
+The development setup is =forth-mode= with =run-forth= for the REPL, eldoc
+for the stack effects of built-in words, and a language server for
+completion and go-to-definition.
+
+- =forth-mode= and =run-forth= (from the =forth-mode= package): set
+  =forth-executable= to ="gforth"=, then load the inspector into the REPL:
+  =(forth-load-file "env/inspect.fs")=.
+- *eldoc and TAGS* come from the model of gforth's built-ins, which is built
+  on branch =model= and is not yet on =main=: =out/gforth-eldoc.el= gives
+  the stack effect of the word at point, and =out/TAGS= jumps to its source
+  in gforth.
+- *forth-lsp* 0.9.1 reads =lsp/.forth-lsp.toml= (branch =model=). A one-line
+  patch makes configured words win over its built-in list.
+- To watch the stacks from Emacs, read the log, not the REPL.
+  =stacks.jsonl= is append-only. Watch it with =filenotify= and render the
+  last line.
+
+Generated editor files must not contain absolute paths. A path in them is
+resolved at load time, from =gforth --version= or from =(locate-library)=,
+never baked in by a Makefile. Today =model= bakes in Homebrew Cellar paths.
+That has to be fixed before =model= merges.
+
+* Forth
+
+- *gforth 0.7.3 only.* The words =[{:= =:}d=, =[:= =;]=, ={:= =:}= and
+  =free-closure= are gforth 1.0, and so is much of what you remember about
+  gforth. Before using a word, check that it exists:
+  =gforth -e 's" WORD" find-name 0<> . bye'= prints =-1= if it does.
+- *All three engines.* =gforth= and =gforth-fast= are direct-threaded;
+  =gforth-itc= is indirect-threaded. Code that walks threaded code (=dbg=,
+  =see=, return addresses) behaves differently in each. =gforth-fast= also
+  keeps the top of stack in a register and fuses superinstructions, so
+  stepping skips cells there.
+- *Read-only inspection.* An inspector word must leave every stack exactly
+  as it found it. =pbt/= checks this.
+- *No debugger in any live path.* lldb gives exact stacks only at a
+  Forth-side breakpoint. It is a research tool and stays one.
+
+* Never drive someone's REPL
+
+To learn what a REPL holds, read the log it writes. Never type into a tmux
+pane someone else is using. Tests run gforth as a subprocess with their own
+=XDG_STATE_HOME= (see =pbt/gforth_run.py=). If you must script tmux, three
+things have bitten before:
+
+- =send-keys= treats a trailing =;= as a command separator. Send =\;= or use =-l=.
+- An argument such as =-3= is read as a flag. Put =--= before it.
+- Keys typed before the shell has finished starting can make gforth exit.
+  Start the REPL as the pane's command instead.
+
+* Public repository: no private data
+
+The repository and everything it publishes (releases, eval outputs, logs)
+are public. None of them may contain:
+
+- absolute paths (=/Users/...=, =/home/...=, macOS =/var/folders= temp dirs, Homebrew
+  Cellar paths). Records name files relative to their run directory.
+- names, e-mail addresses or handles, other than in git metadata and the
+  attribution trailer.
+- anyone else's code. Course and student files may be used as a read-only
+  corpus, but only aggregate counts are recorded: no excerpts, no file names,
+  no author names.
+- tokens, private gist links, or transcripts of a session.
+
+=scripts/privacy-scan.sh= enforces this over the tracked files, and
+=--calibrate= proves that it still goes red. Run it before every commit. A
+leak in a commit stays in the history after a later fix, so stop at the scan.
+
+* Tests and gates
+
+- Every gate is calibrated: plant a fault, watch the gate go red, then
+  remove the fault. A gate that has never failed proves nothing.
+- Run property tests through =gmake -C pbt check=, with =PROFILE=ci= for the
+  long run. Each experiment adds a planted-fault script under
+  =pbt/calibrate/=, and =gmake -C pbt calibrate= must report red on every one.
+- A shrunk failure becomes a regression case: a fixed =@example= in the
+  test, plus a one-line reproducer, =gforth env/inspect.fs -e '...'=.
+
+* Branches, commits, pull requests
+
+- Coordination (=experiments/README.org=, =.meta/=, the docs) is committed
+  to =main=. Code reaches =main= only through a pull request.
+- Cut every branch from =main=. A branch cut from an unmerged branch carries
+  that branch into the squash merge.
+- Experiments run in sibling worktrees =../gforth-inspect-NNN-slug= on
+  branch =exp/NNN-slug=. Push results as you go; an unpushed log is lost
+  when the session ends.
+- Use conventional commits (=feat(pbt): ...=, =fix(inspect): ...=), with
+  co-authors credited by =git commit --trailer "Co-Authored-By: ..."=.
+- Use =gmake=, not BSD =make=.

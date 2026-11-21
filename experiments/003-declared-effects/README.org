@@ -1,0 +1,44 @@
+#+TITLE: 003 declared-effects: words.json against measured depth deltas
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+* Hypothesis
+
+Take every built-in word in the model (=git show model:model/data/words.json=,
+2018 words) that has a declared data and/or float stack effect and is not
+parsing, immediate, compile-only or a defining word, does no I/O, does not
+throw on valid input and does not allocate. For each, give it inputs of the
+declared types and run it under =catch=. The measured changes in =depth=
+and =fdepth= then equal the declared effect.
+
+Where an input is declared as an address, it is a valid, aligned address in
+a scratch buffer, with room for whatever the word writes. Where it is
+declared as =u= or =n=, it is small and in range.
+
+* Prediction (written before the first run)
+
+At least 95% of the tested words agree. Most disagreements come from the
+model's parse of the effect comments (alternatives such as =( -- f | x f )=,
+and the =w= / =x= / =d= cell counts), not from gforth.
+
+* Gate
+
+1. *Coverage.* Report how many words were tested, how many were excluded
+   and why (one count per reason), and how many could not be typed.
+2. *Agreement.* Held if at least 95% of the tested words agree on at least
+   20 generated inputs each, in =gforth=. Repeat the disagreeing words in
+   =gforth-fast= and =gforth-itc=.
+3. *Classification.* Every disagreement is listed by word name and given
+   one class: model parse, gforth differs from its own comment, harness
+   typing, or a data-dependent effect (such as =?dup=).
+4. *Calibration.* =pbt/calibrate/003-*.sh= edits one declared effect in a
+   copy of words.json (for example, =dup= becomes =( x -- )=) and must go red
+   on exactly that word.
+5. *No crash is a pass.* A word that kills gforth (=SIGSEGV=, abort) is
+   logged as excluded with its reason. It is never retried until it
+   passes.
+
+Out of scope: words that need a sandbox to run (file words, =system=,
+=allocate=). Those get a count, not tests.
+
+* Log

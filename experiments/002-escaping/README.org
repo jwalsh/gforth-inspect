@@ -1,0 +1,43 @@
+#+TITLE: 002 escaping: input.text survives JSON
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+* Hypothesis
+
+For any input line taken by =.stacks= under =log-on=, the snapshot line in
+=stacks.jsonl= decodes as strict UTF-8 and parses as strict JSON (Python
+=json.loads=, with no =strict=False=). Its =input.text= equals the source
+line with every byte below 0x20 mapped to a space, and =input.in= is the
+=>IN= at the snapshot.
+
+The generated lines can contain =\"=, =\\=, every control byte, DEL,
+multi-byte UTF-8, astral-plane characters and lone bytes of 0x80 and above,
+and can run from 0 bytes up to the longest line gforth's input buffer
+accepts. One way to build a case: =.stacks \ <generated>=, which puts the
+generated text in a comment, so the line stays valid Forth while =source=
+returns all of it. Also try a generated line that sits before the
+=.stacks=, inside =s" ..."= or =( ... )=, where it is still legal Forth.
+
+* Prediction (written before the first run)
+
+Valid UTF-8 round-trips, and so do quotes and backslashes. DEL passes
+through raw, which JSON allows. Lone high bytes come through raw and make
+the line invalid UTF-8, so the property is refuted for non-UTF-8 input.
+That would be a finding about the contract: the schema says =string= and
+does not say what happens to non-UTF-8 source.
+
+* Gate
+
+1. *Volume.* At least 1000 examples on =gforth=, and 200 each on
+   =gforth-fast= and =gforth-itc=. Escaping should not depend on the
+   engine, and the smaller runs check that it does not.
+2. *Result.* The pass rate is reported per input class (ASCII, controls,
+   valid UTF-8, invalid bytes, long lines). Each failing class gets one
+   shrunk reproducer.
+3. *Calibration.* =pbt/calibrate/002-*.sh= runs the tests against planted
+   faults and must go red on each: (a) =json-str= does not escape =\=; (b)
+   =json-str= leaves control bytes raw.
+
+Out of scope: the stack fields (001).
+
+* Log

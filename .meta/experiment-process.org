@@ -1,0 +1,42 @@
+#+TITLE: The experiment process
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+This follows the house process used by other projects here, with the
+local differences below.
+
+* Roles
+
+| who                                      | owns                                                             | does not touch                                              |
+|------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------|
+| coordinators (the owner and one session) | =main=, =experiments/README.org=, =.meta/=, the docs, promotion    | an experiment's code                                        |
+| an experiment's agent                    | its worktree =../gforth-inspect-NNN-slug=, branch =exp/NNN-slug= | =main=, other experiments, =env/= and =contract/= on =harden= |
+| the harden work                          | =env/*.fs=, =contract/=, =test/=, the top-level =Makefile=        | =pbt/=                                                      |
+
+Experiments test the inspector; they do not fix it. A bug found in
+=env/inspect.fs= goes back to whoever owns the inspector as a shrunk case
+and a one-line reproducer. The test that found the bug stays red until the
+fix lands, and is not weakened to go green.
+
+* The loop
+
+1. A coordinator adds a row to =experiments/README.org=, writes the
+   hypothesis and the gate into =experiments/NNN-slug/README.org=, and
+   commits both to =main= before the first run.
+2. An agent gets a worktree cut from =main=. Every run goes through
+   =gmake -C pbt check=. Each run is logged with its date, the inspect.fs
+   provenance (=gforth_run.py= prints it), the seed and the result.
+   Failures are logged too.
+3. The agent commits and pushes =exp/NNN-slug= as it goes, so the results
+   exist before the work is finished.
+4. When the gate passes, or a finding is solid, the agent opens a PR to
+   =main= and the coordinators ask the owner to merge it. A refuted
+   hypothesis gets merged as well, as a log with no code, because the
+   negative result is part of the record.
+
+* Isolation
+
+The inspector under test comes from =INSPECT_REF= (default =harden=), not
+from the working tree. That way every experiment tests the same blob, and
+the log can name it. Each gforth run gets its own =XDG_STATE_HOME= in a
+temp directory and a relative file name, so no record holds a real path.
