@@ -7,8 +7,10 @@ release a promise, and this file says what it promises.
 * What a release is
 
 - A tag =vMAJOR.MINOR.PATCH= on =main=, published as a GitHub Release.
-- Assets: =inspect.fs=, =canvas.fs=, =stacks-log.schema.json= and
-  =SHA256SUMS= (covering the other three).
+- Assets: =inspect.fs=, =stacks-log.schema.json= and =SHA256SUMS= (covering
+  the other two). =canvas.fs= is not part of this project and never ships.
+  It stays on =harden= only as a test bed until the end of the week of
+  2026-11-21, and is removed by a PR before v0.1.0.
 - =inspect.fs= begins with these two lines:
   #+begin_example
   \ gforth-inspect vX.Y.Z
@@ -26,8 +28,12 @@ release a promise, and this file says what it promises.
 | a fix that keeps every word's stack effect and every key's type          | PATCH                          |
 
 The stable words: =.stacks .rs .input ~~~ .cs all-~~ dbg-fix dbg+ rs-full
-fclearstack log-on log-off log-where inspect-version=. From =canvas.fs=:
-=canvas clear plot line .canvas save-pbm save-ppm save-xbm=.
+fclearstack log-on log-off log-where log-id inspect-version=.
+
+=log-id ( c-addr u -- )= (issue #3) copies up to 63 characters. Each later
+snapshot carries ="id":"<tag>"=, and =s" " log-id= clears it, after which
+the key is omitted. In the schema, =id= is an optional snapshot property
+of type string, and =x-version= stays 1.
 
 Log location: =$GFORTH_INSPECT_LOG_DIR=, falling back to
 =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/=. A released file never
@@ -57,12 +63,40 @@ into the notes.
 git switch main && git pull --ff-only
 # bump the version line in env/inspect.fs and inspect-version, then commit: chore(release): vX.Y.Z
 gmake test && gmake -C pbt check PROFILE=ci && scripts/privacy-scan.sh
-mkdir -p dist && cp env/inspect.fs env/canvas.fs contract/stacks-log.schema.json dist/
-(cd dist && shasum -a 256 inspect.fs canvas.fs stacks-log.schema.json > SHA256SUMS)
+mkdir -p dist && cp env/inspect.fs contract/stacks-log.schema.json dist/
+(cd dist && shasum -a 256 inspect.fs stacks-log.schema.json > SHA256SUMS)
 scripts/privacy-scan.sh dist/*
 git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
 gh release create vX.Y.Z dist/* --notes-file dist/NOTES.md
 #+end_src
+
+* Changing the contract or the tooling
+
+Plan every change to the record format, the stable words or the tooling
+in this order. Each step is done before the next one starts:
+
+1. *Issue.* Open one on this repository: what changes, why, the bump it
+   needs (see the table above), and a reproducer or example record.
+2. *Schema.* Edit =contract/stacks-log.schema.json=. Bump =x-version= only
+   when a change renames or retypes something.
+3. *Prose.* Edit =contract/stacks-log.org=, and add a row to its change log.
+4. *Producer.* Edit =env/inspect.fs=.
+5. *Consumers.* The checks in this repo (=test/= goldens, =pbt/=), and the
+   known downstream readers, which are told in step 7.
+6. *Checks.* =gmake verify= is green, and a new test covers the change.
+   Its planted fault (old producer against new schema, or the reverse)
+   goes red.
+7. *Notify.* Comment on the issue with the commit, and close it once the
+   release ships, as described under downstream deviations.
+
+* Change log
+
+| version     | date       | change                                                                      | issue  |
+|-------------+------------+-----------------------------------------------------------------------------+--------|
+| (unreleased) | 2026-11-21 | json-f: 17 significant digits, -0.0 kept, non-finite logged as null          | #1     |
+| (unreleased) | 2026-11-21 | snapshot gains optional =id= (=log-id=)                                       | #3     |
+| (unreleased) | 2026-11-21 | log dir is =$GFORTH_INSPECT_LOG_DIR=; =hello= gains =inspect=                  |        |
+| (unreleased) | 2026-11-21 | =canvas.fs= removed from the release contract                                |        |
 
 * Downstream deviations
 

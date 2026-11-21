@@ -17,4 +17,4 @@ which is a separate question from whether a test went green.
 
 Not yet proposed, from the handoff list: engine equivalence,
 control-flow stack nesting, =rs-full= prefix, =dbg+= step counts,
-closures, intervals, canvas.
+closures, intervals. (Canvas is out of scope: it belongs to the course.)
