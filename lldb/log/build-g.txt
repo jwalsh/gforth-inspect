@@ -1,5 +1,5 @@
 (lldb) target create "vendor/build-g/gforth"
-Current executable set to '/Users/jasonwalsh/ghq/github.com/jwalsh/gforth-inspect-lldb/vendor/build-g/gforth' (arm64).
+Current executable set to 'vendor/build-g/gforth' (arm64).
 (lldb) settings set -- target.run-args  "-p" ".:vendor/build-g:vendor/gforth-0.7.3" "-i" "vendor/build-g/gforth.fi" "env/brk.fs" "test/demo.fs"
 (lldb) command script import lldb/gforth.py
 (lldb) fbrk
@@ -14,7 +14,7 @@ libsystem_kernel.dylib`__getpid:
     0x19b876338 <+8>:  ldr    w0, [x9]
     0x19b87633c <+12>: cmp    w0, #0x0
 Target 0: (gforth) stopped.
-Process 40719 launched: '/Users/jasonwalsh/ghq/github.com/jwalsh/gforth-inspect-lldb/vendor/build-g/gforth' (arm64)
+Process 40719 launched: 'vendor/build-g/gforth' (arm64)
 (lldb) breakpoint disable 1
 1 breakpoints disabled.
 (lldb) fbreak-prim f*

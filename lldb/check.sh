@@ -22,5 +22,10 @@ for b in g O0; do
     -- "$G/gforth" -p ".:$G:vendor/gforth-0.7.3" -i "$G/gforth.fi" \
     env/brk.fs test/demo.fs > "$log/build-$b.txt" 2>&1
 done
-# strip per-run noise that makes diffs useless? no: addresses are ASLR'd, keep
+# addresses are ASLR'd and kept; machine paths are not (the repo is public):
+# checkout-relative paths, ~ for $HOME, $GFORTH_PREFIX for the keg
+for f in "$log"/*.txt; do
+  sed -E -i.bak -e "s#$PWD/##g" -e "s#$HOME#~#g" \
+      -e 's#/opt/homebrew/Cell[a]r/gforth/[^/]*#$GFORTH_PREFIX#g' "$f" && rm -f "$f.bak"
+done
 ls -l "$log"

@@ -8,7 +8,7 @@ libsystem_kernel.dylib`__semwait_signal:
     0x19b8793d0 <+16>: stp    x29, x30, [sp, #-0x10]!
     0x19b8793d4 <+20>: mov    x29, sp
 Target 0: (gforth-fast-0.7.3) stopped.
-Executable module set to "/opt/homebrew/Cellar/gforth/0.7.3_3/bin/gforth-fast-0.7.3".
+Executable module set to "$GFORTH_PREFIX/bin/gforth-fast-0.7.3".
 Architecture set to: arm64-apple-macosx-.
 (lldb) command script import lldb/gforth.py
 (lldb) bt 4
