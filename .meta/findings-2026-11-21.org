@@ -1,0 +1,51 @@
+#+TITLE: Findings, 2026-11-21: before there were tests
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+These were found by hand while the inspector was being written, before
+=pbt/= existed. Each is stated so that it can be checked again.
+
+* lldb gives exact stacks only at a Forth-side breakpoint
+
+=brk= reaches C through =call-c=, which flushes the VM registers to
+=gforth_SP= / =FP= / =RP= / =LP=. Anywhere else lldb has to guess. 0.7.3
+has no arm64 port, the registers move about at =-O2=, and =gforth-fast=
+keeps the top of stack in a register. A =-g -O0= build is exact. lldb also
+cannot attach from inside a sandboxed agent session. *Decision: no lldb in
+any live pipeline.*
+
+* The threaded code is not what the stock tools assume
+
+- An xt is a code-field address. =dodoes:= pushes =>body=. A =does>= word is
+  laid out as =[dodoes:][does-code][body]=.
+- In the direct-threaded engines, a colon call is two cells: =call <body>=.
+  Stock 0.7.3 =dbg= is ITC-only (=debug.fs=: "!!! dependency: ITC"), and it
+  crashes in =gforth= and =gforth-fast= on the first step. =dbg-fix= puts the
+  two-cell breakpoint in. =nestXT+= does the same for =n=.
+- Each control-flow stack item is three cells (orig / dest / do-dest).
+- =pause= saves sp/fp/rp/lp into the task area. That is what lets a server
+  task read the REPL task's stacks.
+
+* An inspector that reads the return stack moves it
+
+=.stacks= once printed its own frame's copy of the return stack instead of
+its caller's. The report looked plausible and was wrong. This is why
+non-interference and faithfulness are separate properties (experiment 001),
+and why =.stacks=, =~~~= and =all-~~= =~~= are tested as three paths: each
+one stores =snap-rp= differently.
+
+* Sockets in 0.7.3
+
+=unix/socket.fs= works once =C_INCLUDE_PATH= points at the gforth bottle's
+=include/= (the Homebrew bottle gets the libcc header path wrong).
+=create-server= binds 0.0.0.0, so a server has to bind 127.0.0.1 itself.
+=tasker.fs= sets =key= to =task-key=, so the REPL pauses while idle. In a
+30-line prototype server task, the server's socket fd turned up in the
+REPL's data stack: the two tasks were sharing one stack.
+
+* A first look at the logged floats (to be confirmed by 001)
+
+In a first manual run, =-0e= was logged as =0.00000000000000E0=, without
+its sign, and =json-f= prints through =fs.=, which keeps 15 significant
+digits. So a float in a record may not round-trip. This is the first thing
+experiment 001's faithfulness property checks.
