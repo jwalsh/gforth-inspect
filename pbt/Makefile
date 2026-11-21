@@ -14,7 +14,7 @@ check: smoke
 ifeq ($(TESTS),)
 	@echo "no test_*.py yet"
 else
-	$(UV_RUN) pytest -q --hypothesis-profile=$(PROFILE) $(TESTS)
+	$(UV_RUN) pytest -q --hypothesis-profile=$(PROFILE) --hypothesis-show-statistics $(TESTS)
 endif
 
 # every experiment adds its planted-fault run here; check must go red on each
