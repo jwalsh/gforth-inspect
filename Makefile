@@ -24,7 +24,8 @@ export VALIDATE
 CONTRACT := $(shell python3 -c 'import json; print(json.load(open("$(SCHEMA)"))["x-contract"])')
 export CONTRACT
 
-RELEASE_FILES := env/inspect.fs env/canvas.fs $(SCHEMA)
+# canvas.fs is a test bed on harden only and never ships (RELEASING.org)
+RELEASE_FILES := env/inspect.fs $(SCHEMA)
 
 .PHONY: test test-contract test-selftest test-goldens test-one goldens \
         stress test-lldb verify release-check
@@ -86,9 +87,9 @@ release-check: verify
 	  grep -q "s\" $$v\" ;" env/inspect.fs || { echo "inspect-version != header v$$v"; exit 1; }
 	@test -f LICENSE || { echo "release-check: no LICENSE"; exit 1; }
 	mkdir -p dist && cp $(RELEASE_FILES) dist/
-	cd dist && shasum -a 256 inspect.fs canvas.fs stacks-log.schema.json > SHA256SUMS
-	scripts/privacy-scan.sh dist/inspect.fs dist/canvas.fs dist/stacks-log.schema.json dist/SHA256SUMS
-	@n=$$(cat dist/inspect.fs dist/canvas.fs dist/stacks-log.schema.json | grep -c sicpminus || true); \
+	cd dist && shasum -a 256 inspect.fs stacks-log.schema.json > SHA256SUMS
+	scripts/privacy-scan.sh dist/inspect.fs dist/stacks-log.schema.json dist/SHA256SUMS
+	@n=$$(cat dist/inspect.fs dist/stacks-log.schema.json | grep -c sicpminus || true); \
 	  test "$$n" = 0 || { echo "release-check: sicpminus in assets"; exit 1; }
 	@cat dist/SHA256SUMS
 	@echo "release-check: dist/ ready; tagging and publishing are the owner's call"
