@@ -158,3 +158,13 @@ the record says so; a flag or a byte-exact companion field would.  And
 characters, so a consumer that places a caret at =text[in]= is off by one
 per extra byte of every multi-byte character before it; the contract
 should say that =in= is a byte offset into the UTF-8 (raw) source line.
+
+** 2026-11-21 recheck: harden moved again
+
+- commit c31f161, =PYTEST_ADDOPTS=--hypothesis-seed=20261121 gmake -C pbt check= (default profile)
+- inspect.fs =ref:harden@fc283da blob:a7e5c141af51= (contract 1.1: =log-id=,
+  =contract= in hello, ~~ where/src; =json-chars= unchanged)
+- wall 98 s; 24 passed; 100 examples per class on =gforth=, 20 on the others.
+- =gmake -C pbt calibrate= on c31f161: (a) and (b) red as expected at the
+  head of =harden= and at =18ebe2d=.
+- The new =id= key goes through =json-str= too but is not generated here.
