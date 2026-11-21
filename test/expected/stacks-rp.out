@@ -1,0 +1,14 @@
+## stdout
+data   <0> 
+float  <0> 
+return <R:41> top first
+  $ADDR = w2 +32
+  ... interpreter (rs-full on to see it)
+input  test/stacks-rp.fs:6 >in=2
+w2
+  ^
+<R:41> top first
+  $ADDR = r2 +32
+  ... interpreter (rs-full on to see it)
+## stderr
+## exit 0

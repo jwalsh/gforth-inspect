@@ -1,0 +1,18 @@
+## stdout
+
+CS: here=$ADDR 
+  do-dest $ADDR  (0 cells back) | colon-sys
+
+CS: here=$ADDR  | colon-sys
+
+CS: here=$ADDR 
+  do-dest $ADDR  (0 cells back) | colon-sys
+
+CS: here=$ADDR 
+  do-dest $ADDR  (0 cells back) | colon-sys
+
+CS: here=$ADDR 
+  do-dest $ADDR  (0 cells back)
+  do-dest $ADDR  (5 cells back) | colon-sys
+## stderr
+## exit 0

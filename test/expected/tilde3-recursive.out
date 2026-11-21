@@ -1,0 +1,28 @@
+## stdout
+## stderr
+
+test/tilde3-recursive.fs:3 in fact 
+data   <4> 4 3 2 1 
+float  <0> 
+return <R:43> top first
+  $ADDR = fact +96
+  $ADDR = fact +96
+  $ADDR = fact +96
+  ... interpreter (rs-full on to see it)
+input  test/tilde3-recursive.fs:5 >in=7
+4 fact 24 s" fact" assert=
+       ^
+
+test/tilde3-recursive.fs:6 in ??? 
+data   <1> 9 
+float  <0> 
+return <R:40> top first
+  ... interpreter (rs-full on to see it)
+input  test/tilde3-recursive.fs:6 >in=35
+:noname ( -- ) 9 ~~~ drop ; execute
+                                   ^
+## log state/gforth-inspect/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0"}
+{"v":1,"event":"snapshot","t":T,"where":"fact","src":"test/tilde3-recursive.fs:3","data":[4,3,2,1],"float":[],"rs":[{"word":"fact","off":96},{"word":"fact","off":96},{"word":"fact","off":96}],"input":{"file":"test/tilde3-recursive.fs","line":5,"in":7,"text":"4 fact 24 s\" fact\" assert="}}
+{"v":1,"event":"snapshot","t":T,"where":"???","src":"test/tilde3-recursive.fs:6","data":[9],"float":[],"rs":[],"input":{"file":"test/tilde3-recursive.fs","line":6,"in":35,"text":":noname ( -- ) 9 ~~~ drop ; execute"}}
+## exit 0

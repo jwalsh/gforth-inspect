@@ -1,0 +1,6 @@
+## stdout
+0.1.0
+## stderr
+## log state/gforth-inspect/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0"}
+## exit 0

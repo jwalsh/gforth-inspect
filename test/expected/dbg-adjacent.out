@@ -1,0 +1,43 @@
+## stdout
+
+: u  
+Scanning code...
+
+Nesting debugger ready!
+
+D: <0>  F: <0> R: -
+ADDR ADDR 5              -> 
+D: <1> 5  F: <0> R: -
+ADDR ADDR -1             -> 
+D: <2> 5 -1  F: <0> R: -
+ADDR ADDR t              -> 
+: t  
+Scanning code...
+
+Nesting debugger ready!
+
+D: <2> 5 -1  F: <0> R: u 
+ADDR ADDR IF             -> 
+D: <0>  F: <0> R: u 
+ADDR ADDR THEN ;         -> 
+Scanning code...
+
+Nesting debugger ready!
+
+D: <0>  F: <0> R: -
+ADDR ADDR ;              -> 
+: v  
+Scanning code...
+
+Nesting debugger ready!
+
+D: <0>  F: <0> R: -
+ADDR ADDR 5              -> 
+D: <1> 5  F: <0> R: -
+ADDR ADDR 0              -> 
+D: <2> 5 0  F: <0> R: -
+ADDR ADDR t              -> 
+D: <1> 5  F: <0> R: -
+ADDR ADDR ;              -> 
+## stderr
+## exit 0

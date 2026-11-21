@@ -1,0 +1,17 @@
+{"v":2,"event":"hello","t":1,"gforth":"0.7.3"}
+{"v":1,"event":"hello","t":1}
+{"v":1,"event":"hello","t":1.5,"gforth":"0.7.3"}
+{"v":1,"event":"hello","t":1,"gforth":"0.7.3","inspect":1}
+{"v":1,"event":"bye","t":1}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[NaN],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[Infinity],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[1.5],"float":[],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[3.E0],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[],"rs":["xp"],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[],"rs":[{"word":"w","off":1,"x":2}],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"f","line":1,"in":0}}
+{"v":1,"event":"snapshot","t":1,"where":null,"data":[],"float":[],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"f","line":1,"in":0,"text":"a	b"}}
+{"v":1,"v":1,"event":"hello","t":1,"gforth":"0.7.3"}
+[1,2]
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"f","line":1,"in":0,"text":"ÿ"}}

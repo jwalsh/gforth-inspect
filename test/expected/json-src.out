@@ -1,0 +1,17 @@
+## stdout
+## stderr
+
+$TMP/out/we"ird\name.fs:1 in w 
+data   <0> 
+float  <0> 
+return <R:61> top first
+  ... interpreter (rs-full on to see it)
+input  $TMP/out/we"ird\name.fs:1 >in=18
+: w ( -- ) ~~~ ; w
+                  ^
+## log state/gforth-inspect/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0"}
+{"v":1,"event":"snapshot","t":T,"where":"w","src":"$TMP/out/we\"ird\\name.fs:1","data":[],"float":[],"rs":[],"input":{"file":"$TMP/out/we\"ird\\name.fs","line":1,"in":18,"text":": w ( -- ) ~~~ ; w"}}
+## file we"ird\name.fs
+: w ( -- ) ~~~ ; w
+## exit 0
