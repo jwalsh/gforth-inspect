@@ -17,7 +17,14 @@ else
 	$(UV_RUN) pytest -q --hypothesis-profile=$(PROFILE) --hypothesis-show-statistics $(TESTS)
 endif
 
-# every experiment adds its planted-fault run here; check must go red on each
+# Every experiment adds a planted-fault script to CALIBRATE_DIR.  A script
+# exits 0 only if the tests went red on its planted fault, so calibrate is
+# green exactly when every gate was seen to fail.  The recipe is one shell:
+# an `exit` on one recipe line ends only that line, not the target.
+CALIBRATE_DIR ?= calibrate
+
 calibrate:
-	@ls calibrate/*.sh >/dev/null 2>&1 || { echo "no calibration yet"; exit 0; }
-	@for script in calibrate/*.sh; do echo "== $$script"; sh $$script || exit 1; done
+	@set -e; \
+	scripts=$$(ls $(CALIBRATE_DIR)/*.sh 2>/dev/null || true); \
+	if [ -z "$$scripts" ]; then echo "no calibration yet"; exit 0; fi; \
+	for script in $$scripts; do echo "== $$script"; sh "$$script"; done
