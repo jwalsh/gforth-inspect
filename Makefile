@@ -6,7 +6,7 @@
 #   gmake stress CORPUS="dir/*.fs ..."   load real programs with/without inspect.fs
 #   gmake test-lldb      lldb/check.sh; skipped where debugserver cannot attach
 #   gmake verify         the CONTRIBUTING.org baseline
-#   gmake release-check  verify + release hygiene + SHA256SUMS
+#   gmake release-check  verify + release hygiene + dist/ with SHA256SUMS
 
 SHELL   := /bin/bash
 .SHELLFLAGS := -eu -o pipefail -c
@@ -75,5 +75,10 @@ release-check: verify
 	@v=$$(sed -n 's/^\\ gforth-inspect v//p' env/inspect.fs); \
 	  grep -q "s\" $$v\" ;" env/inspect.fs || { echo "inspect-version != header v$$v"; exit 1; }
 	@test -f LICENSE || { echo "release-check: no LICENSE"; exit 1; }
-	shasum -a 256 $(RELEASE_FILES) > SHA256SUMS
-	@cat SHA256SUMS
+	mkdir -p dist && cp $(RELEASE_FILES) dist/
+	cd dist && shasum -a 256 inspect.fs canvas.fs stacks-log.schema.json > SHA256SUMS
+	scripts/privacy-scan.sh dist/inspect.fs dist/canvas.fs dist/stacks-log.schema.json dist/SHA256SUMS
+	@n=$$(cat dist/inspect.fs dist/canvas.fs dist/stacks-log.schema.json | grep -c sicpminus || true); \
+	  test "$$n" = 0 || { echo "release-check: sicpminus in assets"; exit 1; }
+	@cat dist/SHA256SUMS
+	@echo "release-check: dist/ ready; tagging and publishing are the owner's call"
