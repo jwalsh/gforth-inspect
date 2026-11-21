@@ -1,0 +1,48 @@
+#+TITLE: 004 reference-consumers: is harden's v0.1.0 candidate a non-breaking change?
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+* Hypothesis
+
+The three reference consumers in =RELEASING.org= (a jq one-liner, an editor
+checker/dashboard reader, and a mock =GET /stacks= server) are frozen as
+written. They give the same output on records produced by inspect.fs at
+=18ebe2d= (the import the course runs today) as on records produced by
+harden's head (the v0.1.0 candidate), for the same programs. The one
+exception is the documented #1 fix (=-0e= keeps its sign, and floats print
+with 17 digits). Where #1 makes the output differ, the decoded values are
+the same as or closer to the true stack, never further from it. So harden
+is a MINOR or PATCH change, not a MAJOR one.
+
+* Prediction (written before the first run)
+
+The hypothesis holds for data, rs, input, where and src. For floats it
+holds as "the same or closer", by #1. The new =hello.inspect= key and the
+moved default log location are the risks. The key is ignorable. The
+location is a contract question: the default changes from
+=.../course-repo/= to =.../gforth-inspect/=, and by the rule in
+RELEASING.org that alone is breaking for a consumer that hard-codes the
+old path. The course says it will set =GFORTH_INSPECT_LOG_DIR=. Whatever
+the run finds, this has to be named in the verdict.
+
+* Gate
+
+1. *Consumers frozen.* =pbt/consumers/= holds the three consumers: a jq
+   filter file, a stdlib-only Python mock server that serves the last line
+   of the log byte for byte, and a Python reader that does the editor
+   checker's job (last line, subset-validate, extract the fields). They
+   are committed before the first comparison run.
+2. *Differential.* At least 200 generated programs (stacks as in 001,
+   input lines as in 002, plus the three snapshot paths) are run under both
+   refs. Consumer outputs are compared field by field. Each difference is
+   classified: #1 float, ignorable new key, or breaking.
+3. *Unknown keys.* Each record gets an injected unknown key at the top
+   level and inside =input=. All three consumers must give unchanged
+   output.
+4. *Calibration.* Each planted breaking change must turn the gate red with
+   the right classification: rename =data= to =stack=; split one record
+   across two lines; print one integer in hex; change =null= to =0= for
+   =nan=; move the log so the default path is empty.
+5. Verdict: MAJOR, MINOR or PATCH for harden's head, with the reason.
+
+* Log
