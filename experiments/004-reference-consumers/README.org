@@ -207,7 +207,10 @@ fix-#2 1729 (jq); escape-fix 4214 + 46 (checker), 3128 + 216 (server).
    one. A consumer that sets =GFORTH_INSPECT_LOG_DIR=, as the course says
    it will, is not broken. Apart from the path, the record stream is
    MINOR: =hello.inspect=, =hello.contract= and snapshot =id= are new
-   optional keys, and #1, #2 and the escaping are value fixes.
+   optional keys, and #1, #2 and the escaping are value fixes. (=id= is
+   only emitted after =log-id=, which the generated programs never call,
+   so =id= went untested here. Unknown-key injection covers the same
+   consumer behaviour.)
 
    The hypothesis holds for the stream but not for the file location. Two
    more literal readings to put to the user:
