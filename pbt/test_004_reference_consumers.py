@@ -123,7 +123,9 @@ def run_jq(lines: list[str]) -> list[dict]:
                               capture_output=True)
     if proc.returncode != 0:
         first = proc.stderr.decode("utf-8", "replace").splitlines()[:1]
-        return [{"jq-error": first[0] if first else f"exit {proc.returncode}"}]
+        # the kind of error, without its position (an injected key moves it)
+        kind = re.sub(r" at line \d+, column \d+$", "", first[0]) if first else f"exit {proc.returncode}"
+        return [{"jq-error": kind}]
     return [_strict_json(out) for out in proc.stdout.splitlines()]
 
 
@@ -484,9 +486,8 @@ def test_consumers_read_both_refs_alike(batch, server):
     _record(diffs)
     breaking = [f"breaking consumer={c} field={f} rec={i} old={str(o)[:80]} new={str(n)[:100]}"
                 for cls, c, f, i, o, n in diffs if cls == "breaking"]
-    assert not violations, violations
-    assert not unknown_key_failures, "\n".join(unknown_key_failures)
-    assert not breaking, "\n".join(breaking[:12])
+    failures = breaking[:12] + unknown_key_failures + violations
+    assert not failures, "\n".join(failures)
 
 
 def _valid_utf8(raw: bytes) -> bool:
