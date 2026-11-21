@@ -2,7 +2,9 @@
 #+STARTUP: showall
 
 Downstream projects use only tagged releases, never branches. That makes a
-release a promise, and this file says what it promises.
+release a promise, and this file says what it promises. Who produces the
+stream, who consumes it, and what each owes the other is set out in
+[[file:CONSUMERS.org][CONSUMERS.org]].
 
 * What a release is
 
@@ -17,7 +19,9 @@ release a promise, and this file says what it promises.
   \ stacks-log schema v1
   #+end_example
 - =inspect-version ( -- c-addr u )= returns ="X.Y.Z"=, and the =hello= record
-  carries ="inspect":"X.Y.Z"=.
+  carries ="inspect":"X.Y.Z"= and ="contract":"MAJOR.MINOR"=, the latter equal
+  to the schema's =x-contract=. v0.1.0 announces contract 1.1. A consumer
+  that follows CONSUMERS.org refuses a stream that has no =contract=.
 
 * Stable API, and what bumps what
 
