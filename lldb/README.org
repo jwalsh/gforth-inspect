@@ -300,3 +300,11 @@ printf '%20s' | gforth env/inspect.fs test/dbg-demo.fs   # dbg+ stepping
   is unavailable at -O2 and complete at -O0. =env/inspect.fs= done: =~~~=,
   =.cs=, =all-~~=; stock dbg crash found and fixed with =dbg-fix=/=dbg+=.
   =lldb/check.sh= wrote =log/=.
+- 2026-11-21 (later): =env/inspect.fs= hardened by driving it in a live REPL.
+  =all-~~= skips =~~='s own printer frames. =n= (nest) in =dbg= no longer dies
+  in direct-threaded engines: =nestXT+= (installed by =dbg-fix=) nests colon
+  calls and steps over primitives. The return-stack views stop at the text
+  interpreter unless =rs-full on=. =fclearstack= added (absent in 0.7.3).
+  Check, all 3 engines:
+  =printf '\rn\r\r\r\r\r\r\r\r' | gforth env/inspect.fs test/dbg-nest.fs -e bye=
+  prints =: inner= then =nest-ok=.

@@ -1,13 +1,16 @@
 \ inspect.fs -- see all of gforth 0.7.3's stacks from inside gforth
 \
-\   .rs       return stack, top first, with word+offset for return addresses
+\   .rs       return stack, top first, with word+offset for return addresses;
+\             stops at the interpreter unless rs-full is on
 \   .input    current input line, file:line, and a caret at >IN
 \   .stacks   .s  f.s  .rs  .input
+\   fclearstack  empty the float stack (missing from 0.7.3)
 \   ~~~       like ~~ (file:line to stderr) but prints .stacks; the return
 \             stack is taken at the ~~~ itself, not inside the printer
 \   .cs       IMMEDIATE: decode the compile-time control-flow stack
 \   all-~~    make plain ~~ print .stacks (via the printdebugdata hook)
-\   dbg-fix   make stock dbg work in gforth/gforth-fast (it is ITC-only)
+\   dbg-fix   make stock dbg work in gforth/gforth-fast (it is ITC-only),
+\             including n (nest) into colon words
 \   dbg+      dbg-fix, and print .s f.s and return words at every step
 \
 \ Works in gforth, gforth-fast and gforth-itc 0.7.3.
@@ -49,10 +52,22 @@
 
 \ --- return stack ----------------------------------------------------
 
+variable rs-full  rs-full off
+
+: interp-frame? ( addr -- f )
+    \ a return into gforth's text interpreter or its exception frames
+    enclosing dup 0= IF EXIT THEN
+    dup ['] interpret1 = over ['] interpret = or over ['] handler-intro, = or
+    over ['] (quit) = or swap ['] quit = or ;
+\ rs-full on   list the whole return stack, interpreter frames included
+
 : .rs-from ( a-addr -- )
-    \ print return-stack cells from a-addr (top) up to rp0
+    \ print return-stack cells from a-addr (top) up to rp0; unless rs-full,
+    \ stop at the text interpreter (interpret1): below it is gforth's own
     rp0 @ over - cell / 0 max ." <R:" 0 .r ." > top first" cr
     rp0 @ swap ?DO
+        rs-full @ 0= i @ interp-frame? and IF
+            ."   ... interpreter (rs-full on to see it)" cr UNLOOP EXIT THEN
         2 spaces i @ dup hex. decimal
         dup enclosing IF ." = " .where
         ELSE dup stack-region? IF drop ." (stack pointer)"
@@ -80,6 +95,11 @@
 
 : .stacks ( -- )  rp@ cell+ .stacks-from ;
 
+[undefined] fclearstack [IF]
+: fclearstack ( F: r1 .. rn -- ) \ gforth 0.7.3 has clearstack but no float twin
+    fdepth 0 ?DO fdrop LOOP ;
+[THEN]
+
 : .~~~ ( nfile nline xt -- )
     cr -rot .sourcepos ."  in " >head-noprim .name cr ;
 
@@ -91,11 +111,18 @@
     compile-sourcepos latestxt postpone literal
     postpone rp@ postpone (~~~) ; immediate compile-only
 
-: ~~-stacks ( -- )  cr rp@ cell+ .stacks-from ;
+: past-debugline ( a-addr -- a-addr' )
+    \ skip ~~'s own printer frames (outfile-execute, .debugline-stderr):
+    \ start just above the .debugline-stderr return; unchanged if absent
+    rp0 @ over ?DO
+        i @ enclosing ['] .debugline-stderr = IF drop i cell+ UNLOOP EXIT THEN
+    cell +LOOP ;
+
+: ~~-stacks ( -- )  cr rp@ cell+ past-debugline .stacks-from ;
 
 : all-~~ ( -- )
-    \ plain ~~ now prints all stacks (the return stack includes ~~'s own
-    \ printer frames on top: .debugline-stderr, outfile-execute, catch)
+    \ plain ~~ now prints all stacks; the return stack starts at the word
+    \ that contains the ~~, not inside ~~'s printer
     ['] ~~-stacks IS printdebugdata ;
 
 \ --- compile-time control-flow stack ---------------------------------
@@ -173,9 +200,23 @@ create bp-code 2 cells allot
     bp2 cell+ @ ?dup IF dt2 2 cells + swap 2 cells move THEN
     bp2 @       ?dup IF dt2 swap 2 cells move THEN ;
 
+: nestXT+ ( x -- true | body false )
+    \ the n (nest) key.  Stock nestXT treats the threaded cell as an xt and
+    \ runs xt-see on it; in direct-threaded engines that cell is engine code,
+    \ so xt-see shells out to gdb and dies (even nesting a colon word).
+    \ Here a colon call is the cell `call`'s code address followed by the
+    \ target body; anything else (primitive, literal) steps instead.
+    dup ['] call @ = IF drop ['] call THEN
+    dup ['] call = over colon-xt? or 0= IF
+        drop cr ." (not a colon definition: stepped over)" true EXIT THEN
+    nestXT-checkSpecial
+    DebugMode c-pass ! C-Output off  xt-see  C-Output on
+    c-pass @ DebugMode = dup IF cr ." Cannot debug!!" THEN ;
+
 : dbg-fix ( -- )
     ['] set-bp2 ['] set-bp patch-colon
-    ['] restore-bp2 ['] restore-bp patch-colon ;
+    ['] restore-bp2 ['] restore-bp patch-colon
+    ['] nestXT+ ['] nestXT patch-colon ;
 
 : dbg+ ( -- )
     \ dbg that works in every engine and shows D: F: R: at each step
