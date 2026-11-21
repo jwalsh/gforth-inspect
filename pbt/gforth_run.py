@@ -11,7 +11,6 @@ inspect.fs comes from, in order:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import subprocess
@@ -35,8 +34,10 @@ def inspect_source() -> tuple[Path, str]:
     explicit = os.environ.get("INSPECT_FS")
     if explicit:
         path = Path(explicit).resolve()
-        digest = hashlib.sha1(path.read_bytes()).hexdigest()[:12]
-        return path, f"file:{path} sha1:{digest}"
+        # name and git blob id only: the provenance line goes into public
+        # logs, and the blob id matches the ref form's, so the two compare
+        blob = _git("hash-object", str(path)).strip()
+        return path, f"file:{path.name} blob:{blob[:12]}"
     refs = [os.environ["INSPECT_REF"]] if "INSPECT_REF" in os.environ else ["harden", "origin/harden"]
     for ref in refs:
         try:
@@ -97,7 +98,10 @@ def run(program: str, engine: str = "gforth", timeout: float = 10.0) -> Run:
         logs = sorted((tmp_path / "state").glob("*/stacks.jsonl"))
         if len(logs) > 1:
             raise RuntimeError(f"more than one stacks.jsonl written: {[p.parent.name for p in logs]}")
-        lines = logs[0].read_bytes().decode("utf-8", "surrogateescape").splitlines() if logs else []
+        # split the bytes on LF only: str.splitlines() also breaks on U+0085,
+        # U+2028/9, VT, FF and 0x1c-0x1e, which may sit inside a JSON string
+        raw = logs[0].read_bytes() if logs else b""
+        lines = [chunk.decode("utf-8", "surrogateescape") for chunk in raw.split(b"\n") if chunk]
         return Run(
             proc.returncode,
             proc.stdout.decode("utf-8", "surrogateescape"),

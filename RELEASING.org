@@ -2,7 +2,9 @@
 #+STARTUP: showall
 
 Downstream projects use only tagged releases, never branches. That makes a
-release a promise, and this file says what it promises.
+release a promise, and this file says what it promises. Who produces the
+stream, who consumes it, and what each owes the other is set out in
+[[file:CONSUMERS.org][CONSUMERS.org]].
 
 * What a release is
 
@@ -17,7 +19,9 @@ release a promise, and this file says what it promises.
   \ stacks-log schema v1
   #+end_example
 - =inspect-version ( -- c-addr u )= returns ="X.Y.Z"=, and the =hello= record
-  carries ="inspect":"X.Y.Z"=.
+  carries ="inspect":"X.Y.Z"= and ="contract":"MAJOR.MINOR"=, the latter equal
+  to the schema's =x-contract=. v0.1.0 announces contract 1.1. A consumer
+  that follows CONSUMERS.org refuses a stream that has no =contract=.
 
 * Stable API, and what bumps what
 
@@ -52,8 +56,26 @@ A consumer must ignore keys it does not know, and the gate checks that
 too: every produced record has an unknown key injected, and all three
 consumers still give the same output.
 
+** Rulings
+
+Two cases that the table alone did not settle. Both were found by
+experiment 004:
+
+- *A fix toward the truth is not a break.* Suppose a number or a string
+  decodes differently, and the new value matches the true state more
+  closely than the old one: =fp@= bits for a float, the source bytes for
+  =input.text=. That is a PATCH. Examples are #1 (17 digits, =-0.0=) and the
+  0.1.0 escaping. A consumer that relied on the wrong value was relying on
+  a bug. The change log still records the fix.
+- *v0.1.0 is the first release.* 18ebe2d and the other earlier commits were
+  imports, not releases, so moving the default log directory to
+  =.../gforth-inspect/= breaks no released promise. From v0.1.0 on, the
+  default location is under the table's MAJOR row.
+
 The stable words: =.stacks .rs .input ~~~ .cs all-~~ dbg-fix dbg+ rs-full
-fclearstack log-on log-off log-where log-id inspect-version=.
+fclearstack log-on log-off log-where log-id inspect-version
+contract-version=. =contract-version ( -- c-addr u )= returns the announced
+contract, ="1.1"= for v0.1.0.
 
 =log-id ( c-addr u -- )= (issue #3) copies up to 63 characters. Each later
 snapshot carries ="id":"<tag>"=, and =s" " log-id= clears it, after which
