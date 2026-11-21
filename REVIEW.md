@@ -29,7 +29,16 @@ change must not break.
    It runs the privacy scan (calibrated first), the golden tests in all
    three engines, the property tests and the planted-fault calibration, and
    checks that the guides are intact (`scripts/check-guides.sh`). It must
-   be green. Paste its summary line into the PR body: engines, golden
+   be green.
+
+   The root Makefile, `env/` and `contract/` arrive with the `harden` PR.
+   Until it merges, run the parts that exist on `main` by hand:
+
+   ```sh
+   scripts/privacy-scan.sh --calibrate && scripts/privacy-scan.sh
+   scripts/check-guides.sh --calibrate && scripts/check-guides.sh
+   gmake -C pbt check && gmake -C pbt calibrate
+   ``` Paste its summary line into the PR body: engines, golden
    count, Hypothesis examples, seed.
 
 3. **Review your own branch.** In Claude Code:
@@ -42,7 +51,7 @@ change must not break.
    `medium` for documentation-only changes. Do not use `max` or `ultra`
    unless the owner asks for one: they start many reviewers and cost the
    most. Other agents should run their own review tool at the same depth,
-   against the same diff (`git diff main...HEAD`).
+   against the same diff (`git fetch origin && git diff origin/main...HEAD`).
 
 4. **Deal with every finding.** Fix it, or answer it in the PR body with a
    reason. A finding is not skipped silently, and a test is not weakened
