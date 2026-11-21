@@ -1,0 +1,77 @@
+(lldb) target create "vendor/build-O0/gforth"
+Current executable set to '/Users/jasonwalsh/ghq/github.com/jwalsh/gforth-inspect-lldb/vendor/build-O0/gforth' (arm64).
+(lldb) settings set -- target.run-args  "-p" ".:vendor/build-O0:vendor/gforth-0.7.3" "-i" "vendor/build-O0/gforth.fi" "env/brk.fs" "test/demo.fs"
+(lldb) command script import lldb/gforth.py
+(lldb) fbrk
+breakpoint 1 on getpid (Forth `brk`)
+(lldb) run
+Process 40821 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 1.1
+    frame #0: 0x000000019b876330 libsystem_kernel.dylib`__getpid
+libsystem_kernel.dylib`__getpid:
+->  0x19b876330 <+0>:  adrp   x9, 414047
+    0x19b876334 <+4>:  add    x9, x9, #0xe88            ; _current_pid
+    0x19b876338 <+8>:  ldr    w0, [x9]
+    0x19b87633c <+12>: cmp    w0, #0x0
+Target 0: (gforth) stopped.
+Process 40821 launched: '/Users/jasonwalsh/ghq/github.com/jwalsh/gforth-inspect-lldb/vendor/build-O0/gforth' (arm64)
+(lldb) breakpoint disable 1
+1 breakpoints disabled.
+(lldb) fbreak-prim f*
+breakpoint 2 at 0x10000bdc8 (primitive f*)
+(lldb) continue
+Process 40821 resuming
+Process 40821 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 2.1
+    frame #0: 0x000000010000bdc8 gforth`gforth_engine(ip0=0x000000012180a668, sp0=0x000000012000c7e0, rp0=0x0000000120014800, fp0=0x0000000120010a00, lp0="") at prim.i:10822:1
+Target 0: (gforth) stopped.
+(lldb) frame variable sp fp ip lp
+(Cell *) sp = 0x000000012000c7e0
+(Float *) fp = 0x00000001200109e8
+(Xt *) ip = 0x0000000121842828
+(Address) lp = 0x0000000120018400 ""
+(lldb) fregs
+engine: gforth (direct threaded, GFORTH_DEBUGGING)  exe=gforth  frame0=gforth_engine
+forthstart=0x121800080 image=0x42568 dict=0x800000 prims=334 words=2058
+C stacks: d=[0x120008800,0x12000c800) f=[0x12000ca00,0x120010a00) r=[0x120010c00,0x120014800) l=[0x120014a00,0x120018400)
+Forth sp0=0x12000c800 fp0=0x120010a00 rp0=0x120014800
+  sp = 0x12000c7e0        DWARF local sp of gforth_engine
+  fp = 0x1200109e8        DWARF local fp of gforth_engine
+  rp = 0x1200146b8        C global rp (GFORTH_DEBUGGING)
+  ip = 0x121842828        DWARF local ip of gforth_engine
+register candidates in gforth_engine frame: sp[('x12', 4831889368)] fp[('x11', 4831906296)] ip[]
+(lldb) fstacks
+engine: gforth (direct threaded, GFORTH_DEBUGGING)  [debug info (DWARF)]
+current: fmix+72 executing [ip-1]=f*, next [ip]=call   (ip=0x121842828; pc at start of f*)
+data stack (bottom first):
+  <4> 11 22 33 24   (ptr=0x12000c7e0)
+float stack (bottom first):
+  <3> 3.25 24 1.5   (ptr=0x1200109e8)
+return stack:
+  <41> top first   (rp=0x1200146b8 rp0=0x120014800)
+    [ 0] 0x0000000121842900        outer+168
+    [ 1] 0x0000000121808b40        interpret1+144
+    [ 2] 0x0000000121818738        (noname@0x1218186e8)+80
+    [ 3] 0x0000000120014718        (-> return stack, 29 cells below top)
+    [ 4] 0x0000000120018400        (-> locals stack, 0 cells below top)
+    [ 5] 0x0000000120010a00        (-> float stack, 0 cells below top)
+    [ 6] 0x000000012000c7f0        (-> data stack, 2 cells below top)
+    [ 7] 0x0000000121818708        (noname@0x1218186e8)+32
+    [ 8] 0x0000000121808bd0        interpret+80
+    [ 9] 0x00000001200147c8        (-> return stack, 7 cells below top)
+    [10] 0x000000012180faa8        read-loop+64
+    [11] 0x0000000121818738        (noname@0x1218186e8)+80
+    [12] 0x0000000120014778        (-> return stack, 17 cells below top)
+    [13] 0x0000000120018400        (-> locals stack, 0 cells below top)
+    [14] 0x0000000120010a00        (-> float stack, 0 cells below top)
+    [15] 0x000000012000c7f0        (-> data stack, 2 cells below top)
+    [16] 0x0000000121818708        (noname@0x1218186e8)+32
+    [17] 0x000000012180fb70        execute-parsing-named-file+112
+    [18] 0x0000000121813e58        included1+152
+    [19] 0x0000000000000000 0      
+    [20] 0x0000000000000000 0      
+    [21] 0x0000000121813f90        required+152
+    [22] 0x0000000121811018        args-required1+56
+    [23] 0x0000000121818738        (noname@0x1218186e8)+80
+(lldb) kill
+Process 40821 exited with status = 9 (0x00000009) killed
