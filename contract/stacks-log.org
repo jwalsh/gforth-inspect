@@ -1,0 +1,100 @@
+#+TITLE: Stacks log contract, v1
+#+STARTUP: showall
+
+Producer: =forth/env/inspect.fs= (gforth 0.7.3) after =log-on=.
+Consumer: =course-forth-dashboard= in =course.el=.
+Confirm both ends: =gmake init=.
+
+* Files
+
+| path                                                         | written by                               | content                  |
+|--------------------------------------------------------------+------------------------------------------+--------------------------|
+| =${XDG_STATE_HOME:-~/.local/state}/sicpminus/stacks.jsonl=   | =inspect.fs= (=log-on=)                  | one JSON object per line |
+| =${XDG_STATE_HOME:-~/.local/state}/sicpminus/forth-repl.log= | =scripts/forth-tmux.sh= (tmux pipe-pane) | raw REPL transcript      |
+
+Append-only. One complete object per line; the consumer reads the last line.
+
+* Data flow
+
+One producer, files as the interface, independent read-only consumers.
+No debugger in the path.
+
+#+begin_src mermaid :file out/stacks-flow.png :scale 2
+flowchart LR
+  subgraph producer["producer: gforth 0.7.3"]
+    U["you type<br/>.stacks  #126;#126;#126;  #126;#126;"]
+    G["gforth REPL<br/>env/inspect.fs log-on"]
+    U --> G
+  end
+  subgraph run["where it runs"]
+    T["tmux forth:repl<br/>gmake repl"]
+    E["Emacs *forth*<br/>run-forth"]
+  end
+  G --- T
+  G --- E
+  subgraph disk["disk: ~/.local/state/sicpminus/"]
+    J[("stacks.jsonl<br/>hello + snapshot<br/>contract v1")]
+    L[("forth-repl.log<br/>raw transcript")]
+  end
+  G -- "one JSON line<br/>per snapshot" --> J
+  T -- "tmux pipe-pane" --> L
+  S{{"stacks-log.schema.json<br/>x-version 1"}}
+  subgraph readers["consumers (read-only)"]
+    D["Emacs dashboard<br/>course-forth-dashboard"]
+    C["gmake init<br/>course-forth-check"]
+    M["MCP / API<br/>get_stacks …"]
+  end
+  J --> D
+  J --> C
+  J --> M
+  L --> M
+  S -. validates .-> D
+  S -. validates .-> C
+  S -. validates .-> M
+  D --> YOU(["you"])
+  M --> CL(["Claude Code"])
+#+end_src
+
+#+RESULTS:
+[[file:out/stacks-flow.png]]
+
+The MCP / API reader is planned, not built.
+
+* Records
+
+Every record: ="v": 1=, ="event"=, ="t"= (Unix seconds, integer).
+
+** =hello= (sentinel)
+
+Written once by =log-on=. Tells the consumer a v1 producer is attached.
+
+#+begin_src json
+{"v":1,"event":"hello","t":1763740800,"gforth":"0.7.3"}
+#+end_src
+
+** =snapshot=
+
+Written by =.stacks=, =~~~=, and plain =~~= after =all-~~=.
+
+#+begin_src json
+{"v":1,"event":"snapshot","t":1763740801,
+ "where":"fact~","src":"forth/x.fs:3",
+ "data":[3,2,1],
+ "float":[2.50000000000000E0],
+ "rs":[{"word":"fact~","off":96},"sp",0],
+ "input":{"file":"forth/x.fs","line":4,"in":8,"text":"3 fact~ ."}}
+#+end_src
+
+| key     | type                         | meaning                                                   |
+|---------+------------------------------+-----------------------------------------------------------|
+| =where= | string or null               | the word containing =~~~= / =~~=; null for =.stacks=      |
+| =src=   | string or null               | =file:line= of that =~~~=; null for =.stacks=             |
+| =data=  | array of integers            | data stack, bottom first                                  |
+| =float= | array of numbers / null      | float stack, bottom first; null for inf or NaN            |
+| =rs=    | array                        | return stack, top first; ={"word","off"}= for a return into a colon definition, ="sp"= for a stack pointer, an integer otherwise; stops at the text interpreter unless =rs-full on= |
+| =input= | object                       | =file=, =line=, =in= (=>in=), =text= (the source line)    |
+
+* Compatibility
+
+A consumer rejects records whose =v= it does not know. Adding keys is
+compatible; renaming or retyping one is a new =v=.

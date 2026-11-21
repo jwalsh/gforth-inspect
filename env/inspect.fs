@@ -5,6 +5,7 @@
 \   .input    current input line, file:line, and a caret at >IN
 \   .stacks   .s  f.s  .rs  .input
 \   fclearstack  empty the float stack (missing from 0.7.3)
+\   log-on / log-off  JSON records for the Emacs dashboard (resources/stacks-log.org)
 \   ~~~       like ~~ (file:line to stderr) but prints .stacks; the return
 \             stack is taken at the ~~~ itself, not inside the printer
 \   .cs       IMMEDIATE: decode the compile-time control-flow stack
@@ -85,6 +86,83 @@ variable rs-full  rs-full off
     source type cr
     >in @ source nip min spaces ." ^" cr ;
 
+\ --- structured log: resources/stacks-log.org (contract v1) -----------
+\   log-on    ( -- )  append JSON records to $XDG_STATE_HOME/sicpminus/stacks.jsonl
+\   log-off   ( -- )  stop and close
+\ While on, .stacks, ~~~ and (after all-~~) ~~ also write a snapshot record.
+
+create log-dir 256 allot   create log-path 256 allot   create log-cmd 512 allot
+: log-paths ( -- )
+    s" XDG_STATE_HOME" getenv dup IF log-dir place ELSE
+        2drop s" HOME" getenv log-dir place s" /.local/state" log-dir +place THEN
+    s" /sicpminus" log-dir +place
+    log-dir count log-path place  s" /stacks.jsonl" log-path +place ;
+log-paths
+
+variable logging  logging off   variable log-fid  0 log-fid !
+variable snap-file  variable snap-line  variable snap-xt  variable snap-rp
+variable n#  variable first?
+
+: q ( -- ) [char] " emit ;
+: jc ( -- ) [char] , emit ;  \ a JSON comma
+: jkey ( c-addr u -- ) q type q [char] : emit ;
+: json-str ( c-addr u -- )
+    q bounds ?DO
+        i c@ dup [char] " = over [char] \ = or IF [char] \ emit THEN
+        dup bl < IF drop bl THEN emit
+    LOOP q ;
+: json-f ( r -- ) fdup fdup f- f0= IF fs. ELSE fdrop ." null" THEN ;
+: sep ( -- ) first? @ IF first? off ELSE jc THEN ;
+
+: json-data ( -- )
+    [char] [ emit  depth n# !  first? on
+    n# @ 0 ?DO sep n# @ 1- i - pick 0 .r LOOP  [char] ] emit ;
+: json-float ( -- )
+    [char] [ emit  fdepth n# !  first? on
+    n# @ 0 ?DO sep n# @ 1- i - fpick json-f LOOP  [char] ] emit ;
+: json-rs ( a-addr -- )
+    [char] [ emit  first? on
+    rp0 @ swap ?DO
+        rs-full @ 0= i @ interp-frame? and IF LEAVE THEN
+        sep i @ dup enclosing ?dup IF
+            [char] { emit  s" word" jkey dup >head-noprim name>string json-str
+            jc s" off" jkey - 0 .r [char] } emit
+        ELSE dup stack-region? IF drop s" sp" json-str ELSE 0 .r THEN THEN
+    cell +LOOP  [char] ] emit ;
+: json-input ( -- )
+    [char] { emit  s" file" jkey sourcefilename json-str
+    jc s" line" jkey sourceline# 0 .r
+    jc s" in" jkey >in @ 0 .r
+    jc s" text" jkey source json-str  [char] } emit ;
+: json-head ( c-addr u -- )
+    [char] { emit  s" v" jkey 1 0 .r  jc s" event" jkey json-str
+    jc s" t" jkey utime 1000000 um/mod nip 0 .r ;
+
+: (snapshot) ( -- )
+    s" snapshot" json-head
+    jc s" where" jkey snap-xt @ ?dup IF >head-noprim name>string json-str ELSE ." null" THEN
+    jc s" src" jkey snap-xt @ IF q snap-file @ snap-line @ .sourcepos q ELSE ." null" THEN
+    jc s" data" jkey json-data
+    jc s" float" jkey json-float
+    jc s" rs" jkey snap-rp @ json-rs
+    jc s" input" jkey json-input  [char] } emit cr ;
+: (hello) ( -- )
+    s" hello" json-head  jc s" gforth" jkey version-string json-str  [char] } emit cr ;
+
+: log-write ( xt -- ) log-fid @ outfile-execute  log-fid @ flush-file throw ;
+: log-snapshot ( -- ) logging @ IF ['] (snapshot) log-write THEN ;
+
+: log-on ( -- )
+    logging @ IF EXIT THEN
+    s" mkdir -p '" log-cmd place  log-dir count log-cmd +place  s" '" log-cmd +place
+    log-cmd count system
+    log-path count r/w open-file IF drop log-path count r/w create-file throw THEN
+    >r r@ file-size throw r@ reposition-file throw r> log-fid !
+    logging on  ['] (hello) log-write ;
+: log-off ( -- )
+    logging @ 0= IF EXIT THEN  logging off  log-fid @ close-file throw ;
+: log-where ( -- ) cr log-path count type cr ;
+
 \ --- everything ------------------------------------------------------
 
 : .stacks-from ( rp -- )
@@ -93,7 +171,9 @@ variable rs-full  rs-full off
     ." return " r> .rs-from
     ." input  " .input ;
 
-: .stacks ( -- )  rp@ cell+ .stacks-from ;
+: .stacks ( -- )
+    rp@ cell+ snap-rp !  snap-rp @ .stacks-from
+    0 snap-xt !  log-snapshot ;
 
 [undefined] fclearstack [IF]
 : fclearstack ( F: r1 .. rn -- ) \ gforth 0.7.3 has clearstack but no float twin
@@ -104,8 +184,10 @@ variable rs-full  rs-full off
     cr -rot .sourcepos ."  in " >head-noprim .name cr ;
 
 : (~~~) ( nfile nline xt rp -- )
-    >r ['] .~~~ stderr outfile-execute
-    r> ['] .stacks-from stderr outfile-execute ;
+    snap-rp !  snap-xt !  snap-line !  snap-file !
+    snap-file @ snap-line @ snap-xt @ ['] .~~~ stderr outfile-execute
+    snap-rp @ ['] .stacks-from stderr outfile-execute
+    log-snapshot ;
 
 : ~~~ ( compilation: -- ; run-time: -- ) \ ~~ with all stacks
     compile-sourcepos latestxt postpone literal
@@ -118,7 +200,9 @@ variable rs-full  rs-full off
         i @ enclosing ['] .debugline-stderr = IF drop i cell+ UNLOOP EXIT THEN
     cell +LOOP ;
 
-: ~~-stacks ( -- )  cr rp@ cell+ past-debugline .stacks-from ;
+: ~~-stacks ( -- )
+    cr rp@ cell+ past-debugline snap-rp !  snap-rp @ .stacks-from
+    0 snap-xt !  log-snapshot ;
 
 : all-~~ ( -- )
     \ plain ~~ now prints all stacks; the return stack starts at the word
