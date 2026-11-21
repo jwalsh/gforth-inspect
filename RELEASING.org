@@ -21,11 +21,36 @@ release a promise, and this file says what it promises.
 
 * Stable API, and what bumps what
 
-| change                                                                   | bump                           |
-|--------------------------------------------------------------------------+--------------------------------|
-| rename or retype a record key, remove a word, change a stack effect       | MAJOR, and a new schema =x-version= |
-| a new key in a record, a new word                                         | MINOR                          |
-| a fix that keeps every word's stack effect and every key's type          | PATCH                          |
+*The rule: anything that would break one of the three reference consumers
+below, as they are today, is a new record =v= and a MAJOR release. That
+holds even where the schema would technically allow the change.*
+
+| change                                                                                                                                                                                    | bump                                      |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------|
+| remove or rename a key or an event; change a type; change what =null= means; split a record across lines; change the default file location; print numbers that decode to different values | MAJOR, plus new record =v= and =x-version= |
+| remove a word, or change a stack effect                                                                                                                                                   | MAJOR                                     |
+| a new optional key; a new event type the consumers can ignore; a new word                                                                                                                 | MINOR                                     |
+| a fix that keeps every word's stack effect, and every record as the consumers read it                                                                                                     | PATCH                                     |
+
+** The reference consumers
+
+Each is a release-gate test (=pbt/consumers/=) and is frozen as written.
+Changing a frozen consumer to make it pass is itself a breaking change.
+
+1. *Simple CLI tooling.*
+   =tail -f stacks.jsonl | jq -c '{e:.event,w:.where,d:.data,f:.float}'=.
+   It relies on one complete object per line, append-only writes, stable
+   key names, and numbers that decode to the same values.
+2. *An editor dashboard and checker.* It reads the last line, validates
+   it against the schema with a subset validator, and renders
+   =data= / =float= / =rs= / =input=. The course's =course-forth-dashboard=
+   and =course-forth-check= are the instances. Their wording is in the
+   course's =stacks-log.org= under "Compatibility".
+3. *A mock API server.* =GET /stacks= serves the last record as-is.
+
+A consumer must ignore keys it does not know, and the gate checks that
+too: every produced record has an unknown key injected, and all three
+consumers still give the same output.
 
 The stable words: =.stacks .rs .input ~~~ .cs all-~~ dbg-fix dbg+ rs-full
 fclearstack log-on log-off log-where log-id inspect-version=.
