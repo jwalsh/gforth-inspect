@@ -42,8 +42,10 @@ names a particular downstream project.
 3. =scripts/privacy-scan.sh= is clean, over the tree and over the release
    assets themselves.
 4. =grep -c course-repo= on the assets prints 0.
-5. The release notes include the test summary: engines, case counts, and
-   the Hypothesis seed.
+5. The release notes include the test summary (engines, case counts, and
+   the Hypothesis seed) and a =Closes= line naming every issue the release
+   fixes, for example =Closes #1, #4=. Downstream projects use those
+   numbers to retire their local patches (see below).
 
 CI on a macOS runner with =brew install gforth= runs 1 to 4. Until that CI
 exists, whoever cuts the release runs them by hand and pastes the output
@@ -61,6 +63,28 @@ scripts/privacy-scan.sh dist/*
 git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
 gh release create vX.Y.Z dist/* --notes-file dist/NOTES.md
 #+end_src
+
+* Downstream deviations
+
+A downstream project may carry a local patch to its copy of a release when
+a fix it needs has not shipped yet. The issue comes first: every deviation
+is an open issue on this repository that carries a reproducer, and the
+downstream records it as a row (issue, file, change, why now) in its own
+=DEVIATIONS.org=.
+
+When a release ships, the downstream project takes these steps:
+
+1. Download the release and verify =SHA256SUMS=.
+2. Run each deviation's reproducer against the released files.
+3. Drop the rows that the release's =Closes= line fixes and that the
+   reproducer confirms.
+4. File a new issue here for any deviation the release claims to fix but
+   does not, and keep that row.
+
+On this side, then: a fix is not closed until its reproducer passes against
+the release assets, and not merely against =main=. An issue that still has
+a downstream deviation open on it gets the label =downstream-patch=, so the
+next release can see what is waiting on it.
 
 Making the repository public is the owner's decision. Before anyone makes
 it, the history of every branch that will be pushed has to pass the privacy
