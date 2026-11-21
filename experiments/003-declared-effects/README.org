@@ -68,7 +68,7 @@ fdrop loop, the erase and =<#=, then =depth fdepth=, =' w catch=, =depth fdepth=
 |---------------------------------------------------------+-------|
 | live (wordlist, name) pairs in the model                 |  2018 |
 | excluded before running (14 reasons, below)              |  1173 |
-| run                                                      |   846 |
+| run                                                      |   845 |
 | excluded by measurement: crashed / hung / broke harness  |    12 |
 | excluded by measurement: threw on typed inputs           |    32 |
 | excluded by measurement: printed (6, 1 also threw)       |     5 |
