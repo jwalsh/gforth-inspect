@@ -3,6 +3,8 @@
 
 UV_RUN := uv run --no-project --with hypothesis --with jsonschema --with pytest
 PROFILE ?= default
+SEED ?=
+SEED_OPT := $(if $(SEED),--hypothesis-seed=$(SEED))
 TESTS := $(wildcard test_*.py)
 
 .PHONY: check smoke calibrate
@@ -14,7 +16,7 @@ check: smoke
 ifeq ($(TESTS),)
 	@echo "no test_*.py yet"
 else
-	$(UV_RUN) pytest -q --hypothesis-profile=$(PROFILE) --hypothesis-show-statistics $(TESTS)
+	$(UV_RUN) pytest -q --hypothesis-profile=$(PROFILE) --hypothesis-show-statistics $(SEED_OPT) $(TESTS)
 endif
 
 # Every experiment adds a planted-fault script to CALIBRATE_DIR.  A script
