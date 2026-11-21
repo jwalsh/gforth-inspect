@@ -312,7 +312,9 @@ create (scratch) {SCRATCH_BYTES + 32} allot
 variable (d0) variable (f0) variable (d1) variable (f1) variable (err)
 : (base) ( -- a-addr ) (scratch) 15 + -16 and ;
 : (fclear) ( F: ... -- ) begin fdepth while fdrop repeat ;
-: (pre) ( ... -- ) decimal clearstack (fclear) (base) {SCRATCH_BYTES} erase ;
+\ <# resets the pictured-output area: without it, 200 calls of hold or <<#
+\ overflow it and gforth exits (found in the ci profile)
+: (pre) ( ... -- ) decimal clearstack (fclear) (base) {SCRATCH_BYTES} erase <# ;
 : (snap) ( -- ) depth (d0) ! fdepth (f0) ! ;
 : (post) ( ... err -- ) (err) ! depth (d1) ! fdepth (f1) ! decimal clearstack (fclear) ;
 : (line) ( idx -- ) ." @@R " 0 .r space (d0) @ . (f0) @ . (d1) @ . (f1) @ . (err) @ . cr
