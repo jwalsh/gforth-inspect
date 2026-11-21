@@ -57,7 +57,9 @@ too: every produced record has an unknown key injected, and all three
 consumers still give the same output.
 
 The stable words: =.stacks .rs .input ~~~ .cs all-~~ dbg-fix dbg+ rs-full
-fclearstack log-on log-off log-where log-id inspect-version=.
+fclearstack log-on log-off log-where log-id inspect-version
+contract-version=. =contract-version ( -- c-addr u )= returns the announced
+contract, ="1.1"= for v0.1.0.
 
 =log-id ( c-addr u -- )= (issue #3) copies up to 63 characters. Each later
 snapshot carries ="id":"<tag>"=, and =s" " log-id= clears it, after which
