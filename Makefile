@@ -71,6 +71,8 @@ test-lldb:
 verify:
 	scripts/privacy-scan.sh --calibrate
 	scripts/privacy-scan.sh
+	bash scripts/check-guides.sh --calibrate
+	bash scripts/check-guides.sh
 	$(MAKE) test
 	$(MAKE) -C pbt check
 	$(MAKE) -C pbt calibrate

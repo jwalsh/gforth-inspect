@@ -30,9 +30,11 @@ virtualenv to manage.
 every commit and every PR. It runs, in order:
 
 1. =scripts/privacy-scan.sh --calibrate= and then =scripts/privacy-scan.sh=
-2. =gmake test=: the goldens in =gforth=, =gforth-fast= and =gforth-itc=,
-   with every record validated against the schema
-3. =gmake -C pbt check=, then =gmake -C pbt calibrate=
+2. =scripts/check-guides.sh --calibrate= and then =scripts/check-guides.sh=
+3. =gmake test=: the goldens in =gforth=, =gforth-fast= and =gforth-itc=,
+   with every record validated against the schema; coverage, known limits
+   and the dated log are in [[file:test/README.org][test/README.org]]
+4. =gmake -C pbt check=, then =gmake -C pbt calibrate=
 
 Keep a baseline. Record the summary line of a green =gmake verify= on
 =main= in the PR description: engines, golden count, Hypothesis examples

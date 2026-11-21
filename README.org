@@ -92,11 +92,10 @@ It is append-only, with one JSON object per line. The fields are defined in
 
 A float that is not finite is logged as =null=.
 
-* Tested
+* Tested with
 
-=gmake test= runs 39 golden tests in each of =gforth=, =gforth-fast= and
-=gforth-itc=, and validates every log record against the schema. See
-[[file:test/README.org][test/README.org]] for coverage and known limits.
+gforth 0.7.3, in all three of its engines (=gforth=, =gforth-fast=,
+=gforth-itc=).
 
 * Screenshots
 
