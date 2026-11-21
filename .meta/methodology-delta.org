@@ -1,0 +1,41 @@
+#+TITLE: What kind of oracle this project has
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+The oracle is stated first, because it decides which techniques apply.
+
+The thing under test is a reporter. =inspect.fs= describes state that
+gforth already holds. The report can be checked against that state, as long
+as the state is read by a path that does not pass through the reporter.
+That leaves two separate questions, which cannot share an oracle:
+
+- *Does it change what it reports?* It must leave the stacks it reads
+  bit-identical. The oracle is the same program run with and without the
+  inspector.
+- *Is the report true?* The oracle is an independent read: =depth= with
+  =pick=, =fdepth= with =fpick=. Floats are printed exactly, as their bits,
+  so a printer's rounding does not stand in for agreement.
+
+* The oracles, strongest first
+
+| oracle                                                 | exact?                  | live?        | good for                                    |
+|--------------------------------------------------------+-------------------------+--------------+---------------------------------------------|
+| lldb at a Forth-side =brk= (=call-c= flushes sp/fp/rp/lp) | yes                     | no (offline) | ground truth for a handful of cases          |
+| in-image =depth= =pick= =fdepth= =fpick= =rp@=            | yes for data and float  | yes          | non-interference, faithfulness              |
+| engine differential: gforth / gforth-fast / gforth-itc  | relative                | yes          | any output that should not depend on threading |
+| the JSON schema                                        | shape only              | yes          | every record from every run                 |
+| model =words.json= (declared stack effects)             | declared, not measured  | n/a          | declared vs. measured depth deltas          |
+| =.s= and =f.s= text                                     | rounded, truncated      | yes          | nothing: it is a second reporter             |
+
+* Where these oracles are weak
+
+- *Every in-image oracle runs inside the image.* A fault shared by =depth=
+  and the inspector cannot be seen from inside. The engine differential and
+  the offline lldb runs are the only checks from outside.
+- *A declared stack effect is documentation.* When =words.json= and a
+  measured delta disagree, either gforth is wrong or the model is. The
+  property only finds the disagreement; it cannot say which side is wrong.
+- *gforth-fast is the odd engine on purpose.* It keeps the top of stack in
+  a register and fuses superinstructions. A difference in step counts there
+  is documented behaviour, not a finding. The tests mask it rather than
+  counting it.

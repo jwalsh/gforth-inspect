@@ -1,0 +1,67 @@
+#+TITLE: Releasing
+#+STARTUP: showall
+
+Downstream projects use only tagged releases, never branches. That makes a
+release a promise, and this file says what it promises.
+
+* What a release is
+
+- A tag =vMAJOR.MINOR.PATCH= on =main=, published as a GitHub Release.
+- Assets: =inspect.fs=, =canvas.fs=, =stacks-log.schema.json= and
+  =SHA256SUMS= (covering the other three).
+- =inspect.fs= begins with these two lines:
+  #+begin_example
+  \ gforth-inspect vX.Y.Z
+  \ stacks-log schema v1
+  #+end_example
+- =inspect-version ( -- c-addr u )= returns ="X.Y.Z"=, and the =hello= record
+  carries ="inspect":"X.Y.Z"=.
+
+* Stable API, and what bumps what
+
+| change                                                                   | bump                           |
+|--------------------------------------------------------------------------+--------------------------------|
+| rename or retype a record key, remove a word, change a stack effect       | MAJOR, and a new schema =x-version= |
+| a new key in a record, a new word                                         | MINOR                          |
+| a fix that keeps every word's stack effect and every key's type          | PATCH                          |
+
+The stable words: =.stacks .rs .input ~~~ .cs all-~~ dbg-fix dbg+ rs-full
+fclearstack log-on log-off log-where inspect-version=. From =canvas.fs=:
+=canvas clear plot line .canvas save-pbm save-ppm save-xbm=.
+
+Log location: =$GFORTH_INSPECT_LOG_DIR=, falling back to
+=${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/=. A released file never
+names a particular downstream project.
+
+* Gate: a release comes only from green
+
+1. =gmake test= passes: the golden files in all three engines, and every
+   record validated against the schema.
+2. =gmake -C pbt check PROFILE=ci= passes, and =gmake -C pbt calibrate=
+   reports red on every planted fault.
+3. =scripts/privacy-scan.sh= is clean, over the tree and over the release
+   assets themselves.
+4. =grep -c sicpminus= on the assets prints 0.
+5. The release notes include the test summary: engines, case counts, and
+   the Hypothesis seed.
+
+CI on a macOS runner with =brew install gforth= runs 1 to 4. Until that CI
+exists, whoever cuts the release runs them by hand and pastes the output
+into the notes.
+
+* Cutting one
+
+#+begin_src sh
+git switch main && git pull --ff-only
+# bump the version line in env/inspect.fs and inspect-version, then commit: chore(release): vX.Y.Z
+gmake test && gmake -C pbt check PROFILE=ci && scripts/privacy-scan.sh
+mkdir -p dist && cp env/inspect.fs env/canvas.fs contract/stacks-log.schema.json dist/
+(cd dist && shasum -a 256 inspect.fs canvas.fs stacks-log.schema.json > SHA256SUMS)
+scripts/privacy-scan.sh dist/*
+git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
+gh release create vX.Y.Z dist/* --notes-file dist/NOTES.md
+#+end_src
+
+Making the repository public is the owner's decision. Before anyone makes
+it, the history of every branch that will be pushed has to pass the privacy
+scan, not just the current tree.
