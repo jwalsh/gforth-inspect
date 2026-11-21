@@ -1,0 +1,7 @@
+#+TITLE: gforth-inspect
+
+Seeing gforth 0.7.3 from outside: its data, return, float and control-flow
+stacks, the input stream and the compiled program.
+
+- =lldb/=  debugger-level inspection of the running engine (branch =lldb=)
+- =model/= a parsed model of gforth's own kernel sources, for editor/LSP use (branch =model=)
