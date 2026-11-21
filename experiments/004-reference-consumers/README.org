@@ -46,3 +46,183 @@ the run finds, this has to be named in the verdict.
 5. Verdict: MAJOR, MINOR or PATCH for harden's head, with the reason.
 
 * Log
+
+** 2026-11-21 consumers frozen (gate 1)
+
+=pbt/consumers/= committed at 7464fc0, before any comparison run:
+=stacks.jq= (exactly ={e:.event,w:.where,d:.data,f:.float}=, run as
+=jq -c -f=), =mock_server.py= (stdlib, 127.0.0.1 port 0, =GET /stacks=
+serves the last line byte for byte as =application/json=, re-read on each
+request), and =checker.py= (strict UTF-8, strict JSON, hand-written subset
+validator, extracts data/float/rs/input/where/src). By coordinator
+instruction, the checker also carries the CONSUMERS.org version stop
+(expects contract 1.1). Its message follows CONSUMERS.org ("...: check the
+schema and change log"). The coordinator's note gave a "--" form instead.
+=checker.py= has not changed since 7464fc0.
+
+Refs: the brief named =harden= (9b92746). By the time of the first run,
+=harden= had moved to fc283da, and the coordinator then asked for refs
+pinned by hash. So: before = =18ebe2d=, after = =fc283da=
+(=_004_helpers.NEW_REF=). The runner is unchanged. Side selection lives
+in =pbt/_004_helpers.py=.
+
+** 2026-11-21 first runs (development, not the logged result)
+
+The first run (=harden= resolved to fc283da) found three things, which
+were fixed in the harness, not in the consumers:
+- =where=/=src= on the =~~= path: null in 18ebe2d, filled in fc283da.
+  This is the #2 fix, now classified as =fix-#2= (the new value must equal
+  the word and =prog.fs:line= of the =~~=).
+- The checker decodes the whole file. One 18ebe2d line that is not UTF-8
+  makes every later read of that log fail ("not UTF-8"), not only reads of
+  that line. This is classified as =escape-fix= when an earlier line in the
+  prefix is not valid UTF-8.
+- The checker throws =KeyError= on a record that validates but lacks
+  =data= (rename plant). The consumer stays frozen. The harness records
+  a crash as the consumer's output, so it is classified (=breaking=).
+
+** 2026-11-21 logged result: fc283da (gates 2, 3)
+
+- old: =ref:18ebe2d@18ebe2d blob:76d34db7cd61=
+- new: =ref:fc283da@fc283da blob:a7e5c141af51=
+- command: =PYTEST_ADDOPTS="--hypothesis-seed=4004 -p no:cacheprovider" gmake -C pbt check=
+  on 4d7609f (committed tree), profile =default=, engine =gforth=
+- 100 Hypothesis examples, 431 programs (each one snapshot: =.stacks=,
+  =~~~=, or =~~= after =all-~~=; data depth 0-20, floats 0-8 as raw
+  bits, input text of any byte but LF/CR), 200 gforth runs (one per side
+  per batch of 2-8 programs). 5 passed, 1 xfailed (the default location,
+  below). Wall time 37 s.
+
+| class             | consumer | field      |    n | example                                                     |
+|-------------------+----------+------------+------+-------------------------------------------------------------|
+| #1-float          | jq       | f          |  607 | old 0.333333333333333, new 0.3333333333333333 = true         |
+| #1-float          | checker  | float      |   98 | old 123456789.123457, new 123456789.12345679 = true          |
+| #1-float          | server   | float      |  230 | old 1.99452657128993e+124, new 1.994526571289926e+124 = true |
+| fix-#2            | jq       | w          |  156 | old null, new "w0"                                           |
+| fix-#2            | checker  | where, src | 26+26 | old null, new "w0" / "prog.fs:6"                            |
+| fix-#2            | server   | where, src | 66+66 |                                                             |
+| escape-fix        | checker  | error      |  362 | old "not UTF-8" (whole file), new decodes                    |
+| escape-fix        | checker  | input.text |   17 | old control byte as space, new kept and escaped              |
+| escape-fix        | server   | error      |  279 | old body not UTF-8, new decodes                              |
+| escape-fix        | server   | input.text |   26 |                                                             |
+| ignorable-new-key | server   | inspect    |  100 | hello "0.1.0"                                                |
+| ignorable-new-key | server   | contract   |  100 | hello "1.1"                                                  |
+| breaking          | any      | any        |    0 |                                                             |
+
+In every #1-float difference, the new value has the bits =fp@= read and
+the old one does not. =rs= and =data= never differ. Unknown keys injected
+at the top level and inside =input= leave the jq output and the checker
+output (with and without the stop) unchanged. The server serves the
+injected line byte for byte, and its known keys are unchanged.
+
+Version stop (checker expects 1.1): 18ebe2d is refused ("contract (none)
+from the producer, this consumer expects 1.1 (major update)"), and
+fc283da is accepted. That asymmetry is the expected result. It is a test
+of its own and is not counted as a difference. The differential runs the
+checker with the stop bypassed. Where this log names checker output, read
+it as "checker, version stop bypassed".
+
+** 2026-11-21 intermediate: 9b92746
+
+Same command and seed with =INSPECT_REF=9b92746 PBT_004_NO_SHRINK=1=:
+431 programs. The classes are the same as for fc283da, minus =fix-#2=
+(9b92746 also logs null for =~~=) and minus =hello.contract=. There are no
+=breaking= differences. =test_version_stop= is red: the checker refuses
+9b92746 as it refuses 18ebe2d, "contract (none)". Wall time 29 s.
+
+** 2026-11-21 default location (gate 4)
+
+A direct gforth call, with cwd, =XDG_STATE_HOME= and =HOME= in temp dirs
+and =GFORTH_INSPECT_LOG_DIR= unset, running =log-on 1 2 .stacks log-off=:
+- 18ebe2d writes =state/sicpminus/stacks.jsonl=.
+- 9b92746 and fc283da write =state/gforth-inspect/stacks.jsonl=, and
+  leave =state/sicpminus/= empty.
+(gforth also writes =home/.gforth-history=, which is why =HOME= is a temp
+dir as well.)
+
+=test_default_location_contract= (fc283da writes its documented default)
+passes. =test_default_location_reference_consumer= (a consumer that reads
+18ebe2d's default finds the log) fails, and is marked a strict xfail with
+=raises=DefaultLocationBreak=. So any other failure is still red, and
+restoring the old default turns it XPASS and red.
+
+** 2026-11-21 calibration (gate 4)
+
+=gmake -C pbt calibrate= on 4d7609f, 85 s. Each script plants one fault in a
+temp copy of fc283da's =inspect.fs= (and schema), refuses a sed that changed
+nothing, and exits 0 only if the test went red with the expected text in
+its output:
+
+| script                       | plant                                         | red with                                                            |
+|------------------------------+-----------------------------------------------+---------------------------------------------------------------------|
+| 004-rename-data.sh           | =data= renamed =stack= (producer and schema)      | =breaking consumer=jq field=d=                                       |
+| 004-split-record.sh          | newline after =rs= in every snapshot            | =breaking consumer=checker field=record-count=                       |
+| 004-hex-integer.sh           | bottom data cell printed in hex               | =breaking consumer=jq field=d= (or =field=parse= for digits A-F)     |
+| 004-nan-zero.sh              | NaN logged as =0=                               | =breaking consumer=jq field=f[i]=                                    |
+| 004-default-path-empty.sh    | default dir =gforth-inspect-moved=              | =breaking default-location: documented default ... is empty=         |
+| 004-contract-minor.sh        | hello announces contract =1.2=                  | =contract 1.2 from the producer, this consumer expects 1.1 (minor update)= |
+
+Control: the same harness on the unplanted fc283da copy is green (5
+passed, 1 xfailed). One development run showed why the check must read
+the message and not only the exit code. Hypothesis found a hex batch in
+which the unknown-key assertion fired first: jq's error column moves when
+a key is injected. The test now compares jq errors by kind, and reports
+every failure class in one assertion (4d7609f).
+
+** 2026-11-21 CI profile: fc283da
+
+The same seed with =PROFILE=ci= (pbt/ at 4d7609f): 1000 examples, 4912
+programs, 2000 gforth runs, 222 s. The classes are as above, at about ten
+times the counts: #1-float 8184 (jq), 1073 (checker), 2890 (server);
+fix-#2 1729 (jq); escape-fix 4214 + 46 (checker), 3128 + 216 (server).
+=breaking= is 0. One #1-float example: =-DBL_MAX= decoded as =-inf= from
+18ebe2d, and exactly from fc283da. 5 passed, 1 xfailed.
+
+** 2026-11-21 verdict
+
+1. *Consumers frozen*: met. Committed at 7464fc0, before the first run,
+   and not edited since.
+2. *Differential*: met for fc283da (431 programs logged; 4912 in the CI
+   run). There are no =breaking= differences. Every float difference is
+   #1, with the new value equal to the bits =fp@= read. The ~~ =where= /
+   =src= difference is #2. =escape-fix= is a class outside the three
+   written in the gate. It is reported here rather than folded into one of
+   them (see 5).
+3. *Unknown keys*: met. All three consumers are unchanged at the top level
+   and inside =input=.
+4. *Calibration*: met. All 6 plants are red with the right
+   classification, and the control is green. The default-path plant in
+   particular is caught. *The real fc283da fails the same question for a
+   consumer that reads 18ebe2d's default*: with =GFORTH_INSPECT_LOG_DIR=
+   unset it writes =.../gforth-inspect/stacks.jsonl=, and
+   =.../sicpminus/stacks.jsonl= stays empty. The test records this as a
+   strict xfail.
+   - Version stop: 18ebe2d is refused (no contract), and fc283da is
+     accepted (contract 1.1). 9b92746 was refused like 18ebe2d.
+5. *Semver for fc283da*: *MAJOR*, by RELEASING.org read literally.
+   "Change the default file location" is in the MAJOR row, and fc283da
+   (like 9b92746) changes it. A consumer that relies on the default path
+   (=${XDG_STATE_HOME:-~/.local/state}/sicpminus/stacks.jsonl=) with
+   =GFORTH_INSPECT_LOG_DIR= unset is broken: it finds no log, or a stale
+   one. A consumer that sets =GFORTH_INSPECT_LOG_DIR=, as the course says
+   it will, is not broken. Apart from the path, the record stream is
+   MINOR: =hello.inspect=, =hello.contract= and snapshot =id= are new
+   optional keys, and #1, #2 and the escaping are value fixes.
+
+   The hypothesis holds for the stream but not for the file location. Two
+   more literal readings to put to the user:
+   - "Print numbers that decode to different values" is also in the
+     MAJOR row. #1 does exactly that (for example 0.333333333333333 becomes
+     0.3333333333333333), and so does escaping for =input.text=. The
+     hypothesis treats "closer to the true stack" as a fix. RELEASING.org
+     does not say so.
+   - The obvious non-breaking route is to keep =.../sicpminus/= as the
+     default when =GFORTH_INSPECT_LOG_DIR= is unset. RELEASING.org forbids
+     it: "A released file never names a particular downstream project",
+     and gate 4 requires =grep -c sicpminus= to print 0. So the options
+     are (a) a MAJOR at v0.1.0, which before 1.0 and as the first tag
+     costs nothing in numbering; (b) a carve-out in RELEASING.org:
+     18ebe2d was never a release, so v0.1.0 is not breaking anything
+     released; or (c) a default that names no project but keeps reading
+     where the course reads, which is not on the table. This is a decision
+     for the user, not for the experiment. inspect.fs was not patched.
