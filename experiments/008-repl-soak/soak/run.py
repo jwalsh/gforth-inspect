@@ -367,8 +367,10 @@ class Run:
                     self.finish(session, "lifetime")
                     session = replacement
                     continue
+                # between blocks only: inside a block's marker the forget at its
+                # end would take the new inspect.fs away again (seen in a dev run)
                 if slot == 1 and not self.state["upgrade"] and session.variant == "older" \
-                        and self.state["counted"] >= self.hours * 3600 / 2:
+                        and not session.pending and self.state["counted"] >= self.hours * 3600 / 2:
                     evidence = session.upgrade()
                     evidence["counted_hours"] = self.state["counted"] / 3600
                     with self.lock:
@@ -403,6 +405,8 @@ class Run:
             reasons.append(f"followers down for {', '.join(dead)}")
         if not guard.alive():
             reasons.append("leak guard not alive")
+        if dt > 30:   # the machine slept, or the harness stalled: that time is not counted
+            reasons.append(f"tick gap of {dt:.0f} s")
         running = not reasons
         if running != self.clock_running:
             if not running and self.state["counted"] > 0:

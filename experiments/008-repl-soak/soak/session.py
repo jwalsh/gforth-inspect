@@ -383,7 +383,10 @@ class Session:
         lines = self._read_log()
         new = lines[before:]
         hello = json.loads(new[-1]) if new else {}
-        status, body = self.followers.get_stacks()
+        try:
+            status, body = self.followers.get_stacks()
+        except OSError as error:
+            status, body = None, str(error).encode()
         jq_last = self.followers.jq_lines()[-1:]
         checker = self.followers.run_checker()
         self.upgraded = True
