@@ -119,6 +119,15 @@ repository: the Log reports counts and blob hashes only.
    every calibration seen red. G7 and overhead are reported. Any violation
    is a finding: an issue, a fix through a PR, and the clock restarts on
    the fixed candidate.
+6. *Envelope changes.* If a fix changes the log's envelope (a field, a
+   type, the =hello=, the contract version), it is classed by
+   RELEASING.org's rulings, and before the clock restarts it is run through
+   the consumers' own upgrade process, CONSUMER-AGENTS.md "A new version",
+   step by step: =SHA256SUMS=, the change log, each deviation's reproducer,
+   the three frozen consumers against the old and the new records. A MINOR
+   or MAJOR change must make every follower stop and say so; a PATCH must
+   leave all three frozen consumers' output unchanged. The course is told
+   before the tag, not after.
 5. *Release.* The tag is cut only from the candidate the soak passed on.
 
 * Log
