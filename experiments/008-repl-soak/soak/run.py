@@ -123,6 +123,15 @@ class Run:
                 handle.write(json.dumps(item) + "\n")
         self.event(f"VIOLATION {item['goal']} {item.get('xrid')}: {item['detail'][:200]}")
 
+    def external_write(self, item: dict) -> None:
+        """A change to a real file with no soak mark: someone else's write."""
+        with self.lock:
+            self.state.setdefault("external_writes", 0)
+            self.state["external_writes"] += 1
+            with open(self.run_dir / "external.jsonl", "a") as handle:
+                handle.write(json.dumps(item) + "\n")
+        self.event(f"external write (not G4): {item['detail'][:160]}")
+
     def event(self, text: str) -> None:
         line = f"{utc()} {text}"
         with self.lock:
@@ -180,6 +189,8 @@ class Run:
             self.older_source = subprocess.run(["git", "-C", str(repo.path), "show", f"{older_ref}:env/inspect.fs"],
                                                check=True, capture_output=True).stdout
         self.older_blob = assets.blob_of_bytes(self.older_source)
+        if self.older_blob == self.candidate_blob:
+            raise SystemExit("the older ref is the candidate's blob: the upgrade would test nothing")
         # the unfixed producer the G2 calibration plants (gate 1 names it)
         unfixed_ref = repo.options.get("unfixed", repo.options.get("older"))
         self.unfixed_commit = assets.git(repo.path, "rev-parse", unfixed_ref).strip()
@@ -487,7 +498,8 @@ class Run:
             f"live      " + " ".join(f"{session.xrid}:{session.engine.replace('gforth', 'g')}:{session.records_seen}"
                                     for session in sorted(live, key=lambda item: item.slot)),
             f"records   {records} in live logs, {sum(item.get('records', 0) for item in state['xref'][-1:])} at the last xref",
-            f"leak guard  last {utc(guard.last_check)}  checks {guard.checks}  changes {guard.changes}  "
+            f"leak guard  last {utc(guard.last_check)}  checks {guard.checks}  soak writes {guard.changes}  "
+            f"external writes {state.get('external_writes', 0)}  "
             f"{'alive' if guard.alive() else 'NOT ALIVE'}",
             f"xref      " + (f"{len(state['xref'])} done, last {state['xref'][-1]['utc']}: "
                              f"{state['xref'][-1]['violations']} violations over {state['xref'][-1]['sessions']} sessions"
@@ -496,8 +508,7 @@ class Run:
                              f"mock serves new hello: {state['upgrade']['mock_serves_new_hello']}, "
                              f"hellos in log {state['upgrade']['hellos_in_log']}"
                              if state["upgrade"] else f"pending at {self.hours / 2:g} h counted"),
-            "violations " + "  ".join(f"{goal} {count}" for goal, count in self.counts.items())
-            + f"   (G4 written by a soak session: {self.g4_ours})",
+            "violations " + "  ".join(f"{goal} {count}" for goal, count in self.counts.items()),
             f"last      " + (f"{self.last_violation['goal']} {self.last_violation.get('xrid')}: "
                              f"{self.last_violation['detail'][:110]}" if self.last_violation else "-"),
             f"clock stops {len(state['clock_stops'])}" + (f", last {state['clock_stops'][-1]['utc']}: "
@@ -547,7 +558,7 @@ class Run:
         self.prepare()
         self.orphans()
         guard = checks.LeakGuard(config.real_guarded_paths(), config.real_guarded_dirs(), self.guard_period,
-                                 report=self.report)
+                                 report=self.report, external=self.external_write)
         self.event(f"leak guard baseline: {len(guard.baseline)} entries")
         guard.start()
         threads = [threading.Thread(target=self.slot_loop, args=(slot,), name=f"slot-{slot}", daemon=True)

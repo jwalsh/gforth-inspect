@@ -75,7 +75,12 @@ class Calibration:
             for path in files:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(b'{"planted copy, not the real file":1}\n')
-            guard = checks.LeakGuard(files, [path.parent for path in files[:2]], report=run.report)
+            externals = []
+            guard = checks.LeakGuard(files, [path.parent for path in files[:2]], report=run.report,
+                                     external=externals.append)
+            if not planted:   # the course writing its own log is someone else's write, not a leak
+                with open(files[0], "ab") as handle:
+                    handle.write(b'{"v":1,"event":"snapshot","t":0,"id":"init","where":null}\n')
             if planted:   # HOME is the fake user's home, and nothing else points elsewhere
                 session = self.session(run, log_mode="home",
                                        env_patch={"HOME": str(fake), "XDG_STATE_HOME": None})
@@ -85,10 +90,12 @@ class Calibration:
                 self.probe(session)
             session.retire("calibration")
             guard.check()
-            return count(run, "G4"), examples(run, "G4", 3)
-        red, red_examples = one(True)
-        green, _ = one(False)
-        return red, green, {"plant": "HOME points at a fake home; XDG_STATE_HOME unset", "red_examples": red_examples}
+            return count(run, "G4"), examples(run, "G4", 3), [item["detail"][-60:] for item in externals]
+        red, red_examples, _ = one(True)
+        green, _, green_externals = one(False)
+        return red, green, {"plant": "HOME points at a fake home; XDG_STATE_HOME unset; control: an isolated "
+                                     "session while an external writer appends a non-soak record",
+                            "red_examples": red_examples, "control_external_writes": green_externals}
 
     def g6_shared_dir(self):
         def one(planted: bool):
@@ -278,7 +285,9 @@ SCENARIOS = [
 
 
 def main(only: str | None = None) -> int:
-    real_guard = checks.LeakGuard(config.real_guarded_paths(), config.real_guarded_dirs())
+    real_externals: list = []
+    real_guard = checks.LeakGuard(config.real_guarded_paths(), config.real_guarded_dirs(),
+                                  external=real_externals.append)
     calibration = Calibration()
     results = []
     for label, method in SCENARIOS:
@@ -297,8 +306,10 @@ def main(only: str | None = None) -> int:
     real = real_guard.check()
     results.append({"check": "the real files during calibration", "method": "real_guard",
                     "red": None, "green": len(real), "passed": not real,
-                    "evidence": {"changes": [item["detail"] for item in real]}})
-    print(f"{'PASS' if not real else 'FAIL'}  real guarded files unchanged during calibration: {len(real)} changes")
+                    "evidence": {"soak_writes": [item["detail"] for item in real],
+                                 "external_writes": len(real_externals)}})
+    print(f"{'PASS' if not real else 'FAIL'}  real guarded files: {len(real)} soak writes during calibration, "
+          f"{len(real_externals)} external writes (not G4)")
     out = config.state_root() / f"calibration-{calibration.stamp}.json"
     out.write_text(json.dumps({"utc": utc(), "candidate_blob": calibration.base.candidate_blob,
                                "candidate_release": calibration.base.candidate_release,

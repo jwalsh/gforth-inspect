@@ -115,6 +115,8 @@ def private_strings(entries: list[Entry]) -> list[str]:
     its last component, and the user's home and name."""
     strings = {str(_home()), _home().name}
     for entry in entries:
+        if str(entry.path) in ("-", "."):
+            continue                                # an entry with no local path (a release)
         strings.add(str(entry.path))
         if entry.kind in ("course", "santa"):
             strings.add(entry.path.name)            # the repository's name

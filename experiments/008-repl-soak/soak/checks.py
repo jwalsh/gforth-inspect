@@ -373,29 +373,30 @@ def _digest(path: Path) -> list:
     return [True, len(data), hashlib.sha256(data).hexdigest()]
 
 
+SOAK_MARKS = re.compile(rb'"id":"s\d+"|gforth-inspect-soak-|soak-o\b|soak-u\d+|soak-[dmtrq]\d+')
+
+
 class LeakGuard:
     """Hashes the user's real log(s) and ~/.gforth-history, and lists their
-    directories, at start, every `period` seconds and at the end.  Any
-    change is a G4 violation; what changed is looked at to say whether a
-    soak session wrote it (an xrid or the oracle word in the new bytes)."""
+    directories, at start, every `period` seconds and at the end.
 
-    def __init__(self, files: list[Path], dirs: list[Path], period: float = 600.0, report=None):
+    A change is judged by its content (owner's ruling, 2026-11-22: the
+    course writes the real log itself).  New bytes that carry a soak mark (a
+    snapshot id of the soak's xrid form, a soak sandbox path, or a word only
+    the soak types) are a G4 violation; any other change is an external
+    writer, recorded and reported, but not a violation."""
+
+    def __init__(self, files: list[Path], dirs: list[Path], period: float = 600.0, report=None, external=None):
         self.files, self.dirs, self.period = files, dirs, period
         self.report = report or (lambda item: None)
+        self.external = external or (lambda item: None)
         self.baseline = self.snapshot()
-        self.saved = {str(path): self._tail_bytes(path) for path in files}
         self.last_check = time.time()
         self.checks = 0
-        self.changes = 0
+        self.changes = 0          # G4: changes a soak session wrote
+        self.external_changes = 0  # changes by someone else (the course)
         self.stop_event = threading.Event()
         self.thread: threading.Thread | None = None
-
-    @staticmethod
-    def _tail_bytes(path: Path) -> int:
-        try:
-            return path.stat().st_size
-        except FileNotFoundError:
-            return 0
 
     def snapshot(self) -> dict:
         state = {str(path): _digest(path) for path in self.files}
@@ -411,31 +412,42 @@ class LeakGuard:
         found = []
         for key, before in self.baseline.items():
             after = now.get(key)
-            if after != before:
-                attribution = self._attribute(key, before, after)
-                found.append(violation("G4", None, f"{key} changed: {before} -> {after}; {attribution}"))
+            if after == before:
+                continue
+            new = self._new_bytes(key, before, after)
+            ours = SOAK_MARKS.search(new)
+            detail = (f"{key} changed: {before} -> {after}; {len(new)} new bytes, "
+                      + (f"WRITTEN BY A SOAK SESSION ({ours.group(0)[:40]!r})" if ours else "no soak mark in them"))
+            item = violation("G4" if ours else "G4-external", None, detail)
+            if ours:
+                found.append(item)
+                self.report(item)
+            else:
+                self.external_changes += 1
+                self.external(item)
         self.checks += 1
         self.changes += len(found)
         self.last_check = time.time()
-        if found:
-            self.baseline = now  # report each change once
-        for item in found:
-            self.report(item)
+        self.baseline = now  # report each change once
         return found
 
-    def _attribute(self, key: str, before, after) -> str:
-        if key.endswith("/") or not isinstance(after, list) or not after[0]:
-            return "not attributed"
-        path = Path(key)
-        start = before[1] if isinstance(before, list) and before[0] and after[1] >= before[1] else 0
+    def _new_bytes(self, key: str, before, after) -> bytes:
+        """What appeared: the appended tail of a file that grew, all of a file
+        that was replaced, the contents of new files in a directory."""
         try:
-            with open(path, "rb") as handle:
+            if key.endswith("/"):
+                directory = Path(key)
+                added = set(after or []) - set(before or [])
+                return b"".join((directory / name).read_bytes()[:2_000_000] for name in sorted(added)
+                                if (directory / name).is_file())
+            if not isinstance(after, list) or not after[0]:
+                return b""
+            start = before[1] if isinstance(before, list) and before[0] and after[1] >= before[1] else 0
+            with open(key, "rb") as handle:
                 handle.seek(start)
-                new = handle.read(1_000_000)
+                return handle.read(2_000_000)
         except OSError:
-            return "unreadable"
-        ours = re.search(rb'"id":"s\d+"|soak-o|soak-u\d+', new)
-        return f"{len(new)} new bytes, {'WRITTEN BY A SOAK SESSION' if ours else 'no soak marker in them'}"
+            return b""
 
     def start(self) -> None:
         def loop():

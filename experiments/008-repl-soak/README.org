@@ -267,3 +267,37 @@ Correction (coordinator): review fixes moved the v0.1.1 candidate to blob
 =2eec91a4742c= (PR #43 at =d1a0826=), not =34ee47da9d09=.  The soak pins
 whatever blob the published v0.1.1 carries, and records it here when it
 starts.
+
+** 2026-11-22 G4 judged by content (agent, owner's ruling)
+
+Before the gate freezes.  The course now writes the real
+=~/.local/state/gforth-inspect/stacks.jsonl= itself (its =gmake init= adds
+records with =inspect= 0.1.1 and id =init=), and during the 14:36Z
+calibration the real log, the course's older log and =~/.gforth-history=
+all changed, one log rotated, none with a soak mark.  A byte hash cannot
+tell that from a leak.  So, per the coordinator: a change to a guarded file
+is a G4 violation when its new bytes carry a soak mark (a snapshot id of
+the soak's xrid form =s<n>=, a soak sandbox path, or a word only the soak
+types: =soak-o=, =soak-u<n>= ...).  Any other change is an external writer:
+recorded in the run's =external.jsonl=, counted in the status file, not a
+violation.  The G4 calibration's control now runs an isolated session
+while an external writer appends a non-soak record: 0 G4, 1 external.
+
+** 2026-11-22 calibration on v0.1.1 (agent)
+
+14:41Z, harness at the commit below.  Candidate: the v0.1.1 prerelease,
+=inspect.fs= blob =82860519a7d3= (tag commit =59d7b4c=), assets by =gh
+release download= and =shasum -a 256 -c SHA256SUMS= (six OK).  Older: the
+v0.1.0 prerelease, blob =af95cdf354af= (tag commit =7a58bd8=), the same way.
+G2 plant: =0842eda=.
+
+Every plant red, every control green, with the counts of the 13:00Z table
+(G4 2/0, G6 3/0 and 2/0, G1 1/0, G2 12/0, G7 4/0, G3 4/0, G5 1/0 and 1/0,
+monitor 1/0, G8 1/0); the real files saw no soak write.  The G6 blob plant
+now writes a different =hello= from its control (0.1.0 against 0.1.1), so
+for this upgrade the log does tell the two releases apart.
+
+A first try at 14:34Z ran on the wrong candidate: a manifest edit had not
+taken, so candidate and older were both =af95cdf354af=, and the G6 blob
+plant went green (red 0).  The plant caught it; the harness now refuses an
+older ref whose blob is the candidate's.
