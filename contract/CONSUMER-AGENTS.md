@@ -21,8 +21,9 @@ The reasoning behind each rule is in [COLLABORATION.org](../docs/COLLABORATION.o
   `gforth inspect.fs -e 'log-where bye'` in the project to see where, or
   put `GFORTH_INSPECT_LOG_DIR=~/.local/state/gforth-inspect/shared` in each
   worktree's `.env` to share one log. The rule: `stacks-log.org`, "Files".
-  On a case-insensitive disk, a directory or repository reached with
-  different capitalisation gets a second log (a split, never a merge); set
+  The project is found from gforth's own current directory, not `$PWD`.
+  On a case-insensitive disk, a repository cloned with differently-cased
+  urls gets a second log (a split, never a merge); set
   `GFORTH_INSPECT_LOG_DIR` or the `.env` line to pin one.
 
 ## Required assets

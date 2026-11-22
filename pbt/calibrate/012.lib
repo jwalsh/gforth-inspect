@@ -20,7 +20,8 @@ plant() {
     if cmp -s "$tmp/orig.fs" "$tmp/inspect.fs"; then echo "plant did not apply: $1"; exit 1; fi
 }
 
-# expect_red [P1|P3 ...]: red on P4 and on each property named
+# expect_red [P1|P3|P5 ...]: red on each property named, and on P4 unless
+# NO_P4=1 (a fault outside (log-dir-for), which P4 calls directly)
 expect_red() {
     out=$(cd "$pbt_dir" && INSPECT_FS="$tmp/inspect.fs" PBT_012_EXAMPLES=${PBT_012_EXAMPLES:-25} \
         uv run --no-project --with hypothesis --with jsonschema --with pytest \
@@ -29,8 +30,10 @@ expect_red() {
     printf '%s\n' "$out" | grep -q '^FAILED.*test_forth_matches_reference' && red="$red P4"
     printf '%s\n' "$out" | grep -q '^FAILED.*test_forth_components_safe' && red="$red P1"
     printf '%s\n' "$out" | grep -q '^FAILED.*test_forth_injective' && red="$red P3"
+    printf '%s\n' "$out" | grep -q '^FAILED.*test_forth_cwd_beats_pwd' && red="$red P5"
     echo "red:${red:- none}"
-    for want in P4 "$@"; do
+    if [ "${NO_P4:-0}" = 1 ]; then wants="$*"; else wants="P4 $*"; fi
+    for want in $wants; do
         case " $red " in *" $want "*) ;; *)
             echo "GREEN on $want: not caught"; printf '%s\n' "$out" | grep -E '^(FAILED|E )' | head -8; exit 1;;
         esac

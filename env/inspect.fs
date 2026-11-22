@@ -123,10 +123,12 @@ variable rs-full  rs-full off
 \   log-where ( -- )  print the log file's path
 \ <dir> is, first match wins (contract/stacks-log.org, "Files"):
 \   $GFORTH_INSPECT_LOG_DIR, if set and non-empty;
-\   <base> = ${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect, if $PWD
-\     is unset or empty;
+\   <base> = ${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect, if the
+\     current directory cannot be read;
 \   the GFORTH_INSPECT_LOG_DIR= line of <root>/.env, <root> being the
-\     nearest ancestor of $PWD holding .git, else $PWD itself;
+\     nearest ancestor of the current directory (get-dir, never $PWD: a
+\     process started in one worktree with $PWD inherited from another must
+\     log to its own) holding .git, else the current directory itself;
 \   <base>/<owner>/<repo>/<worktree>, read from the files of .git (git is
 \     never run), each part one ASCII path component, see (enc+).
 \ It is computed at log-on, so changing the environment after loading is
@@ -333,14 +335,17 @@ create (owner) log-max allot  variable (owner#)
 : (project+) ( root-a root-u git? -- ) \ <base>/<owner>/<repo>/<worktree> of root
     (base+) (dir/) IF 2dup (git-dir!) (common!) (owner-repo+) (dir/) (worktree+)
     ELSE s" _nogit/" (dir+) (basename) (enc+) s" /_" (dir+) THEN ;
-: (log-dir-for) ( pwd-a pwd-u -- ) \ append the default log dir for this $PWD
+: (log-dir-for) ( dir-a dir-u -- ) \ append the default log dir for this current directory
     dup 0= IF 2drop (base+) EXIT THEN
     (git-root) >r 2dup (dotenv+) IF 2drop rdrop EXIT THEN r> (project+) ;
+
+create (cwd-buf) log-max allot
+: (cwd) ( -- c-addr u ) (cwd-buf) log-max get-dir ;  \ 0 0 if it cannot be read
 
 : log-paths ( -- )
     0 log-dir# !  0 log-path# !
     s" GFORTH_INSPECT_LOG_DIR" getenv dup IF (dir+) ELSE
-        2drop s" PWD" getenv (log-dir-for) THEN
+        2drop (cwd) (log-dir-for) THEN
     log-dir log-dir# @ log-path log-path# buf+
     s" /stacks.jsonl" log-path log-path# buf+ ;
 

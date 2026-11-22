@@ -91,3 +91,27 @@ Rerun of every plant:
 | leading =.= not stripped                   | 012-no-dot-strip.sh     | P4     |
 | =~= allowed in a plain name                | 012-tilde-plain.sh      | P4     |
 | owner = the next-to-last segment only    | 012-owner-last-only.sh  | P4 P3  |
+
+** 2026-11-22 the project is the current directory, never $PWD (P5)
+
+The coordinator reproduced a clobber: gforth started with cwd = linked
+worktree b and $PWD inherited from the main worktree logged to
+=acme/widget/main/=.  The brief said 0.7.3 has no getcwd; it has
+=get-dir= (all three engines, and 1.0.1), which ignores =$PWD=.  The
+project is now found from =get-dir='s physical path; =$PWD= is never read.
+The reference takes =cwd= instead of =PWD=.  New property P5,
+=test_forth_cwd_beats_pwd=: one gforth per fixture, started in it, =$PWD=
+naming another fixture or unset; pinned trio of two linked worktrees and
+the main checkout, one engine each.  =pytest test_012_log_paths.py=: 11
+passed.  New plant:
+
+| fault                                        | script                  | red |
+|----------------------------------------------+-------------------------+-----|
+| project from =$PWD= instead of =get-dir=       | 012-root-from-pwd.sh    | P5  |
+
+P4 calls =(log-dir-for)= with the directory directly, so it cannot see this
+fault (=NO_P4=1=); the goldens =log-dir-cwd-not-pwd= and =log-dir-no-pwd= go
+red on it too.  =test_004='s default-location run now starts in
+=<tmp>/proj= (=_004_helpers.py=), so its documented default is
+=state/gforth-inspect/_nogit/proj/_/stacks.jsonl=.
+

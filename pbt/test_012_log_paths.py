@@ -10,6 +10,8 @@ block there, loaded by _012_helpers.  Properties:
                  case-folding, across every generated set
   P4 reference   inspect.fs's (log-dir-for) equals the reference, on real
                  fixture trees (.git dirs and files, HEAD, config, .env)
+  P5 cwd         gforth started in a fixture's directory logs where the
+                 reference puts that directory, whatever $PWD says
 
 P1-P3 run on the reference over arbitrary bytes and on git-valid branch
 names (kept only when `git check-ref-format --branch` accepts them); P1,
@@ -321,6 +323,40 @@ def test_forth_injective(batch, engine):
             if len(components) == 3:
                 pairs.append((raw[position], components[position]))
         assert_injective(pairs)
+
+
+# P5: the project is the process's own current directory, never $PWD.
+# Two linked worktrees of one repository and its main checkout: each must
+# log to itself whichever of the others $PWD names, and with $PWD unset
+CWD_TRIO = [
+    Fixture("linked-abs", "wt-a", "main", b'[remote "origin"]\n\turl = git@h:acme/widget.git\n',
+            b"ref: refs/heads/feature-a\n", None, 0),
+    Fixture("linked-rel", "wt-b", "main", b'[remote "origin"]\n\turl = git@h:acme/widget.git\n',
+            b"ref: refs/heads/feature-b\n", None, 1),
+    Fixture("main", "main", "m", b'[remote "origin"]\n\turl = git@h:acme/widget.git\n',
+            b"ref: refs/heads/main\n", None, 0),
+]
+
+
+@example(CWD_TRIO, 1, "gforth")
+@example(CWD_TRIO, 2, "gforth-fast")
+@example(CWD_TRIO, None, "gforth-itc")
+@given(st.lists(fixtures(), min_size=1, max_size=3), st.one_of(st.none(), st.integers(1, 2)), engines)
+@calibration
+def test_forth_cwd_beats_pwd(batch, pwd_shift, engine):
+    """P5: gforth started in a fixture's directory, $PWD naming another
+    fixture or unset, logs where the reference puts that directory."""
+    try:
+        runs = helpers.forth_cwd(batch, pwd_shift, engine)
+    except OSError as error:
+        if error.errno != errno.EILSEQ:
+            raise
+        reject()
+    for run in runs:
+        note(f"cwd {run.cwd!r} PWD {run.pwd!r}: forth {run.forth!r} reference {run.expected!r}")
+        assert run.returncode == 0, (run.returncode, run.stderr[-300:])
+        assert run.forth == run.expected, \
+            f"P5 cwd: cwd {run.cwd!r} with $PWD {run.pwd!r}: forth {run.forth!r}, reference {run.expected!r}"
 
 
 def test_reference_matches_goldens():

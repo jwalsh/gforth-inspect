@@ -1,7 +1,9 @@
 ## stdout
 
-$TMP/state/gforth-inspect/stacks.jsonl
+$TMP/state/gforth-inspect/OWNER/REPO/WORKTREE/stacks.jsonl
+<base>/acme/widget/feature-b
+<base>/_nogit/not-a-repo~88c643c668c0/_
 ## stderr
-## log state/gforth-inspect/stacks.jsonl
+## log state/gforth-inspect/OWNER/REPO/WORKTREE/stacks.jsonl
 {"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
 ## exit 0

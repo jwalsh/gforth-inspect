@@ -7,9 +7,12 @@ Fixture     one project tree to build under a temp dir: a .git directory,
             a linked worktree's .git file (absolute or relative gitdir:),
             or no repository; HEAD, origin's url, an optional .env.
 forth_dirs  build a batch of fixtures and run ONE gforth over them: a
-            driver calls (log-dir-for), what log-on uses for $PWD, on each
-            fixture's $PWD and prints the directory.  HOME, XDG_STATE_HOME
-            and cwd are inside the temp dir (E-10, #46); nothing is logged.
+            driver calls (log-dir-for), what log-on uses for the current
+            directory, on each fixture's directory and prints the log dir.
+forth_cwd   one gforth per fixture, started IN the fixture's directory
+            with $PWD set to another fixture (or unset); prints log-where.
+            HOME and XDG_STATE_HOME are inside the temp dir, and so is every
+            cwd (E-10, #46); nothing is logged.
 git_accepts `git check-ref-format --branch`, cached; real git decides which
             generated branch names are kept.
 """
@@ -63,11 +66,11 @@ class Fixture:
     config: bytes | None      # the common dir's config file, None for none
     head: bytes | None        # HEAD's content, None for none
     dotenv: bytes | None      # <root>/.env, None for none
-    depth: int                # how far below the root $PWD is (0..2)
+    depth: int                # how far below the root the directory is (0..2)
 
 
 def build(fixture: Fixture, parent: Path) -> bytes:
-    """Create the fixture under parent; return its $PWD as bytes."""
+    """Create the fixture under parent; return its directory as bytes."""
     if fixture.kind in ("linked-abs", "linked-rel"):
         main = parent / fixture.main
         gitdir = main / ".git" / "worktrees" / "w"
@@ -161,7 +164,7 @@ def forth_dirs(fixtures: list[Fixture], engine: str = "gforth") -> Batch:
         proc = subprocess.run([engine, "inspect.fs", "driver.fs"], cwd=tmp_path, env=env,
                               capture_output=True, timeout=60, stdin=subprocess.DEVNULL)
         environ = {os.fsencode(key): os.fsencode(value) for key, value in env.items()}
-        expected = [reference.log_dir({**environ, b"PWD": pwd}) for pwd in pwds]
+        expected = [reference.log_dir(environ, cwd=pwd) for pwd in pwds]
         raw = [raw_components(pwd) for pwd in pwds]
         lines = proc.stdout.split(b"\n")
         forth = lines[:len(pwds)]
@@ -175,4 +178,49 @@ def forth_dirs(fixtures: list[Fixture], engine: str = "gforth") -> Batch:
 
 
 def _relative(path: bytes, tmp_path: Path) -> bytes:
+    path = path.replace(os.fsencode(os.path.realpath(tmp_path)), b"$TMP")
     return path.replace(os.fsencode(tmp_path), b"$TMP")
+
+
+@dataclass
+class CwdRun:
+    cwd: bytes
+    pwd: bytes | None
+    forth: bytes
+    expected: bytes
+    stderr: bytes
+    returncode: int
+
+
+def forth_cwd(fixtures: list[Fixture], pwd_shift: int | None, engine: str = "gforth") -> list[CwdRun]:
+    """Each fixture's log dir as log-where prints it, gforth started in that
+    fixture's directory with $PWD = the fixture pwd_shift places on (None:
+    unset).  The reference is given the physical cwd, as getcwd returns it."""
+    inspect_fs, _ = gforth_run.inspect_source()
+    runs = []
+    with tempfile.TemporaryDirectory(prefix="gfi-012-cwd-") as tmp:
+        tmp_path = Path(tmp)
+        for sub in ("home", "state"):
+            (tmp_path / sub).mkdir()
+        (tmp_path / "inspect.fs").write_bytes(inspect_fs.read_bytes())
+        dirs = [build(fixture, tmp_path / "fx" / f"f{index}") for index, fixture in enumerate(fixtures)]
+        base_env = {key: value for key, value in os.environ.items()
+                    if key not in ("GFORTH_INSPECT_LOG_DIR", "PWD")}
+        base_env.update(HOME=str(tmp_path / "home"), XDG_STATE_HOME=str(tmp_path / "state"))
+        environ = {os.fsencode(key): os.fsencode(value) for key, value in base_env.items()}
+        for index, cwd in enumerate(dirs):
+            env = dict(base_env)
+            pwd = None if pwd_shift is None else dirs[(index + pwd_shift) % len(dirs)]
+            if pwd is not None:
+                env["PWD"] = os.fsdecode(pwd)
+            proc = subprocess.run([engine, os.fsdecode(tmp_path / "inspect.fs"), "-e", "log-where bye"],
+                                  cwd=cwd, env=env, capture_output=True, timeout=30,
+                                  stdin=subprocess.DEVNULL)
+            lines = proc.stdout.split(b"\n")
+            printed = lines[1] if len(lines) > 1 else b""
+            forth = printed[:-len(b"/stacks.jsonl")] if printed.endswith(b"/stacks.jsonl") else printed
+            expected = reference.log_dir(environ, cwd=os.fsencode(os.path.realpath(cwd)))
+            runs.append(CwdRun(_relative(cwd, tmp_path), None if pwd is None else _relative(pwd, tmp_path),
+                               _relative(forth, tmp_path), _relative(expected, tmp_path),
+                               proc.stderr, proc.returncode))
+    return runs

@@ -54,7 +54,8 @@ Log path: =<dir>/stacks.jsonl=. =<dir>= is =$GFORTH_INSPECT_LOG_DIR= when that
 variable is set and non-empty; else the =GFORTH_INSPECT_LOG_DIR== line of the
 project's =.env=; else, per project and worktree,
 =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/<owner>/<repo>/<worktree>=
-(=.../gforth-inspect= itself when =$PWD= is unset). The exact rule is
+(=.../gforth-inspect= itself when the current directory cannot be read),
+from the process's current directory, never =$PWD=. The exact rule is
 [[file:stacks-log.org][stacks-log.org]], "Files".
 
 * Output formats

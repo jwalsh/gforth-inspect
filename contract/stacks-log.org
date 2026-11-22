@@ -20,15 +20,19 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
 =<dir>= is the first of these that applies (since 0.3.0):
 
 1. =$GFORTH_INSPECT_LOG_DIR=, when it is set and non-empty.
-2. =<base>=, when =$PWD= is unset or empty, where =<base>= is
-   =${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect= (the shared
-   default of 0.2.0 and before).
+2. =<base>=, when the current directory cannot be read (=get-dir= fails),
+   where =<base>= is =${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect=
+   (the shared default of 0.2.0 and before).
 3. The value of the last line starting =GFORTH_INSPECT_LOG_DIR== in
    =<root>/.env=, when it is non-empty: one pair of surrounding ="= or ='=
    is stripped and a leading =~/= is read as =$HOME/=; everything else is
-   literal.  =<root>= is the nearest ancestor of =$PWD=, itself included,
-   that holds a =.git= (a directory, or the file of a linked worktree), or
-   =$PWD= when none does.  This is how a project opts out, for example to
+   literal.  =<root>= is the nearest ancestor of the current directory,
+   itself included, that holds a =.git= (a directory, or the file of a
+   linked worktree), or the current directory when none does.  The
+   current directory is the process's own (getcwd, gforth's =get-dir=),
+   never =$PWD=: a gforth started in one worktree with =$PWD= inherited
+   from another (=subprocess.run(cwd=...)=, an editor's job runner) logs
+   to its own worktree, and an unset =$PWD= changes nothing.  This is how a project opts out, for example to
    make all its worktrees share one log:
    =GFORTH_INSPECT_LOG_DIR=~/.local/state/gforth-inspect/shared= in each
    worktree's =.env=.
@@ -55,8 +59,8 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
    - =<worktree>= is the branch of =HEAD=, =ref: refs/heads/<branch>= (it
      may contain =/=).  A detached =HEAD= gives =_detached-= followed by
      the hashed name of =<root>='s last component (below);
-   - outside any repository the three are =_nogit=, the name of =$PWD='s
-     last component, and =_=.
+   - outside any repository the three are =_nogit=, the name of the
+     current directory's last component, and =_=.
 
    Each name (owner, repo, branch, directory name) becomes exactly one
    path component: itself when it matches =^[a-z0-9][a-z0-9._-]{0,63}$=;
@@ -70,7 +74,7 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
    or branches never share a directory; every component is ASCII, so
    case-insensitive and normalizing file systems cannot merge two either.
 
-| =$PWD=, with                                            | =<dir>= below =<base>=                       |
+| current directory, with                                 | =<dir>= below =<base>=                       |
 |---------------------------------------------------------+----------------------------------------------|
 | =~/src/widget=, origin =git@host:acme/widget.git=, on =main= | =acme/widget/main=                  |
 | a linked worktree of it on =feature/Parser=              | =acme/widget/feature-parser~eb9f8a4eb252=   |
@@ -79,13 +83,17 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
 | a repository with no origin in =~/src/Local.Repo=, on =topic= | =_local/local.repo~17f2393cee21/topic=  |
 | =/tmp/My Proj=, no =.git= above it                       | =_nogit/my-proj~c0571c5e0b05/_=             |
 
-*Limit: case.*  Names are taken as =$PWD= and the url spell them.  On a
-case-insensitive disk (macOS, Windows), one directory reached with
-different capitalisation in =$PWD=, or one forge repository cloned with
+*Limit: case.*  Names are taken as the url and the file system spell
+them.  On a case-insensitive disk (macOS, Windows), one forge repository
+cloned with
 differently-cased urls (=Acme/Widget= and =acme/widget=), gets two logs: a
 split, never a merge.  Two different names never share a log.  To pin one
 location, set =GFORTH_INSPECT_LOG_DIR=, or the =.env= line above.  Git's
 own worktrees and branch refs have the same limits on such a disk.
+
+*Limit: symlinks.*  The current directory is the physical path, so a
+project reached through a symbolic link is named after the link's target
+(=_nogit=, =_local= and =_detached-= names), whichever name was typed.
 
 The directory is created (with parents) by =log-on=, which computes it at
 that moment; =log-where= prints the file's path.  A consumer finds the log
@@ -99,8 +107,10 @@ is (=log_dir()= reads =os.environb=; the property tests check
 #+begin_src python
 """Where gforth-inspect 0.3.0 writes stacks.jsonl (stacks-log.org, "Files").
 
-log_dir(environ) returns the directory, as bytes, that inspect.fs would
-use for the given environment (os.environb by default).  Paths and file
+log_dir(environ, cwd) returns the directory, as bytes, that inspect.fs
+would use for the given environment (os.environb by default) and current
+directory (os.getcwdb() by default: the physical path, as getcwd gives it;
+$PWD is never read).  Paths and file
 contents are bytes throughout; nothing here runs git.
 """
 import os
@@ -153,15 +163,15 @@ def basename(path):
     return path[path.rfind(b"/") + 1:]
 
 
-def find_root(pwd):
-    """(root, True) for the nearest ancestor of pwd holding .git, else (pwd, False)."""
-    path = pwd
+def find_root(cwd):
+    """(root, True) for the nearest ancestor of cwd holding .git, else (cwd, False)."""
+    path = cwd
     while True:
         if os.path.exists(path + b"/.git"):
             return path or b"/", True
         cut = path.rfind(b"/")
         if cut < 0:
-            return pwd, False
+            return cwd, False
         path = path[:cut]
 
 
@@ -263,16 +273,16 @@ def components(root, has_git):
     return parts
 
 
-def log_dir(environ=os.environb):
+def log_dir(environ=os.environb, cwd=None):
     explicit = environ.get(b"GFORTH_INSPECT_LOG_DIR", b"")
     if explicit:
         return explicit
     state = environ.get(b"XDG_STATE_HOME") or environ.get(b"HOME", b"") + b"/.local/state"
     base = state + b"/gforth-inspect"
-    pwd = environ.get(b"PWD", b"")
-    if not pwd:
+    cwd = os.getcwdb() if cwd is None else cwd
+    if not cwd:
         return base
-    root, has_git = find_root(pwd)
+    root, has_git = find_root(cwd)
     override = dotenv(root, environ.get(b"HOME", b""))
     if override:
         return override
@@ -414,4 +424,4 @@ follows the same path, in one commit:
 | 2026-11-21 | records are written in decimal whatever =BASE= is (18ebe2d wrote =t= and the cells in the current BASE) | PATCH (values only) | #38 | 0.1.0 | none needed |
 | 2026-11-22 | =dbg= of a DEFER or DOES> word after =dbg-fix=; the log is unchanged | none (words only) | #39 | 0.1.1 | none needed |
 | 2026-11-22 | =WORDS.org= ships with each release; a notice on stderr when gforth is not 0.7.3; the log is unchanged | none (words only) | #45 | 0.2.0 | none needed |
-| 2026-11-22 | the default log dir is per project: =<base>/<owner>/<repo>/<worktree>/= from the nearest =.git= of =$PWD= (each worktree its own), a =GFORTH_INSPECT_LOG_DIR== line in the project's =.env= opts out, =<base>= alone without =$PWD=; =GFORTH_INSPECT_LOG_DIR= still wins; records unchanged; gforth >= 1.0 fails the dependency check at load | PATCH (location; no schema change) |  | 0.3.0 | run =gforth inspect.fs -e 'log-where bye'= in the project directory, or set =GFORTH_INSPECT_LOG_DIR= |
+| 2026-11-22 | the default log dir is per project: =<base>/<owner>/<repo>/<worktree>/= from the nearest =.git= of the current directory (=get-dir=, never =$PWD=; each worktree its own), a =GFORTH_INSPECT_LOG_DIR== line in the project's =.env= opts out, =<base>= alone when the current directory cannot be read; =GFORTH_INSPECT_LOG_DIR= still wins; records unchanged; gforth >= 1.0 fails the dependency check at load | PATCH (location; no schema change) |  | 0.3.0 | run =gforth inspect.fs -e 'log-where bye'= in the project directory, or set =GFORTH_INSPECT_LOG_DIR= |

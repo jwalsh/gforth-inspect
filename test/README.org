@@ -64,12 +64,12 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 | =dbg-fix= / =dbg+=  | dbg-step, dbg-nest-n, dbg-adjacent, dbg-loop-keys, dbg-demo, dbg-loop, dbg-nest |
 | log records         | log-records, version, log-id, all-tilde, base-kept          |
 | two producers (#17) | log-two-producers (a second gforth appends between records) |
-| log location        | log-dir-env, log-dir-xdg, log-dir-home, log-dir-project, log-dir-rule (owner/repo/worktree, linked worktrees, detached, no origin, url forms, no repository), log-dir-dotenv, log-dir-env-dotenv, log-dir-no-pwd |
+| log location        | log-dir-env, log-dir-xdg, log-dir-home, log-dir-project, log-dir-rule (owner/repo/worktree, linked worktrees, detached, no origin, url forms, no repository), log-dir-dotenv, log-dir-env-dotenv, log-dir-cwd-not-pwd (started in worktree b, $PWD inherited from worktree a: logs to b), log-dir-no-pwd |
 | dependency check    | version-notice (0.7.9: notice, loads on), version-too-new (1.0.1: exit 1), version-too-new-caught (9.9.9: =include= throws) |
 | JSON                | json-escape (quotes, backslash, controls, UTF-8, invalid bytes), json-src, json-float |
 | lldb =brk= (no lldb) | demo                                                       |
 
-45 tests x 3 engines = 135 cases, plus =idle.fs= (skipped: it parks for
+46 tests x 3 engines = 138 cases, plus =idle.fs= (skipped: it parks for
 =lldb -p=).
 
 * Known limits
@@ -112,8 +112,13 @@ runner's =## log= line) print the checkout's own three components as
 =OWNER/REPO/WORKTREE=.  The rule itself is tested where the components are
 known: =log-dir-rule= builds fixture trees under =$FX= (=$TMP/fx=) and
 prints =(log-dir-for)= for each with =test/lib/log-dir.fs=, unmasked; its
-hashes were checked against the Python reference.  Re-recorded goldens
-changed only in the log path and the version.  Tests 38 -> 45.
+hashes were checked against the Python reference.  The project is the
+current directory (=get-dir=), never =$PWD=: the black-box tests =set-dir=
+into their fixture (=log-dir-cwd-not-pwd= with =$PWD= naming another
+worktree, =log-dir-no-pwd= with it unset); with the project taken from
+=$PWD= instead, both go red (feature-a instead of feature-b; the shared
+base).  Re-recorded goldens changed only in the log path and the version.
+Tests 38 -> 46.
 
 ** 2026-11-21 (canvas removed)
 
