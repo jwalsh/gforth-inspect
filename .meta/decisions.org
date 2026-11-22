@@ -41,6 +41,7 @@ a script or a setting. A decision with nothing enforcing it is a wish.
 | 26 | README carries no version placeholder: Install shows only what works; after a release =scripts/readme-release.sh= writes the real tag, committed =[skip ci]=. | Human | | =scripts/readme-release.sh=; RELEASING.org "Cutting one" |
 | 27 | Ship v0.5.0 by 2026-11-22 for course use: =harden= is final, =canvas.fs= removed now (brings #8 forward). | Human | #8's end-of-week timing | issue #23 |
 | 28 | Port the tooling from Python to Babashka after v0.5.0, as a gated experiment; shell scripts are suspect. Frozen reference consumers stay as they are. | Human | | experiment 006 (proposal) |
+| 29 | A release is a contract: the inspector, the guidelines (=contract/CONSUMERS.org=, =contract/CONSUMER-AGENTS.md=) and the skill (=contract/skill/SKILL.md=), never this repository's execution. Consumer docs live in =contract/=, not the root. | Human | | RELEASING.org asset table; =scripts/check-guides.sh= |
 
 * Open
 
