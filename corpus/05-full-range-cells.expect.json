@@ -1,0 +1,39 @@
+{
+  "producer_exit": 0,
+  "jq": {
+    "exit": 0,
+    "lines": [
+      "{\"e\":\"hello\",\"w\":null,\"d\":null,\"f\":null}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[0,1,-1,9223372036854775807,-9223372036854775808,255,-256],\"f\":[]}"
+    ]
+  },
+  "checker": {
+    "exit": 0,
+    "output": {
+      "event": "snapshot",
+      "where": null,
+      "src": null,
+      "data": [
+        0,
+        1,
+        -1,
+        9223372036854775807,
+        -9223372036854775808,
+        255,
+        -256
+      ],
+      "float": [],
+      "rs": [],
+      "input": {
+        "file": "05-full-range-cells.fs",
+        "line": 5,
+        "in": 12,
+        "text": "hex .stacks decimal"
+      }
+    }
+  },
+  "mock_get_stacks": {
+    "status": 200,
+    "body": "{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"where\":null,\"src\":null,\"data\":[0,1,-1,9223372036854775807,-9223372036854775808,255,-256],\"float\":[],\"rs\":[],\"input\":{\"file\":\"05-full-range-cells.fs\",\"line\":5,\"in\":12,\"text\":\"hex .stacks decimal\"}}"
+  }
+}
