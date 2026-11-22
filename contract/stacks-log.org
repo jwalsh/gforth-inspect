@@ -79,6 +79,14 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
 | a repository with no origin in =~/src/Local.Repo=, on =topic= | =_local/local.repo~17f2393cee21/topic=  |
 | =/tmp/My Proj=, no =.git= above it                       | =_nogit/my-proj~c0571c5e0b05/_=             |
 
+*Limit: case.*  Names are taken as =$PWD= and the url spell them.  On a
+case-insensitive disk (macOS, Windows), one directory reached with
+different capitalisation in =$PWD=, or one forge repository cloned with
+differently-cased urls (=Acme/Widget= and =acme/widget=), gets two logs: a
+split, never a merge.  Two different names never share a log.  To pin one
+location, set =GFORTH_INSPECT_LOG_DIR=, or the =.env= line above.  Git's
+own worktrees and branch refs have the same limits on such a disk.
+
 The directory is created (with parents) by =log-on=, which computes it at
 that moment; =log-where= prints the file's path.  A consumer finds the log
 by running =gforth inspect.fs -e 'log-where bye'= from the project
