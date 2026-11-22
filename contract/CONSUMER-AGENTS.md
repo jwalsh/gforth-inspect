@@ -100,13 +100,26 @@ first stable tag, you may keep your local copy.
 
 **Before you upgrade, your session runs these steps:**
 
-1. `gh release download vX.Y.Z -R jwalsh/gforth-inspect` into your env
-   directory, then check `SHA256SUMS`.
+1. Download into a fresh, empty directory and check it there:
+
+   ```sh
+   new=$(mktemp -d)
+   gh release download vX.Y.Z -R jwalsh/gforth-inspect -D "$new"
+   (cd "$new" && shasum -a 256 -c SHA256SUMS)
+   ```
+
+   Then copy the files into your env directory: the one your project loads
+   `inspect.fs` from. The assets are flat; keep them side by side. Never
+   download over an existing copy: `gh` writes the new files, then stops
+   at the first one that exists, leaving a mix of old and new.
 2. Read the change log in `stacks-log.org`. If `hello.contract` differs
    from what your consumer expects in MAJOR or MINOR, your checker stops.
    Read the change, then bump your expected version on purpose.
-3. Run each deviation's reproducer against the new files. Drop the rows
-   that the release fixed. Reopen the issue for any it did not.
+3. Run each deviation's reproducer against the new files. A reproducer is
+   one line you can paste: it loads `inspect.fs` from the directory you just
+   downloaded and writes its log to a fresh `$GFORTH_INSPECT_LOG_DIR`. The
+   producer's issues carry one in this form. Drop the rows that the release
+   fixed. Reopen the issue for any it did not.
 4. Run your own init and tests (version, contract, schema).
 5. Reply in the release thread with "upgraded to vX.Y.Z", or "staying on
    vA.B.C because …".

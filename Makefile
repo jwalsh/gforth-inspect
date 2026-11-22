@@ -26,7 +26,7 @@ export CONTRACT
 # The release assets (docs/RELEASING.org's table, decision 29), copied flat
 # into dist/ beside SHA256SUMS. Their basenames must be distinct.
 RELEASE_FILES := env/inspect.fs $(SCHEMA) contract/stacks-log.org contract/CONSUMERS.org \
-                 contract/CONSUMER-AGENTS.md contract/skill/SKILL.md
+                 contract/CONSUMER-AGENTS.md contract/skill/SKILL.md contract/WORDS.org
 ASSET_NAMES   := $(notdir $(RELEASE_FILES))
 DIST_FILES    := $(addprefix dist/,$(ASSET_NAMES))
 
@@ -116,8 +116,24 @@ gate: ## Every gate, in order (the standard alias for verify)
 # release files must not name a machine, a person or the course that uses them
 LEAK := /Users/|/home/|/opt/homebrew|/private/|/var/folders|sicpminus|course\.el|[a-z0-9._-]+@[a-z0-9-]+\.[a-z]+
 
-release-check: verify ## verify + release hygiene + the 7 assets in dist/
+release-check: verify ## verify + release hygiene + the 8 assets in dist/
 	@echo "== release hygiene: env/ contract/ ($(RELEASE_FILES))"
+	@last=$$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true); \
+	  if [ -z "$$last" ] && [ -n "$$(git tag -l 'v[0-9]*')" ]; then \
+	    echo "release-check: version tags exist but none is reachable from HEAD (shallow clone?): fetch tags first (#44)"; exit 1; \
+	  fi; \
+	  if [ -n "$$last" ]; then \
+	    v=$$(sed -n 's/^\\ gforth-inspect v//p' env/inspect.fs); \
+	    lastv=$$(git show "$$last:env/inspect.fs" | sed -n 's/^\\ gforth-inspect v//p'); \
+	    old=$$(git rev-parse -q --verify "$$last:env/inspect.fs" || true); \
+	    new=$$(git hash-object env/inspect.fs); \
+	    if [ "$$old" != "$$new" ] && [ "$$v" = "$$lastv" ]; then \
+	      echo "release-check: env/inspect.fs changed since $$last but is still v$$v: bump the version (#44)"; exit 1; \
+	    fi; \
+	    if [ "$$v" != "$$lastv" ] && [ "$$(printf '%s\n%s\n' "$$lastv" "$$v" | sort -V | tail -1)" != "$$v" ]; then \
+	      echo "release-check: v$$v is older than $$last (#44)"; exit 1; \
+	    fi; \
+	  fi
 	@test $(words $(sort $(ASSET_NAMES))) = $(words $(RELEASE_FILES)) || \
 	  { echo "release-check: two RELEASE_FILES share a basename"; exit 1; }
 	@if grep -rn -i -E '$(LEAK)' env contract; then \

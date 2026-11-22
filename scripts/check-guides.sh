@@ -8,7 +8,7 @@
 set -u
 set -f   # link targets are data: never glob-expand them
 
-REQUIRED="README.org docs/CONTRIBUTING.org docs/RELEASING.org contract/CONSUMERS.org docs/REVIEW.md AGENTS.md docs/COLLABORATION.org contract/CONSUMER-AGENTS.md contract/skill/SKILL.md LICENSE"
+REQUIRED="README.org docs/CONTRIBUTING.org docs/RELEASING.org contract/CONSUMERS.org docs/REVIEW.md AGENTS.md docs/COLLABORATION.org contract/CONSUMER-AGENTS.md contract/skill/SKILL.md contract/WORDS.org LICENSE"
 # words that mark developer or release-engineering content
 README_DEV='gmake|pbt/|experiments/|\.meta/|hypothesis|calibrat|worktree|code-review'
 
