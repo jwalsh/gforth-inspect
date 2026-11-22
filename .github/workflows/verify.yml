@@ -1,0 +1,73 @@
+# verify -- the verify baseline (CONTRIBUTING.org) on a macOS runner.
+# The job name `verify` is the status check that branch protection on main
+# requires (RELEASING.org, "Mainline protection"). Renaming the job or the
+# workflow breaks that rule: change both together.
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      # pbt/ reads `git show harden:...` and `model:...` (falling back to
+      # origin/*), and experiment 004 pins commits that live on harden.
+      - name: Fetch every branch and make harden and model resolvable
+        run: |
+          git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          for branch in harden model; do
+            if git rev-parse --verify -q "refs/remotes/origin/$branch" >/dev/null; then
+              git branch -f "$branch" "origin/$branch"
+              echo "$branch -> $(git rev-parse --short "$branch")"
+            else
+              echo "::warning::origin/$branch is absent; tests that read it will fail"
+            fi
+          done
+
+      - name: Install gforth, GNU make, jq
+        run: |
+          brew install gforth make jq
+          gforth --version
+          gmake --version | head -1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: false
+
+      - name: Privacy scan (calibrate, then scan)
+        run: |
+          scripts/privacy-scan.sh --calibrate
+          scripts/privacy-scan.sh
+
+      - name: Guide check (calibrate, then check)
+        run: |
+          scripts/check-guides.sh --calibrate
+          scripts/check-guides.sh
+
+      - name: gmake verify (or the pbt baseline until the root Makefile lands)
+        run: |
+          if [ -f Makefile ] && grep -q '^verify:' Makefile; then
+            gmake verify
+          else
+            gmake -C pbt check && gmake -C pbt calibrate
+          fi

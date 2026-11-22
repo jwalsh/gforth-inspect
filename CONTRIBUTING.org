@@ -34,6 +34,12 @@ every commit and every PR. It runs, in order:
    with every record validated against the schema
 3. =gmake -C pbt check=, then =gmake -C pbt calibrate=
 
+CI runs the same baseline: =.github/workflows/verify.yml= runs on every
+pull request and every push to =main=, on a macOS runner with gforth 0.7.3
+from Homebrew. Its check, =verify=, is required before a PR can merge
+(RELEASING.org, "Mainline protection"). A green run there does not replace
+running =gmake verify= yourself: the PR body records your summary line.
+
 Keep a baseline. Record the summary line of a green =gmake verify= on
 =main= in the PR description: engines, golden count, Hypothesis examples
 and seed. A PR that changes the counts has to say why. A suite that

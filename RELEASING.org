@@ -116,9 +116,57 @@ names a particular downstream project.
    fixes, for example =Closes #1, #4=. Downstream projects use those
    numbers to retire their local patches (see below).
 
-CI on a macOS runner with =brew install gforth= runs 1 to 4. Until that CI
-exists, whoever cuts the release runs them by hand and pastes the output
+CI (=.github/workflows/verify.yml=, a macOS runner with =brew install
+gforth=) runs the verify baseline on every pull request and every push to
+=main=: =gmake verify= once the root Makefile has it, the privacy scan and
+the =pbt/= checks until then. It does not yet run the =PROFILE=ci= long run,
+scan the release assets or grep them (2, 3 over =dist/=, and 4). Until it
+does, whoever cuts the release runs those by hand and pastes the output
 into the notes.
+
+* Mainline protection
+
+=main= is protected, so that what CI checks is what lands. The rules:
+
+| rule                                         | why                                                                 |
+|----------------------------------------------+---------------------------------------------------------------------|
+| a pull request before merging, 0 approvals   | one owner and several agents: the PR is the record, not a sign-off   |
+| status check =verify=, strict                | a PR merges only when CI is green on a head that is up to date      |
+| linear history                               | the repository squash-merges; =main= stays one commit per change    |
+| no force pushes, no deletion                 | tags and downstream =DEVIATIONS.org= rows point at =main='s commits |
+| conversation resolution                      | a review comment is answered before merge, as REVIEW.md asks        |
+| =enforce_admins= false                       | the owner can bypass, see the phases below                          |
+
+Merges are squash only, and head branches are not deleted on merge:
+experiment branches are kept as records.
+
+The check is named after the job =verify= in =verify.yml=. Renaming the job
+without changing the rule leaves every PR waiting on a check that never
+reports.
+
+** Phases
+
+1. *Until v0.5.0.* The repository is under active review, and coordinators
+   commit to =main= directly (coordination documents, as AGENTS.md says).
+   =enforce_admins= is false, so admins bypass the PR and the check. For
+   them the protection only stops force pushes and deletion. Everyone
+   else still merges through a PR with =verify= green.
+2. *From v0.5.0.* =enforce_admins= goes to true, and every change, the
+   owner's included, goes through a PR:
+
+   #+begin_src sh
+   gh api -X POST repos/{owner}/{repo}/branches/main/protection/enforce_admins
+   #+end_src
+
+   =-X DELETE= on the same path turns it back off, for an emergency.
+
+** Changing the rules
+
+The rule set is applied whole with
+=gh api -X PUT repos/{owner}/{repo}/branches/main/protection --input protection.json=,
+and read back with =gh api repos/{owner}/{repo}/branches/main/protection=.
+Run these from a checkout: =gh= fills in ={owner}/{repo}= from its remote. A PUT replaces every rule, so start from the read-back, not from memory.
+Change it in a PR that edits this section first, then apply it.
 
 * Cutting one
 
