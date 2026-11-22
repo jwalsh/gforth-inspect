@@ -148,3 +148,55 @@ a clean-copy control run that must pass first:
 Verdict, before: P1 holds; P2 data holds; P2 schema holds; P2 float
 refuted on every path and engine (sign, precision and non-finite all
 present). The prediction held, and the DBL_MAX overflow was not predicted.
+
+** 2026-11-22 AFTER: =INSPECT_REF=6238b09=, seed 1121, PROFILE=ci
+
+=6238b09= is the harden head that contains the json-f fix (17 significant
+digits, -0 kept, NaN and infinities null); =git log harden -- env/inspect.fs=
+shows it as the first change after =18ebe2d=. Same committed tests (55490ba),
+same seed.
+
+Command: =INSPECT_REF=6238b09 PBT_SEED=1121 gmake -C pbt check PROFILE=ci=.
+Provenance line: =ref:6238b09@6238b09 blob:1264ab7e38c0=.
+Wall time 2206.4 s (36m45s); result 45 passed, 0 failed.
+
+| test                      | per (path, engine)                         | result            |
+|---------------------------+--------------------------------------------+-------------------|
+| =test_p1_noninterference= | 1000 Hypothesis examples, 5384 stack cases | pass, all 9 pairs |
+| =test_p2_data=            | 1000 examples, 5384 cases                  | pass, all 9 pairs |
+| =test_p2_float=           | 1000 examples, 5384 cases                  | pass, all 9 pairs |
+| =test_p2_schema=          | 1000 examples, 5384 cases                  | pass, all 9 pairs |
+| =test_p2_float_corpus=    | 20 edge floats                             | 20 exact, 9 pairs |
+
+The before-run's shrunk case (=0x430C6BF526340008=) and every corpus
+mismatch (-0, DBL_MAX, the subnormal / least-normal pair, 17-digit
+values) now round-trip bit-exactly. =where= / =src= observed as before:
+null on =dotstacks= and =tilde2all=, set on =tilde3= (issue #2, not asserted).
+
+Calibration rerun on the committed tree (the first calibration above
+overlapped an edit to the test file, so it is superseded by this one):
+=INSPECT_REF=18ebe2d gmake -C pbt calibrate= (308 s) and
+=INSPECT_REF=6238b09 gmake -C pbt calibrate= (162 s). On both refs each
+fault went red on exactly the expected tests, with the expected message,
+after a clean-copy control passed: (a) 3 x =test_p1_noninterference[dotstacks-*]=,
+(b) 3 x =test_p1_noninterference[tilde3-*]=, (c) 9 x =test_p2_data[*]=.
+
+** 2026-11-22 Verdict
+
+| gate item      | before (18ebe2d)                                            | after (6238b09)          |
+|----------------+-------------------------------------------------------------+--------------------------|
+| 1. Volume      | held: 1000 examples (5384 cases) per pair for P1, P2 data,   | held: 1000 per pair for  |
+|                | P2 schema; P2 float stopped at its first failure (26)        | all four properties      |
+| 2. P1          | held, all 3 paths x 3 engines                               | held                     |
+| 3. P2 data     | held, all paths                                             | held                     |
+| 3. P2 schema   | held, all paths                                             | held                     |
+| 3. P2 float    | refuted, all paths and engines: sign (-0e, matches #1),      | held, all paths          |
+|                | non-finite (DBL_MAX decodes to inf, matches #1), precision   |                          |
+|                | (15 digits, matches #1's Expected clause)                   |                          |
+| 4. Calibration | held: (a), (b), (c) each red as expected                    | held                     |
+
+The hypothesis is refuted for =18ebe2d= exactly where the prediction said
+(P2 on floats) and holds for =6238b09=. Unpredicted: DBL_MAX overflowing to
+inf, and the greatest subnormal / least normal collapsing to one literal.
+Nothing differed between engines or between paths in either run, so the
+three ways =snap-rp= is stored did not matter to the data or float fields.
