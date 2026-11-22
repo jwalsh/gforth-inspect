@@ -92,6 +92,14 @@ values, and stdout was byte-identical too
 differential, until the test runner itself is ported to bb (006). That
 port's PR deletes them. Consumer 1 stays =stacks.jq=: jq is unchanged.
 
+The twin checker differs from =checker.py= in one way, on purpose. Some
+schema keywords =checker.py= neither implements nor ignores by design:
+=format=, =minItems= and the rest. On such a keyword the twin exits 2
+rather than silently pass what it cannot check. The annotations and
+=pattern= are ignored, as =checker.py= ignores them. So a schema change
+that adds a validation keyword also changes the reference checker. That is
+already MINOR or MAJOR by the table.
+
 A consumer must ignore keys it does not know, and the gate checks that
 too: every produced record has an unknown key injected, and all three
 consumers still give the same output.

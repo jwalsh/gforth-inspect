@@ -2,7 +2,7 @@
 #+DATE: 2026-11-21
 #+STARTUP: showall
 
-Status: running. The owner asked for the migration. Experiment 006 (PR
+Status: review. The owner asked for the migration. Experiment 006 (PR
 #24) assessed the port of the tooling and listed what babashka does not
 hand over; this experiment does the one part 006 left frozen: reference
 consumers 2 and 3 (RELEASING.org, "The reference consumers"). =stacks.jq=
@@ -190,3 +190,77 @@ the other side of this differential, until the test runner itself is in
 bb (experiment 006 ports =pbt/gforth_run.py= and the harness). They are
 deleted in that port's PR, not kept for a release. =stacks.jq= is
 unchanged: jq stays. RELEASING.org says this, citing 007.
+
+** 2026-11-21 review (=/code-review high= on PR #28)
+
+Ten findings, none raised by the gate, because every gate input used a
+well-formed schema, a plain path and a UTF-8 locale. Each was checked
+against the Python before it was answered. Every fix went into the twin,
+never the original.
+- =//stacks=: http.server collapses leading slashes (CPython gh-87389), so
+  =GET //stacks= is a 200 from the original. Confirmed, and the twin now
+  collapses them too. =//stacks=, =///stacks= and =//other/stacks= are in
+  gate 6's cases.
+- Unreadable log paths: java.nio puts the path in front of the reason (and
+  says "Too many levels of symbolic links or unable to access attributes
+  of symbolic link"). Confirmed for ENOTDIR, ELOOP and ENAMETOOLONG. The
+  prefix is now stripped and ELOOP is reworded.
+- The schema file: it is now strict UTF-8, and OSErrors are raised with
+  Python's class, errno and repr'd path. The errno values are macOS's,
+  which is where the gate runs. Still not matched, and outside the gate
+  (a broken schema is not a consumer input): the text of a
+  =UnicodeDecodeError=, and the position suffix of a =JSONDecodeError=, in
+  the schema file.
+- argparse: =--expect -= and =--expect -1.1= are values, and =-v= is an
+  unknown option. Confirmed, and fixed with argparse's negative-number
+  rule.
+- Locale: under a C locale or =PYTHONUTF8=1=, Python's stdout uses
+  surrogateescape, and =\udc80..\udcff= would print. The reference is
+  defined on a UTF-8 locale with strict stdout, which is what =uv run=
+  gives here. That is declared scope, not matched. A =\udc80= case is in
+  the CLI test.
+- Unicode tables: checked. bb's JDK 25.0.4 and Python 3.14.8 are both
+  Unicode 16.0 (U+1C89 is Lu on both).
+- Annotation keywords (=$comment=, =default=, =examples=, =deprecated=,
+  =readOnly=, =writeOnly=) are now ignored, as checker.py ignores them. A
+  validation keyword the twin lacks still makes it exit 2. RELEASING.org
+  now names that difference.
+- Test hygiene: the servers fixture uses an ExitStack. =test_zz_volume=
+  skips when the differential did not run. The batch floor was raised to
+  6 programs after one default run came in at 503 records, too close to
+  the 500 floor.
+- Names: the one-letter locals were renamed (a mechanical pass; the string
+  literals were diffed before and after, unchanged). =clj-kondo= is clean.
+
+** 2026-11-21 verdict
+
+On the final tree (53ef701 plus docs), =gmake -C pbt check= (default
+profile, random seed): 87 passed, 1 xfailed (005's strict xfail), 363 s
+for the whole suite. 007 itself took about 80 s.
+1. Corpus: *held*. 16 of 16 scenarios, read from =origin/main= (#22): the
+   bb checker equals the Python checker and =expect.json=, and the bb
+   server equals both.
+2. Planted breaks: *held*. The six 004 plants on harden 079de9c, every
+   prefix, with the stop on and off, give equal outputs. That includes
+   =KeyError: 'data'= on rename-data, and =unreadable: No such file or
+   directory= on the moved default path. The contract-1.2 stop gives equal
+   outputs on all four readings, and the original's answers are pinned.
+3. Unknown keys: *held*. No change on either side, for the checker and
+   the server.
+4. Generated differential: *held*. 818 gforth snapshot records, 9543 logs
+   (prefixes, injected, 59 mutations, 13 hello variants x 7 expects, byte
+   cuts mid-record and mid-UTF-8), 12110 checker comparisons and 9593
+   server comparisons, with 0 disagreements. Every compared stdout was
+   byte-identical too (12095 of 12095, past usage errors).
+5. Calibration: *held*. Plants (a), (b) and (c) each go red with the
+   expected disagreement. =gmake -C pbt calibrate= is red on all 15
+   plants.
+6. Server bytes: *held*. =0xFF=, a missing final newline, an empty file, a
+   missing file, other paths and slash variants all give the same status,
+   content type and bytes, and the body is the last line.
+
+The hypothesis held. Divergences found by the gate: none. Divergences
+found by review: the six above, all fixed in the twin. Divergences left on
+purpose: the exit-2 refusal on an unimplemented schema keyword; the locale
+and schema-file error text listed above; and the scope declared in the
+gate.
