@@ -87,3 +87,64 @@ expect to measure, and it already disagrees with the first clause.
    clause failed.
 
 * Log
+
+** 2026-11-22 provenance: where 1.0.0 and 1.0.1 came from
+
+The URLs in the brief, =forth/gforth/gforth-1.0.0.tar.xz= and
+=gforth-1.0.1.tar.xz= at the top of the download directory, no longer
+hold them: the top level now carries =gforth-1.0.2.tar.xz= (a later point
+release, not tested here), =gforth-1.0.0.tar.xz= answers 404, and
+=gforth-1.0.1.tar.xz= has moved to =old/=.  Both releases are under
+=forth/gforth/Snapshots/1.0.0/= and =Snapshots/1.0.1/=, each with three
+detached signatures: =.asc= (armoured OpenPGP), =.sig= (binary OpenPGP)
+and =.s2o= (a net2o signature).  No checksum file is published, and the
+announcement on the gforth list gives none.
+
+Each tarball went into its own new empty directory.
+
+| tarball             | SHA-256                                                          | bytes   |
+|---------------------+------------------------------------------------------------------+---------|
+| gforth-1.0.0.tar.xz | 79c880b68a4a9aa817b7067c21b79acd5b07149fad78f3f630320db410886fa6 | 4840516 |
+| gforth-1.0.1.tar.xz | d7cb2a1d0d0d9e4d895bce0739179ba97037a9da790fea536afcdc91f6d93d00 | 4845192 |
+
+Verification: =gpg --verify= of both =.asc= and both =.sig= says "Good
+signature", EdDSA key =04880DE6ECB06FC8EE9C3AF43B64AEC1E0B7BDE0=, in a
+throw-away =GNUPGHOME=.  The key was fetched by that fingerprint from
+keyserver.ubuntu.com (keys.openpgp.org has no copy); its uid names a
+gforth maintainer.  It is not in the GNU keyring (=gnu-keyring.gpg=), and
+the fingerprint was not confirmed through a second channel, so this
+proves the four files agree with one key, not that the key is the
+project's.  All four signatures are dated 2026-11-02: 1.0.0 (released
+2026-10-25) was signed a week after its release.  The =.s2o= files were
+not checked (no net2o here).  The =old/= copy of 1.0.1 is byte-identical
+to the =Snapshots/= one.
+
+Build route: macOS (arm64, Darwin 24) from source, into a private prefix
+in the session's scratch dir, =nice -n 19 gmake -j2=.  Two obstacles:
+- =configure= refuses clang outright ("Clang has a long unfixed bug that
+  makes it unsuitable to compile Gforth"), so Apple's =cc= is out;
+- Homebrew's gcc 16.1.0 cannot compile =#include <stdio.h>= against the
+  installed SDKs (15.2 and older): its fixincluded =_stdio.h= includes
+  =_bounds.h=, which only newer SDKs have.  A one-file shim directory,
+  passed as =CC="gcc-16 -idirafter <shim>"=, defines the nine
+  bounds-safety macros =_stdio.h= uses as empty (they are no-ops without
+  =-fbounds-safety=).  The shim touches only that system header; no
+  gforth source is changed.
+
+** 2026-11-22 calibration on 0.7.3 (gate 3)
+
+=probe.sh= (one process per probe, E-10 isolation; inspector from
+=ref:v0.1.1 blob:82860519a7d3=) on stock Homebrew 0.7.3, all three
+engines: 16 of 16 probes exit 0 with the expected output, and the masked
+outputs are byte-identical across =gforth=, =gforth-fast= and
+=gforth-itc=.  Two probes were fixed before this run, both harness bugs:
+=cs.fs= looped for ever on =0 UNTIL= (now =-1 UNTIL=), and =dbg-nest.fs=
+pressed =n= on a literal (now Enter, then =n= on =sq=).
+
+=internals.sh= lists 197 distinct system words that inspect.fs names
+(comments, strings and its own definitions removed); all 197 are found
+by =find-name= in all of 0.7.3's engines, so the tokenizer drops nothing
+0.7.3 lacks.
+
+The real =~/.local/state/gforth-inspect/stacks.jsonl= before any run:
+2600 bytes, mtime 1795358250 (gate 2 baseline).
