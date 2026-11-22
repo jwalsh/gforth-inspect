@@ -1,0 +1,41 @@
+# sourced by calibrate/007-*.sh (not itself a calibration: gmake globs *.sh)
+#
+# A 007 plant edits a temp copy of the bb twins, never the Python originals,
+# runs test_007_bb_consumers.py against it (BB_CONSUMERS_DIR), and exits 0
+# only if the test went red with the expected disagreement.
+set -u
+calibrate_dir=$(cd "$(dirname "$0")" && pwd)
+pbt_dir=$(dirname "$calibrate_dir")
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+cp -R "$pbt_dir/consumers/bb" "$tmp/bb" || exit 2
+twin="$tmp/bb/checker.clj"
+
+# plant_sed SED-SCRIPT: edit the twin checker; refuse a plant that changed nothing
+plant_sed() {
+    sed "$1" "$pbt_dir/consumers/bb/checker.clj" > "$twin"
+    if cmp -s "$pbt_dir/consumers/bb/checker.clj" "$twin"; then echo "plant did not apply: $1"; exit 1; fi
+}
+
+# plant_redefine FILE: insert FILE's forms just before the command-line block,
+# so they replace earlier definitions when the twin loads
+plant_redefine() {
+    awk -v plant="$1" '/^\(when \(= \*file\*/ { while ((getline line < plant) > 0) print line; print "" } { print }' \
+        "$pbt_dir/consumers/bb/checker.clj" > "$twin"
+    if cmp -s "$pbt_dir/consumers/bb/checker.clj" "$twin"; then echo "plant did not apply: $1"; exit 1; fi
+}
+
+# expect_red SELECTION REGEX: run the selected tests on the plant; red with REGEX
+expect_red() {
+    out=$(cd "$pbt_dir" && BB_CONSUMERS_DIR="$tmp/bb" PBT_007_NO_SHRINK=1 \
+        uv run --no-project --with hypothesis --with jsonschema --with pytest \
+        pytest -q -p no:cacheprovider --hypothesis-seed=7 -k "$1" test_007_bb_consumers.py 2>&1)
+    status=$?
+    if [ $status -eq 0 ]; then
+        echo "GREEN on a planted fault: not caught"; printf '%s\n' "$out" | tail -5; exit 1
+    fi
+    hit=$(printf '%s\n' "$out" | grep -E -o -m1 "$2")
+    if [ -n "$hit" ]; then echo "red as expected: $hit"; exit 0; fi
+    echo "red, but not with /$2/:"; printf '%s\n' "$out" | grep -E 'disagree|FAILED|Error' | head -12
+    exit 1
+}
