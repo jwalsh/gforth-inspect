@@ -5,7 +5,7 @@ Producer: =env/inspect.fs= (gforth 0.7.3) after =log-on=.
 Schema: =contract/stacks-log.schema.json= (JSON Schema 2020-12, =x-version= 1).
 Checked by =gmake test= (every line any test writes is validated, and
 every stream must pass the consumer rule below).  Who reads it:
-[[file:../CONSUMERS.org][CONSUMERS.org]].
+[[file:CONSUMERS.org][CONSUMERS.org]].
 
 Two numbers: the record version =v= (and the schema's =x-version=) is
 =1= and changes only on a breaking change; the contract version
@@ -137,7 +137,7 @@ follows the same path, in one commit:
 3. *Prose*: the record table above and a row in the change log below.
 4. *Producer*: =env/inspect.fs= (=contract-version= follows =x-contract=;
    =gmake test= checks they agree).
-5. *Consumers*: every reader in [[file:../CONSUMERS.org][CONSUMERS.org]]
+5. *Consumers*: every reader in [[file:CONSUMERS.org][CONSUMERS.org]]
    gets the same change; downstream copies that carry it before a release
    record it as a deviation.
 6. *Checks*: a golden test exercises the new field in all three engines;
