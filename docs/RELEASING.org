@@ -80,6 +80,18 @@ Changing a frozen consumer to make it pass is itself a breaking change.
    course's =stacks-log.org= under "Compatibility".
 3. *A mock API server.* =GET /stacks= serves the last record as-is.
 
+Consumers 2 and 3 are Babashka scripts, =pbt/consumers/bb/checker.clj= and
+=pbt/consumers/bb/mock_server.clj=. They are the reference checker and the
+reference mock server. They replaced =checker.py= and =mock_server.py=, and
+the swap is not a break: on every input in experiment 007's gate, their
+output is the same as the originals'. That covers the corpus, 004's planted
+breaks, the version stop, injected unknown keys, over 500 generated
+records, and the server's bytes. Exit status, stdout and crashes compare as
+values, and stdout was byte-identical too
+([[file:../experiments/007-bb-consumers/README.org][007]]). The Python originals remain only as the other side of the 007
+differential, until the test runner itself is ported to bb (006). That
+port's PR deletes them. Consumer 1 stays =stacks.jq=: jq is unchanged.
+
 A consumer must ignore keys it does not know, and the gate checks that
 too: every produced record has an unknown key injected, and all three
 consumers still give the same output.

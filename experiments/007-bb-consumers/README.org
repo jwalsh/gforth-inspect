@@ -115,3 +115,78 @@ contract schema uses (=$schema=, =$id=, =title=, =description=,
 ignores them, =pattern= included.
 
 * Log
+
+** 2026-11-21 gate committed (ebab4ec), then the twins
+
+The gate went in at ebab4ec, before any twin code. The twins and the
+differential followed in one commit (48f7552): =pbt/consumers/bb/checker.clj=,
+=mock_server.clj=, the harness-only =driver.clj=,
+=pbt/test_007_bb_consumers.py= and =pbt/calibrate/007-*.sh=. Nothing outside
+babashka is used: cheshire only in the driver's own I/O and in plant (a),
+http-kit for the server.
+
+Python behaviour was probed before the twins were written, on Python
+3.14.8, and built in rather than found by the gate: Java prints 5e-324 as
+=4.9E-324=, so the printer checks whether a one-digit decimal round-trips
+and takes it when it does, as Python's repr does. Python's =int_max_str_digits= is
+4300, counting digits but not the sign. =print= of a lone surrogate fails
+with a =UnicodeEncodeError= whose position is a code point index, and a run
+of surrogates is reported as a range. =sorted()= orders keys by code
+point, so U+FFFF comes before U+10000; UTF-16 order agrees on that pair
+only by luck, so the twin compares code points. =repr= uses double quotes
+when the string holds ='= and no ="=. In the validator, =1.0= passes
+=const 1= but =true= does not.
+
+Two babashka gaps that cost a redesign, not a divergence: there is no
+=java.util.LinkedHashMap= in bb, so a JSON object is a Clojure map whose
+metadata holds the key order, with a repeated key keeping its first place
+and its last value as in a Python dict. And =AccessDeniedException= is not
+exposed as a class, so it is matched by name.
+
+Namespaces (coordinator, from clj-kondo): =pbt/consumers/bb/= is the
+source root, so the namespaces are =checker= and =mock-server=, and the
+driver requires =checker= through the classpath. =clj-kondo --lint
+pbt/consumers/bb= is clean.
+
+Corpus: PR #22 merged while this ran. The test reads =corpus/= from the
+tree if it is there, else from =origin/main=.
+
+** 2026-11-21 first runs (gates 1-4, 6)
+
+The first full run of the differential (seed 1) was green, with no
+disagreement on any input. So the gate found no divergence the probes had
+not already built in. 648 gforth snapshot records, 9165 logs, 11261
+checker comparisons, every stdout byte-identical, and 9165 server
+comparisons. It took 163 s, 86 s of it in the bb checker. Two speed-ups,
+neither changing what is computed: strings are scanned between special
+characters with a regex rather than char by char, and the driver runs jobs
+with =pmap=. After them: bb checker 22 s, all of 007 in 110 s.
+
+The 004 plants read only the last line at first, so =hex-integer= and
+=nan-zero= (which change the =.stacks= record, not the =~~~= one after it)
+never reached the checker. The test was changed to read every prefix, as
+004 does, before the logged run.
+
+** 2026-11-21 calibration (gate 5)
+
+Each plant edits a temp copy of the twins (=BB_CONSUMERS_DIR=), never the
+Python. Seed 7, no shrinking:
+- (a) lenient reader: red, =disagree checker: mutation raw-control
+  no-stop=. The first version of the plant went red for the wrong reason:
+  cheshire returns =java.lang.Integer= for small numbers, which the twin's
+  =repr= does not know. The plant now converts cheshire's numbers to the
+  twin's types, so it differs from the twin in leniency alone. It is a
+  second reason not to use cheshire's reader here.
+- (b) no =enum=: red, =disagree checker: mutation enum-event=.
+- (c) version stop on MAJOR only: red, =version stop []= (the contract-1.2
+  log read with the default =--expect=: the original stops, the plant
+  accepts).
+
+** 2026-11-21 decision: what happens to the Python originals
+
+The owner ruled, through the coordinator: the reference checker and mock
+server are the bb twins. =checker.py= and =mock_server.py= stay only as
+the other side of this differential, until the test runner itself is in
+bb (experiment 006 ports =pbt/gforth_run.py= and the harness). They are
+deleted in that port's PR, not kept for a release. =stacks.jq= is
+unchanged: jq stays. RELEASING.org says this, citing 007.
