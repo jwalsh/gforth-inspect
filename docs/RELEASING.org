@@ -148,7 +148,7 @@ notes.
 | rule                                       | why                                                                       |
 |--------------------------------------------+---------------------------------------------------------------------------|
 | a pull request before merging, 0 approvals | one owner and several agents: the PR is the record, not a sign-off         |
-| status check =verify=, strict from v0.5.0  | a PR merges only when CI is green; from v0.5.0 also on a head up to date with =main=. *Removed 2026-11-22* (D-40): GitHub Actions billing stopped every job; the workflow is disabled and a local =gmake verify= on the PR's head, pasted into the PR body (REVIEW.md), is the gate until billing works. To restore: =gh workflow enable verify.yml=, put the =required_status_checks= block back in the JSON, PUT it |
+| status check =verify=, strict from the first stable tag | a PR merges only when CI is green; from the first stable tag also on a head up to date with =main=. *Removed 2026-11-22* (D-40): GitHub Actions billing stopped every job; the workflow is disabled and a local =gmake verify= on the PR's head, pasted into the PR body (REVIEW.md), is the gate until billing works. To restore: =gh workflow enable verify.yml=, put the =required_status_checks= block back in the JSON, PUT it |
 | linear history                             | the repository squash-merges; =main= stays one commit per change          |
 | no force pushes, no deletion               | tags and downstream =DEVIATIONS.org= rows point at =main='s commits       |
 | conversation resolution                    | a review thread on the PR is resolved before merge, not left hanging      |
@@ -164,7 +164,7 @@ Change the job and this rule set together.
 
 ** Phases
 
-1. *Until v0.5.0.* The repository is under active review, and coordinators
+1. *Until the first stable tag.* The repository is under active review, and coordinators
    commit to =main= directly (coordination documents, as AGENTS.md says).
    =enforce_admins= is false, so admins bypass the PR and the check. For
    them the protection only stops force pushes and deletion. Anyone
@@ -176,7 +176,7 @@ Change the job and this rule set together.
    =main=. With strict on, every direct push to =main= restarted the
    23-minute CI of every queued PR (issue #26); =main='s own CI run after
    each merge catches the rare semantic clash instead.
-2. *From v0.5.0.* =enforce_admins= goes to true, and every change, the
+2. *From the first stable tag.* =enforce_admins= goes to true, and every change, the
    owner's and the agents' included, goes through a PR:
 
    #+begin_src sh
@@ -223,7 +223,7 @@ notes=$(mktemp)   # write the notes here: test summary and the Fixed: line (Gate
 gh release create vX.Y.Z dist/* --notes-file "$notes"   # notes live outside dist/, so dist/* is exactly the 7 assets
 scripts/readme-release.sh vX.Y.Z    # README's Install names the real tag; refuses if the release isn't there
 git commit -am "docs(readme): install vX.Y.Z [skip ci]" && git push   # direct, as an admin
-# at v0.5.0: run the two lines above BEFORE flipping enforce_admins (Mainline protection);
+# at the first stable tag: run the two lines above BEFORE flipping enforce_admins (Mainline protection);
 # after the flip, the README commit goes through a PR without [skip ci], because a
 # skipped required check never reports and the PR would wait forever
 #+end_src

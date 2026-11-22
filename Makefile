@@ -131,6 +131,9 @@ release-check: verify ## verify + release hygiene + the 7 assets in dist/
 	  test -z "$$stale" || { echo "release-check: dist/ holds files not in RELEASE_FILES: $$stale (gmake clean)"; exit 1; }
 	bash scripts/dist-links.sh --calibrate
 	@v=$$(sed -n 's/^\\ gforth-inspect v//p' env/inspect.fs); \
+	  if tag=$$(git rev-parse -q --verify "refs/tags/v$$v^{commit}"); then \
+	    [ "$$tag" = "$$(git rev-parse HEAD)" ] || { echo "release-check: tag v$$v exists and is not HEAD: bump the version"; exit 1; }; \
+	  fi; \
 	  bash scripts/dist-links.sh dist v$$v $(RELEASE_FILES)
 	cd dist && shasum -a 256 $(ASSET_NAMES) > SHA256SUMS
 	@test "$$(ls dist | wc -l | tr -d ' ')" = $$(( $(words $(ASSET_NAMES)) + 1 )) || \

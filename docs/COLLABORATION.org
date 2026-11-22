@@ -70,7 +70,8 @@ is done.
 4. *Review.* Draft PR, =gmake verify=, =/code-review= of the PR's own
    branch, every finding answered (REVIEW.md), then the producer
    coordinator merges.
-5. *Release.* Only from green. Before the first stable tag (v0.5.0 or v1.0.0), as a prerelease (D-41). Each fixing PR
+5. *Release.* Only from green. Before the first stable tag (v0.5.0 or
+   v1.0.0), as a prerelease (D-41). Each fixing PR
    says =Closes #N= (GitHub closes the issue on merge). The release notes
    list =Fixed: #N, ...= and the change log names every contract change.
 6. *Notify.* The producer coordinator comments on every issue the release

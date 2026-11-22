@@ -6,8 +6,8 @@
 #
 # DIR holds the flat copies of the release assets; SRC... are their paths in
 # the repository (RELEASE_FILES), so that DIR/$(basename SRC) came from SRC.
-# REF is the tag being released (vX.Y.Z); it
-# names HEAD, the commit being released.
+# REF is the tag being released (vX.Y.Z), cut at HEAD, the commit being
+# released; gmake release-check refuses a tag that exists elsewhere.
 #
 # Rewrite, for every relative link in an .org ([[file:T]], [[./T]], [[../T]])
 # or .md ([text](T)) asset, resolved against that asset's SRC directory:

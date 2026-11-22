@@ -470,17 +470,21 @@ variable bp-a  variable bp-b
     dup >code-address dodefer: =  swap >does-code 0<>  or ;
 
 : defer-target ( xt -- xt' true | false )
-    \ follow a DEFER chain, at most 16 hops (a cycle would loop for ever)
+    \ follow a DEFER chain, at most 16 hops (a cycle would loop for ever);
+    \ silent: the caller says "nesting defered..." once it can nest
     16 0 DO
         dup >code-address dodefer: <> IF true UNLOOP EXIT THEN
-        cr ." nesting defered..."  >body @
-    LOOP drop false ;
+        >body @
+    LOOP
+    dup >code-address dodefer: <> IF true EXIT THEN
+    drop false ;
 
 : special-target ( xt -- xt | body xt | 0 )
     \ what to nest into for a DEFER or DOES> word: a colon word (headerless
     \ too), or a does> word with its body below; 0 when there is none
     dup >code-address dodefer: = IF
         defer-target 0= IF cr ." (defer chain too long: stepped over)" 0 EXIT THEN
+        dup >code-address docol: = over >does-code or IF cr ." nesting defered..." THEN
     THEN
     dup >code-address docol: = IF EXIT THEN
     dup >does-code IF dup >body swap EXIT THEN
@@ -505,8 +509,17 @@ variable bp-a  variable bp-b
     DebugMode c-pass ! C-Output off  xt-see  C-Output on
     c-pass @ DebugMode = dup IF cr ." Cannot debug!!" THEN ;
 
+: runnable? ( xt -- f ) \ false for a defer chain longer than 16 hops
+    dup >code-address dodefer: = IF defer-target dup IF nip THEN ELSE drop true THEN ;
+
 : dbg2 ( "name" -- ) \ stock dbg, then clear any breakpoint left set
-    ' NestXT IF EXIT THEN (debug) restore-bp2 Leave-D ;
+    \ a word it cannot debug is run, as its "stepped over" message says,
+    \ unless it is a defer chain with no end (running it never returns)
+    \ (the xt waits on the return stack: for a does> word NestXT leaves the
+    \ body below the code to debug, as does> would)
+    ' dup >r NestXT IF
+        r> dup runnable? IF execute ELSE drop cr ." (not run)" THEN EXIT
+    THEN r> drop (debug) restore-bp2 Leave-D ;
 
 : dbg-fix ( -- )
     ['] set-bp2 ['] set-bp patch-colon
