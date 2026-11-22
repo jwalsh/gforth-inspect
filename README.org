@@ -16,7 +16,40 @@ gforth forth-env/inspect.fs
 #+end_src
 
 =inspect-version type= prints 0.3.0. Within one MAJOR version the words
-and the log format do not break.
+and the log format do not break. It needs a 64-bit gforth 0.7.3.
+
+** As a dependency of your project
+
+*Vendored.* Keep the release files in the project and swap them only after
+the checksums pass:
+
+#+begin_src sh
+new=$(mktemp -d) && gh release download v0.3.0 -R jwalsh/gforth-inspect -D "$new" \
+  && (cd "$new" && shasum -a 256 -c SHA256SUMS) \
+  && rm -rf vendor/gforth-inspect && mv "$new" vendor/gforth-inspect
+#+end_src
+
+Load it with =s" vendor/gforth-inspect/inspect.fs" included=. To upgrade, run
+the same lines with the new tag.
+
+*fmix.* In =package.4th=:
+
+#+begin_example
+key-list dependencies gforth-inspect git https://github.com/jwalsh/gforth-inspect tag v0.3.0
+#+end_example
+
+Then =fmix packages.get=, and load
+=require ./forth-packages/gforth-inspect/v0.3.0/env/inspect.fs=. To upgrade,
+change the tag in both lines and run =fmix packages.get= again; the old tag's
+directory stays until you remove it. fmix checks no checksums: compare
+=env/inspect.fs= with the release's =SHA256SUMS= yourself. With gforth 0.7.3
+use fmix 0.9.0 or earlier.
+
+*f (theforth.net).* Not available: gforth-inspect is not published on
+theforth.net.
+
+*Upgrading to 0.3.0 or later* without =GFORTH_INSPECT_LOG_DIR= moves the log
+to a per-project directory; =log-where= prints it.
 
 * Usage
 
