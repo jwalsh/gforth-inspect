@@ -11,7 +11,7 @@ may change in any release.
 | gforth | engines                          | status                                                                 |
 |--------+----------------------------------+------------------------------------------------------------------------|
 | 0.7.3  | =gforth=, =gforth-fast=, =gforth-itc= | supported and tested: every word below, every release                  |
-| 1.0.x  | —                                | not supported. =inspect.fs= prints one line on stderr when loaded by any gforth whose =version-string= is not =0.7.3=, then loads on as far as it can |
+| 1.0.x  | —                                | not supported, and does not load: on 1.0.0 and 1.0.1 (all engines) loading stops at an undefined word, because three 0.7.3 internals it uses (=interpret1=, =handler-intro,=, =.debugline-stderr=) are gone. =inspect.fs= first prints one line on stderr naming the gforth version |
 
 =inspect.fs= uses only words present in 0.7.3. It uses no gforth 1.0
 words (={: :}=, =[: ;]=, =[{:=).
