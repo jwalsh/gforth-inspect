@@ -94,8 +94,9 @@ You **never**:
 
 **How you learn about it:** the producer coordinator messages every
 registered consumer with the version, the contract, the issues closed, and
-the change-log rows. The release notes say the same (`Fixed: #N, ...`). There
-are no tags before v0.5.0; until then you keep your local copy.
+the change-log rows. The release notes say the same (`Fixed: #N, ...`). Releases
+before the first stable tag (v0.5.0 or v1.0.0) are prereleases. Until the
+first stable tag, you may keep your local copy.
 
 **Before you upgrade, your session runs these steps:**
 

@@ -1,4 +1,4 @@
-\ gforth-inspect v0.1.0
+\ gforth-inspect v0.1.1
 \ stacks-log schema v1
 \ SPDX-License-Identifier: GPL-3.0-or-later
 \
@@ -18,7 +18,7 @@
 \             including n (nest) into colon words
 \   dbg+      dbg-fix, and print .s f.s and return words at every step
 \   log-id    ( c-addr u -- )  tag following snapshots with "id"; s" " log-id clears
-\   inspect-version  ( -- c-addr u )  "0.1.0"
+\   inspect-version  ( -- c-addr u )  "0.1.1"
 \ The hello record announces "contract":"1.1" (contract/stacks-log.org).
 \
 \ Works in gforth, gforth-fast and gforth-itc 0.7.3.  None of these words
@@ -27,7 +27,7 @@
 \ ~~ (debugs.fs) and dbg (debug.fs) are already in the 0.7.3 image;
 \ REQUIRE-ing them again would redefine half the system.
 
-: inspect-version ( -- c-addr u ) s" 0.1.0" ;
+: inspect-version ( -- c-addr u ) s" 0.1.1" ;
 
 \ --- naming addresses ------------------------------------------------
 
@@ -462,21 +462,64 @@ variable bp-a  variable bp-b
     bp2 @       ?dup IF dt2 swap 2 cells move THEN
     0. bp2 2! ;
 
+: special-xt? ( x -- f )
+    \ x is the xt of a DEFER or DOES> word with a real header
+    dup aligned over <> IF drop false EXIT THEN
+    dup in-dictionary? 0= IF drop false EXIT THEN
+    dup >head-noprim ['] ??? >head-noprim = IF drop false EXIT THEN
+    dup >code-address dodefer: =  swap >does-code 0<>  or ;
+
+: defer-target ( xt -- xt' true | false )
+    \ follow a DEFER chain, at most 16 hops (a cycle would loop for ever);
+    \ silent: the caller says "nesting defered..." once it can nest
+    16 0 DO
+        dup >code-address dodefer: <> IF true UNLOOP EXIT THEN
+        >body @
+    LOOP
+    dup >code-address dodefer: <> IF true EXIT THEN
+    drop false ;
+
+: special-target ( xt -- xt | body xt | 0 )
+    \ what to nest into for a DEFER or DOES> word: a colon word (headerless
+    \ too), or a does> word with its body below; 0 when there is none
+    dup >code-address dodefer: = IF
+        defer-target 0= IF cr ." (defer chain too long: stepped over)" 0 EXIT THEN
+        dup >code-address docol: = over >does-code or IF cr ." nesting defered..." THEN
+    THEN
+    dup >code-address docol: = IF EXIT THEN
+    dup >does-code IF dup >body swap EXIT THEN
+    drop cr ." (defer target cannot be debugged: stepped over)" 0 ;
+
 : nestXT+ ( x -- true | body false )
     \ the n (nest) key.  Stock nestXT treats the threaded cell as an xt and
     \ runs xt-see on it; in direct-threaded engines that cell is engine code,
     \ so xt-see shells out to gdb and dies (even nesting a colon word).
     \ Here a colon call is the cell `call`'s code address followed by the
     \ target body; anything else (primitive, literal) steps instead.
+    \ A DEFER or DOES> word with a real header (#39) nests into its target:
+    \ the end of the defer chain, or a does> word with its body below.
     dup ['] call @ = IF drop ['] call THEN
-    dup ['] call = over colon-xt? or 0= IF
-        drop cr ." (not a colon definition: stepped over)" true EXIT THEN
-    nestXT-checkSpecial
+    dup ['] call = over colon-xt? or IF
+        nestXT-checkSpecial
+    ELSE dup special-xt? IF
+        special-target ?dup 0= IF true EXIT THEN
+    ELSE
+        drop cr ." (not a colon definition: stepped over)" true EXIT
+    THEN THEN
     DebugMode c-pass ! C-Output off  xt-see  C-Output on
     c-pass @ DebugMode = dup IF cr ." Cannot debug!!" THEN ;
 
+: runnable? ( xt -- f ) \ false for a defer chain longer than 16 hops
+    dup >code-address dodefer: = IF defer-target dup IF nip THEN ELSE drop true THEN ;
+
 : dbg2 ( "name" -- ) \ stock dbg, then clear any breakpoint left set
-    ' NestXT IF EXIT THEN (debug) restore-bp2 Leave-D ;
+    \ a word it cannot debug is run, as its "stepped over" message says,
+    \ unless it is a defer chain with no end (running it never returns)
+    \ (the xt waits on the return stack: for a does> word NestXT leaves the
+    \ body below the code to debug, as does> would)
+    ' dup >r NestXT IF
+        r> dup runnable? IF execute ELSE drop cr ." (not run)" THEN EXIT
+    THEN r> drop (debug) restore-bp2 Leave-D ;
 
 : dbg-fix ( -- )
     ['] set-bp2 ['] set-bp patch-colon
