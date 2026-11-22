@@ -13,12 +13,12 @@ execution (tests, scripts, CI, experiments).
 * What a release is
 
 - A tag =vMAJOR.MINOR.PATCH= on =main=, published as a GitHub Release.
-- *No tags before v0.5.0.* 0.5 means good enough to publish and to use
-  tags. Versions below it (0.1.0, 0.2.0, ...) are development versions:
-  they appear only in =inspect.fs='s header, in =inspect-version= and in
-  =hello.inspect=, and are never tagged or published. Until v0.5.0, the
-  coordinators commit directly to =main= while the repository is under
-  review, and downstream projects keep their own local copies.
+- *Prereleases before the first stable tag.* Versions before it (v0.1.0,
+  v0.1.1, ...) are tagged and published as GitHub prereleases, to rehearse
+  this process (decision D-41). The first stable tag is v0.5.0 or v1.0.0
+  (D-32). Until then the coordinators commit directly to =main= while the
+  repository is under review, and downstream projects may keep their own
+  local copies.
 - Each release carries its own spec and contract. The assets are
   self-contained and flat (no directories):
 
@@ -94,12 +94,12 @@ experiment 004:
   =input.text=. That is a PATCH. Examples are #1 (17 digits, =-0.0=) and the
   0.1.0 escaping. A consumer that relied on the wrong value was relying on
   a bug. The change log still records the fix.
-- *v0.5.0 is the first release.* Nothing earlier was released: 18ebe2d
-  was an import, and 0.1.0 to 0.4.x are untagged development versions. So
-  moving the default log directory to =.../gforth-inspect/= breaks no
-  released promise. Until v0.5.0 the table is applied as a discipline,
-  recorded in the change log, but a break costs a note, not a MAJOR. From
-  v0.5.0 on it binds, and the default location falls under the MAJOR row.
+- *The first stable tag binds.* 18ebe2d was an import, and v0.1.0 and
+  later prereleases promise nothing stable. So moving the default log
+  directory to =.../gforth-inspect/= breaks no released promise. Until the
+  first stable tag the table is applied as a discipline, recorded in the
+  change log, but a break costs a note, not a MAJOR. From that tag on it
+  binds, and the default location falls under the MAJOR row.
 
 The stable words: =.stacks .rs .input ~~~ .cs all-~~ dbg-fix dbg+ rs-full
 fclearstack log-on log-off log-where log-id inspect-version
@@ -148,7 +148,7 @@ notes.
 | rule                                       | why                                                                       |
 |--------------------------------------------+---------------------------------------------------------------------------|
 | a pull request before merging, 0 approvals | one owner and several agents: the PR is the record, not a sign-off         |
-| status check =verify=, strict from v0.5.0  | a PR merges only when CI is green; from v0.5.0 also on a head up to date with =main=. *Removed 2026-11-22* (D-40): GitHub Actions billing stopped every job; the workflow is disabled and a local =gmake verify= on the PR's head, pasted into the PR body (REVIEW.md), is the gate until billing works. To restore: =gh workflow enable verify.yml=, put the =required_status_checks= block back in the JSON, PUT it |
+| status check =verify=, strict from the first stable tag | a PR merges only when CI is green; from the first stable tag also on a head up to date with =main=. *Removed 2026-11-22* (D-40): GitHub Actions billing stopped every job; the workflow is disabled and a local =gmake verify= on the PR's head, pasted into the PR body (REVIEW.md), is the gate until billing works. To restore: =gh workflow enable verify.yml=, put the =required_status_checks= block back in the JSON, PUT it |
 | linear history                             | the repository squash-merges; =main= stays one commit per change          |
 | no force pushes, no deletion               | tags and downstream =DEVIATIONS.org= rows point at =main='s commits       |
 | conversation resolution                    | a review thread on the PR is resolved before merge, not left hanging      |
@@ -164,7 +164,7 @@ Change the job and this rule set together.
 
 ** Phases
 
-1. *Until v0.5.0.* The repository is under active review, and coordinators
+1. *Until the first stable tag.* The repository is under active review, and coordinators
    commit to =main= directly (coordination documents, as AGENTS.md says).
    =enforce_admins= is false, so admins bypass the PR and the check. For
    them the protection only stops force pushes and deletion. Anyone
@@ -176,7 +176,7 @@ Change the job and this rule set together.
    =main=. With strict on, every direct push to =main= restarted the
    23-minute CI of every queued PR (issue #26); =main='s own CI run after
    each merge catches the rare semantic clash instead.
-2. *From v0.5.0.* =enforce_admins= goes to true, and every change, the
+2. *From the first stable tag.* =enforce_admins= goes to true, and every change, the
    owner's and the agents' included, goes through a PR:
 
    #+begin_src sh
@@ -223,7 +223,7 @@ notes=$(mktemp)   # write the notes here: test summary and the Fixed: line (Gate
 gh release create vX.Y.Z dist/* --notes-file "$notes"   # notes live outside dist/, so dist/* is exactly the 7 assets
 scripts/readme-release.sh vX.Y.Z    # README's Install names the real tag; refuses if the release isn't there
 git commit -am "docs(readme): install vX.Y.Z [skip ci]" && git push   # direct, as an admin
-# at v0.5.0: run the two lines above BEFORE flipping enforce_admins (Mainline protection);
+# at the first stable tag: run the two lines above BEFORE flipping enforce_admins (Mainline protection);
 # after the flip, the README commit goes through a PR without [skip ci], because a
 # skipped required check never reports and the PR would wait forever
 #+end_src
@@ -251,10 +251,13 @@ in this order. Each step is done before the next one starts:
 
 | version     | date       | change                                                                      | issue  |
 |-------------+------------+-----------------------------------------------------------------------------+--------|
-| (unreleased) | 2026-11-21 | json-f: 17 significant digits, -0.0 kept, non-finite logged as null          | #1     |
-| (unreleased) | 2026-11-21 | snapshot gains optional =id= (=log-id=)                                       | #3     |
-| (unreleased) | 2026-11-21 | log dir is =$GFORTH_INSPECT_LOG_DIR=; =hello= gains =inspect=                  |        |
-| (unreleased) | 2026-11-21 | =canvas.fs= removed from the release contract                                |        |
+| 0.1.1       | 2026-11-22 | after =dbg-fix=, =dbg= of a DEFER or DOES> word nests (it stepped over); =n= on a compiled defer or does> call still steps over | #39    |
+| 0.1.0       | 2026-11-21 | json-f: 17 significant digits, -0.0 kept, non-finite logged as null          | #1     |
+| 0.1.0       | 2026-11-21 | =all-~~= snapshots fill =where= / =src=                                         | #2     |
+| 0.1.0       | 2026-11-21 | snapshot gains optional =id= (=log-id=)                                       | #3     |
+| 0.1.0       | 2026-11-21 | each record is built in memory and written as one line                       | #17    |
+| 0.1.0       | 2026-11-21 | log dir is =$GFORTH_INSPECT_LOG_DIR=; =hello= gains =inspect=                  |        |
+| 0.1.0       | 2026-11-21 | =canvas.fs= removed from the release contract                                |        |
 
 * Downstream deviations
 

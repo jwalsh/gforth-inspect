@@ -70,7 +70,8 @@ is done.
 4. *Review.* Draft PR, =gmake verify=, =/code-review= of the PR's own
    branch, every finding answered (REVIEW.md), then the producer
    coordinator merges.
-5. *Release.* Only from green, and only from v0.5.0 on. Each fixing PR
+5. *Release.* Only from green. Before the first stable tag (v0.5.0 or
+   v1.0.0), as a prerelease (D-41). Each fixing PR
    says =Closes #N= (GitHub closes the issue on merge). The release notes
    list =Fixed: #N, ...= and the change log names every contract change.
 6. *Notify.* The producer coordinator comments on every issue the release
@@ -155,7 +156,7 @@ there is one). A red result means this candidate breaks that consumer.
 
 * Deprecation and support windows
 
-- *Before v0.5.0:* there is no window. Development versions break with a
+- *Before the first stable tag:* there is no window. Prereleases break with a
   change-log row and a message to every registered consumer.
 - *A deprecation is announced at least one MINOR ahead of its removal.* The
   word or key is marked deprecated in the change log and in
