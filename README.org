@@ -22,6 +22,9 @@ gh release download vX.Y.Z -R jwalsh/gforth-inspect -D forth-env/
 (cd forth-env && shasum -a 256 -c SHA256SUMS) && gforth forth-env/inspect.fs
 #+end_src
 
+=inspect-version type= prints the loaded version. Within one MAJOR version
+the words and the log format do not break.
+
 * Usage
 
 ** Every stack at once
@@ -110,5 +113,7 @@ Without =GFORTH_INSPECT_LOG_DIR=, the log is
 =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/stacks.jsonl=. The fields
 are defined in =stacks-log.schema.json=, shipped with each release. A float
 that is not finite is logged as =null=.
+
+* Licence
 
 GPL-3.0-or-later, the same as gforth. See [[file:LICENSE][LICENSE]].
