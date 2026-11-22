@@ -137,3 +137,84 @@ repository: the Log reports counts and blob hashes only.
 Plan written by the coordinator. The harness is built next; the gate
 freezes when the first soak hour starts, and until then the owner may
 amend it.
+
+** 2026-11-22 harness built (agent)
+
+Pinned by blob (RD-1).  Candidate: =inspect.fs= blob =af95cdf354af=, schema
+blob =0a84bb3b6973=, from the PR #13 worktree, which moved under the build
+from =4a9ba79= to =c332cc7= to =476066c= (merges of =main=: =env/= and the
+schema unchanged; =contract/skill/SKILL.md= changed with =9b911f7=).  Older
+ref: =0842eda=, blob =a7e5c141af51= (0.1.0, contract 1.1, before the #17
+fix); =main= has no =env/inspect.fs=, so it cannot be the older ref.  Each
+run records the commit it built its assets from in its =run.json=.
+
+Files: =soak/= (Python standard library, =jsonschema= under =uv run= for G1):
+=config.py= (paths, the local targets manifest), =assets.py= (the seven
+assets built as RELEASING.org "Cutting one" does, with the candidate's own
+=dist-links.sh= and REF = its commit, and installed as CONSUMER-AGENTS.md
+says), =targets.py= (units, probe copies, the read-only pool, the
+preflight), =repl.py= (one gforth per pty), =session.py= (sandbox, feeder,
+per-line checks), =followers.py= (the three frozen consumers, run as they
+are), =checks.py= (G1-G3, G5-G7 per session, the xref, the leak guard),
+=run.py= (slots, clock, status), =calibrate.py=; =run-soak.sh= (resumes
+the harness if it dies), =Makefile=, =privacy_check.py= (target names
+are not in any file this branch adds).
+
+How it works, in the terms of the plan:
+- *xrid.* A session's xrid is =s<n>=, its =log-id=.  =call.json= is keyed
+  by it and records the call: engine, inspect.fs plan (path, blob, ref),
+  log mode, seed, cwd.  The xref works from the xrid both ways.
+- *Oracle.* Each logged point is followed in the same line, or the same
+  definition, by =soak-o=, which prints =depth=, =fdepth= and =.s= (with
+  =maxdepth-.s= raised, BASE kept).  A transcript line expects one =hello=
+  if it turned logging on, then one snapshot per oracle answer, in order;
+  the log must hold exactly that sequence (G2) and each snapshot must equal
+  its answer (G3).
+- *Probes.* Target files are loaded as copies with =.stacks soak-o= on a
+  few top-level blank lines and one added last line; every other line is
+  the original's, at the same number.  The xref checks =input.text=
+  against the copy and the copy against the original at its commit.
+- *Dictionary.* Every block a session types sits inside a =marker=, so a
+  20-hour REPL does not grow.
+- *Preflight.* A unit (prelude + file) is used on an engine only if it
+  loads there in batch with no error and its records match its probes.
+
+Targets (counts only): 44 trees.  The 0.7.3 library: 114 of 193 files
+load cleanly.  The course: 15 of 15 exercises.  The private codebase: 39
+worktrees (the plan said about 30), 62,597 lines of Forth over the files
+used (the plan said about 150k); 12,126 units load, of 18,884 tried, with
+the preludes its Makefile uses (=elf.fs=; =elf.fs repl.fs=; =reuse?=,
+=elf.fs solve.fs=).  This repository's =corpus/= and =test/= at =main=,
+the candidate and =0842eda=: 50 of 82 (=dbg=, =key=, =getenv= and
+=\ test:= directive files left out).
+
+** 2026-11-22 calibration (agent)
+
+=gmake calibrate=, 13:00Z, on the harness at =0e0c4d4=: candidate
+=af95cdf354af= (built at =476066c=), older =a7e5c141af51=.  Each plant runs
+real driven sessions in a run of its own; red and green are counts of the
+check's violations.
+
+| check   | plant                                                                 | red | green |
+|---------+-----------------------------------------------------------------------+-----+-------|
+| G4      | a session with HOME at a fake home, XDG_STATE_HOME unset               |   2 |     0 |
+| G6      | two sessions, one GFORTH_INSPECT_LOG_DIR                               |   3 |     0 |
+| G6      | the manifest names the candidate blob, the sandbox holds the older one |   2 |     0 |
+| G1      | half a record appended to a session's log                              |   1 |     0 |
+| G2      | =0842eda=, two sessions on one dir (control: the candidate, same two)  |  12 |     0 |
+| G7      | =include= by absolute path                                             |   4 |     0 |
+| G3      | =json-data= leaves out the top cell                                    |   4 |     0 |
+| G5      | the checker pinned to contract 2.0 on a 1.1 stream                     |   1 |     0 |
+| G5      | a producer announcing 2.0, the 1.1 checker run =--no-version-stop=      |   1 |     0 |
+| monitor | =log-off=, then 40 s of typing, REPL alive (threshold 15 s)            |   1 |     0 |
+| G8      | =inspect.fs= changed after =SHA256SUMS= was written                    |   1 |     0 |
+
+A guard on the real files ran across the calibration: no change.  The G5
+control on the 2.0 stream is the stop path working: the 1.1 checker
+answered ="contract 2.0 from the producer, this consumer expects 1.1 (major
+update)"=.
+
+Seen while calibrating: the G6 blob plant and its control wrote the same
+=hello= but for =t= (both blobs announce =inspect= 0.1.0, =contract= 1.1).
+The log alone cannot say which blob wrote it; G6's blob trace rests on the
+manifest and the hash taken as the =include= is typed.
