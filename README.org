@@ -10,9 +10,12 @@ A stack inspector for gforth 0.7.3.
 * Install
 
 #+begin_src sh
-curl -fsSLO https://raw.githubusercontent.com/jwalsh/gforth-inspect/main/env/inspect.fs
-gforth inspect.fs
+gh release download v0.1.0 -R jwalsh/gforth-inspect -D forth-env/
+(cd forth-env && shasum -a 256 -c SHA256SUMS) && gforth forth-env/inspect.fs
 #+end_src
+
+=inspect-version type= prints 0.1.0. Within one MAJOR version the words
+and the log format do not break.
 
 * Usage
 
