@@ -1,0 +1,19 @@
+{
+  "producer_exit": 0,
+  "jq": {
+    "exit": 5,
+    "lines": [
+      "{\"e\":\"hello\",\"w\":null,\"d\":null,\"f\":null}"
+    ]
+  },
+  "checker": {
+    "exit": 1,
+    "output": {
+      "error": "last line is not JSON"
+    }
+  },
+  "mock_get_stacks": {
+    "status": 200,
+    "body": "{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"id\":\"p0\",\"where\":null,\"src\":null,\"data\":[100,1],\"{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"id\":\"p1\",\"where\":null,\"src\":null,\"data\":[200,1],\"float\":[],\"rs\":{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"id\":\"p0\",\"where\":null,\"src\":null,\"data\":[100,2],\"{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"id\":\"p1\",\"where\":null,\"src\":null,\"data\":[200,2],\"float\":[],\"rs\":[],\"input\":{\"file\":\"\",\"line\":7,\"in\":14,\"text\":\"200 2 .stacks clearstack\"}}"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "producer_exit": 0,
+  "jq": {
+    "exit": 0,
+    "lines": [
+      "{\"e\":\"hello\",\"w\":null,\"d\":null,\"f\":null}",
+      "{\"e\":\"snapshot\",\"w\":\"scale\",\"d\":[7],\"f\":[1.2500000000000000]}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[70],\"f\":[2.5000000000000000]}"
+    ]
+  },
+  "checker": {
+    "exit": 0,
+    "output": {
+      "event": "snapshot",
+      "where": null,
+      "src": null,
+      "data": [
+        70
+      ],
+      "float": [
+        2.5
+      ],
+      "rs": [],
+      "input": {
+        "file": "06-tilde3-in-definition.fs",
+        "line": 5,
+        "in": 21,
+        "text": "7 1.25e scale .stacks"
+      }
+    }
+  },
+  "mock_get_stacks": {
+    "status": 200,
+    "body": "{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"where\":null,\"src\":null,\"data\":[70],\"float\":[2.5000000000000000E0 ],\"rs\":[],\"input\":{\"file\":\"06-tilde3-in-definition.fs\",\"line\":5,\"in\":21,\"text\":\"7 1.25e scale .stacks\"}}"
+  }
+}

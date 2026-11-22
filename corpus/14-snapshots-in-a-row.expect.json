@@ -1,0 +1,39 @@
+{
+  "producer_exit": 0,
+  "jq": {
+    "exit": 0,
+    "lines": [
+      "{\"e\":\"hello\",\"w\":null,\"d\":null,\"f\":null}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[1],\"f\":[]}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[1,2],\"f\":[]}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[1,2,3],\"f\":[]}",
+      "{\"e\":\"hello\",\"w\":null,\"d\":null,\"f\":null}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[4],\"f\":[]}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[4,5],\"f\":[]}"
+    ]
+  },
+  "checker": {
+    "exit": 0,
+    "output": {
+      "event": "snapshot",
+      "where": null,
+      "src": null,
+      "data": [
+        4,
+        5
+      ],
+      "float": [],
+      "rs": [],
+      "input": {
+        "file": "14-snapshots-in-a-row.fs",
+        "line": 7,
+        "in": 20,
+        "text": "4 .stacks 5 .stacks clearstack"
+      }
+    }
+  },
+  "mock_get_stacks": {
+    "status": 200,
+    "body": "{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"where\":null,\"src\":null,\"data\":[4,5],\"float\":[],\"rs\":[],\"input\":{\"file\":\"14-snapshots-in-a-row.fs\",\"line\":7,\"in\":20,\"text\":\"4 .stacks 5 .stacks clearstack\"}}"
+  }
+}
