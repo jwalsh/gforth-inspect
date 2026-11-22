@@ -57,7 +57,7 @@ the checksums pass:
 #+begin_src sh
 new=$(mktemp -d) && gh release download {tag} -R {repo} -D "$new" \\
   && (cd "$new" && shasum -a 256 -c SHA256SUMS) \\
-  && rm -rf vendor/gforth-inspect && mv "$new" vendor/gforth-inspect
+  && mkdir -p vendor && rm -rf vendor/gforth-inspect && mv "$new" vendor/gforth-inspect
 #+end_src
 
 Load it with =s" vendor/gforth-inspect/inspect.fs" included=. To upgrade, run
