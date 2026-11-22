@@ -1,0 +1,3 @@
+{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"snapshot","t":0,"id":"012345678901234567890123456789012345678901234567890123456789012","where":null,"src":null,"data":[8],"float":[],"rs":[],"input":{"file":"18-log-id-63.fs","line":4,"in":97,"text":"s\" 0123456789012345678901234567890123456789012345678901234567890123456789-tail\" log-id 8 .stacks drop"}}
+{"v":1,"event":"snapshot","t":0,"id":"012345678901234567890123456789012345678901234567890123456789012","where":null,"src":null,"data":[9],"float":[],"rs":[],"input":{"file":"18-log-id-63.fs","line":5,"in":10,"text":"9 .stacks drop"}}

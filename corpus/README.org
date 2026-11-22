@@ -40,6 +40,8 @@ replace the schema.
 | =14-snapshots-in-a-row=        | three snapshots from one line, =log-off=, =log-on=: a second =hello= mid-log                                                            |
 | =15-error-partial=             | the program aborts (exit 1); the log just stops, with no closing record                                                                 |
 | =16-two-producers=             | *best-effort contract*: two gforths on one log, paced line by line; records overwrite each other (issue #17) and the last line is not JSON |
+| =17-evaluated-string=          | snapshots inside =evaluate=: =input.file= is ="*evaluated string*"=, =input.line= is -1, =input.text= is the string; a file word run from it keeps =where= / =src= (exp 009) |
+| =18-log-id-63=                 | =log-id= keeps 63 characters: a longer tag is cut, and later snapshots carry the cut tag (exp 009) |
 
 Things the recordings show that a reader has to cope with:
 

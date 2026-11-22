@@ -1,0 +1,100 @@
+transition	step	status	evidence
+V0->V1	0	ran	I-1 ok, v 1
+V0->V1	1	failed as written	gh release download v0.1.0: exit 1: release not found
+V0->V1	1-staged	failed as written	staged 3/6 assets (missing CONSUMERS.org, CONSUMER-AGENTS.md, SKILL.md); shasum -c exit 0
+V0->V1	2	failed as written	B ships no change log table; change log: 0 rows, 0 new since A, 0 of A's rows rewritten
+V0->V1	3	failed as written	drop rows ['#1'], keep ['#2', '#3', '#17'] | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted not fixed (where None) | #3: as written exit 127: sh: s R1-floats: command not found; adapted not fixed (no id) | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted not fixed (4 lines, one not JSON)
+V0->V1	4	failed as written	hello has no contract
+V0->V1	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+V1->V2	0	ran	I-1 ok, v 1
+V1->V2	1	failed as written	gh release download v0.1.0: exit 1: release not found
+V1->V2	1-staged	failed as written	staged 3/6 assets (missing CONSUMERS.org, CONSUMER-AGENTS.md, SKILL.md); shasum -c exit 0
+V1->V2	2	ran	change log: 4 rows, 4 new since A, 0 of A's rows rewritten; contract 1.1 = expected 1.1: checker accept
+V1->V2	3	failed as written	drop rows ['#1', '#2', '#3'], keep ['#17'] | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted not fixed (4 lines, one not JSON)
+V1->V2	4	failed as written	version cannot tell A from B: both hello.inspect 0.1.0, blobs differ
+V1->V2	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+V2->V3	0	ran	I-1 ok, v 1
+V2->V3	1	failed as written	gh release download v0.1.0: exit 1: release not found
+V2->V3	1-staged	failed as written	staged 3/6 assets (missing CONSUMERS.org, CONSUMER-AGENTS.md, SKILL.md); shasum -c exit 0
+V2->V3	2	ran	change log: 5 rows, 1 new since A, 0 of A's rows rewritten; contract 1.1 = expected 1.1: checker accept
+V2->V3	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+V2->V3	4	failed as written	version cannot tell A from B: both hello.inspect 0.1.0, blobs differ
+V2->V3	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+V3->V4	0	ran	I-1 ok, v 1
+V3->V4	1	failed as written	gh release download v0.1.0: exit 1: release not found
+V3->V4	1-staged	failed as written	staged 3/6 assets (missing CONSUMERS.org, CONSUMER-AGENTS.md, SKILL.md); shasum -c exit 0
+V3->V4	2	ran	change log: 5 rows, 1 new since A, 1 of A's rows rewritten; contract 1.1 = expected 1.1: checker accept
+V3->V4	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+V3->V4	4	failed as written	version cannot tell A from B: both hello.inspect 0.1.0, blobs differ
+V3->V4	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+V4->V5	0	ran	I-1 ok, v 1
+V4->V5	1	failed as written	gh release download v0.1.0: exit 1: release not found
+V4->V5	1-staged	ran	staged 6/6 assets; shasum -c exit 0
+V4->V5	2	failed as written	change log: 5 rows, 0 new since A, 0 of A's rows rewritten; contract 1.1 = expected 1.1: checker accept; B differs from A but the change log has no new row
+V4->V5	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+V4->V5	4	failed as written	version cannot tell A from B: both hello.inspect 0.1.0, blobs differ
+V4->V5	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+V5->F1	0	ran	I-1 ok, v 1
+V5->F1	1	failed as written	gh release download v1.0.0: exit 1: release not found
+V5->F1	1-staged	ran	staged 6/6 assets; shasum -c exit 0
+V5->F1	2	ran	change log: 6 rows, 1 new since A, 0 of A's rows rewritten; contract 1.1 = expected 1.1: checker accept
+V5->F1	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+V5->F1	4	ran	inspect 1.0.0, contract 1.1 = x-contract, all records valid
+V5->F1	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+F1->F2	0	ran	I-1 ok, v 1
+F1->F2	1	failed as written	gh release download v1.0.1: exit 1: release not found
+F1->F2	1-staged	ran	staged 6/6 assets; shasum -c exit 0
+F1->F2	2	ran	change log: 7 rows, 1 new since A, 0 of A's rows rewritten; contract 1.1 = expected 1.1: checker accept
+F1->F2	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+F1->F2	4	ran	inspect 1.0.1, contract 1.1 = x-contract, all records valid
+F1->F2	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+F2->F3	0	ran	I-1 ok, v 1
+F2->F3	1	failed as written	gh release download v1.1.0: exit 1: release not found
+F2->F3	1-staged	ran	staged 6/6 assets; shasum -c exit 0
+F2->F3	2	ran	change log: 8 rows, 1 new since A, 0 of A's rows rewritten; checker (expects 1.1) on B: stop:minor; after the bump to 1.2: accept
+F2->F3	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+F2->F3	4	ran	inspect 1.1.0, contract 1.2 = x-contract, all records valid
+F2->F3	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+F3->F4	0	ran	I-1 stop: line 1: envelope v 2, this consumer knows [1]
+F3->F4	1	failed as written	gh release download v2.0.0: exit 1: release not found
+F3->F4	1-staged	ran	staged 6/6 assets; shasum -c exit 0
+F3->F4	2	failed as written	change log: 9 rows, 1 new since A, 0 of A's rows rewritten; checker (expects 1.2) on B: stop:major; after the bump to 2.0: crash:KeyError: 'data'
+F3->F4	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+F3->F4	4	ran	inspect 2.0.0, contract 2.0 = x-contract, all records valid
+F3->F4	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+F4->F5	0	ran	I-1 stop: line 1: envelope v 10, this consumer knows [2]
+F4->F5	1	failed as written	gh release download v10.0.0: exit 1: release not found
+F4->F5	1-staged	ran	staged 6/6 assets; shasum -c exit 0
+F4->F5	2	ran	change log: 10 rows, 1 new since A, 0 of A's rows rewritten; checker (expects 2.0) on B: stop:major; after the bump to 10.0: accept
+F4->F5	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+F4->F5	4	ran	inspect 10.0.0, contract 10.0 = x-contract, all records valid
+F4->F5	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+V2->V5	0	ran	I-1 ok, v 1
+V2->V5	1	failed as written	gh release download v0.1.0: exit 1: release not found
+V2->V5	1-staged	ran	staged 6/6 assets; shasum -c exit 0
+V2->V5	2	ran	change log: 5 rows, 1 new since A, 0 of A's rows rewritten; contract 1.1 = expected 1.1: checker accept
+V2->V5	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+V2->V5	4	failed as written	version cannot tell A from B: both hello.inspect 0.1.0, blobs differ
+V2->V5	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+Vc->V5	0	ran	I-1 ok, v 1
+Vc->V5	1	failed as written	gh release download v0.1.0: exit 1: release not found
+Vc->V5	1-staged	ran	staged 6/6 assets; shasum -c exit 0
+Vc->V5	2	ran	change log: 5 rows, 5 new since A, 5 of A's rows rewritten; contract 1.1 = expected 1.1: checker accept
+Vc->V5	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+Vc->V5	4	ran	inspect 0.1.0, contract 1.1 = x-contract, all records valid
+Vc->V5	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+V5->F4	0	ran	I-1 stop: line 1: envelope v 2, this consumer knows [1]
+V5->F4	1	failed as written	gh release download v2.0.0: exit 1: release not found
+V5->F4	1-staged	ran	staged 6/6 assets; shasum -c exit 0
+V5->F4	2	failed as written	change log: 9 rows, 4 new since A, 0 of A's rows rewritten; checker (expects 1.1) on B: stop:major; after the bump to 2.0: crash:KeyError: 'data'
+V5->F4	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+V5->F4	4	ran	inspect 2.0.0, contract 2.0 = x-contract, all records valid
+V5->F4	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+V5->F5	0	ran	I-1 stop: line 1: envelope v 10, this consumer knows [1]
+V5->F5	1	failed as written	gh release download v10.0.0: exit 1: release not found
+V5->F5	1-staged	ran	staged 6/6 assets; shasum -c exit 0
+V5->F5	2	ran	change log: 10 rows, 5 new since A, 0 of A's rows rewritten; checker (expects 1.1) on B: stop:major; after the bump to 10.0: accept
+V5->F5	3	failed as written	drop rows ['#1', '#2', '#3', '#17'], keep none | #1: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #2: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed | #3: as written exit 127: sh: s R1-floats: command not found; adapted fixed | #17: as written exit 1: *OS command line*:-1: No such file or directory; adapted fixed
+V5->F5	4	ran	inspect 10.0.0, contract 10.0 = x-contract, all records valid
+V5->F5	5	failed as written	no GitHub release exists (0): no release thread; reply kept locally
+Vc	P8	-	Vc vs V0: 8 hunks; 4 cite an issue in their comment, 2 change code with no issue cited, 2 comment-only; reproducers with a gforth command: 3/4
