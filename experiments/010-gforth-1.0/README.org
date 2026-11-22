@@ -1,0 +1,89 @@
+#+TITLE: 010 gforth-1.0: v0.1.1 against gforth 1.0.0 and 1.0.1
+#+DATE: 2026-11-22
+#+STARTUP: showall
+
+A compatibility finding, not a port.  The project supports gforth 0.7.3
+only (CONTRIBUTING.org, "gforth 0.7.3 only"); this experiment says what
+happens when a user loads the released inspector into gforth 1.0 anyway.
+Nothing under =env/= or =contract/= changes here.  The load-time notice
+for a non-0.7.3 gforth belongs to v0.2.0, not to this branch.
+
+* Hypothesis
+
+v0.1.1 (=env/inspect.fs= blob =82860519a7d3=) loads on gforth 1.0.x, and
+the log it writes there is valid against contract 1.1 and begins with
+={"v":1,= (I-1, D-38), but =dbg-fix= / =dbg+= and the return-stack words
+(=.rs=, =rs-full=, the =rs= field) fail, because they walk 0.7.3's
+threaded code, headers and debugger internals.
+
+* Prediction (written before the first run)
+
+The hypothesis is the suggested one; the prediction below is what I
+expect to measure, and it already disagrees with the first clause.
+
+1. *Load: refuted.*  inspect.fs uses about two dozen 0.7.3 internals
+   with no =[defined]= guard (=>head-noprim=, =threaded>name=, =look=,
+   =interpret1=, =handler-intro,=, =.debugline-stderr=, =loadfilename#>str=,
+   =compile-sourcepos=, and debug.fs's =DebugLoop=, =dbg-ip=, =c-pass=,
+   =DebugMode=, =NestXT=, =nestXT-checkSpecial=, =(_debug)=, =Leave-D=,
+   =set-bp=, =restore-bp=, =d.s=).  At least one of them is gone or renamed
+   in 1.0, so the load stops with "Undefined word" at the first one, and
+   every public word defined after that line is missing.  I expect the
+   first stop inside =colon-xt?= (line 39, =>head-noprim=), which would
+   leave only =inspect-version= defined.  Redefinition warnings are
+   likely too, since 1.0 has many more words in its image.
+2. *Words:* whatever is defined before the stopping line works;
+   everything after it is "Undefined word".  If the load gets further
+   than predicted, =.stacks= prints data and float stacks correctly but
+   names no return addresses, and =dbg-fix= crashes or patches the wrong
+   cells.
+3. *Goldens:* every one of the 36 tests fails in every 1.0 engine, at
+   least on the load error in stderr; none passes by accident.
+4. *Property tests:* =pbt/gforth_run.py= runs whatever =gforth= is first
+   on =PATH=, so it can be pointed at 1.0 without editing it.  The smoke
+   step has no hello record, so =gmake -C pbt check= fails.
+5. *Log:* if =log-on= is never defined there is no log to validate.  If it
+   is, every line validates and starts with ={"v":1,=, and =hello.gforth=
+   is ="1.0.0"= / ="1.0.1"=: the JSON writer uses only standard words
+   (=emit=, =type=, =.r=, =fs.=, =pick=, =fpick=).
+6. *Engines:* 1.0 builds =gforth=, =gforth-fast= and =gforth-itc= (and
+   =gforth-ditc=); the load result is the same in each.
+
+* Gate
+
+1. *Provenance.*  For each tarball: its SHA-256, and what it was checked
+   against (a published checksum, a signature, or none found: recorded
+   either way).  The build route (macOS from source, or the
+   =forthy42/gforth= image) and each binary's =version-string=.  The
+   inspector is =v0.1.1:env/inspect.fs=, blob =82860519a7d3=.
+2. *Isolation (E-10).*  Every gforth run gets its own temp dir as cwd,
+   =HOME= and =XDG_STATE_HOME=, with =GFORTH_INSPECT_LOG_DIR= inside it, and
+   loads files by relative name.  After the runs the real
+   =~/.local/state/gforth-inspect/stacks.jsonl= has the same size and
+   mtime as before them (#46).
+3. *Calibration.*  The probe harness runs first on stock gforth 0.7.3,
+   where every public word must come out "works" in all three engines;
+   a harness that cannot say "works" there cannot say "fails" on 1.0.
+4. *Measurements*, for 1.0.0 and 1.0.1 and each engine the build
+   provides:
+   - load: =gforth inspect.fs -e bye=, its exit status, every warning,
+     redefinition and error;
+   - each public word (=.stacks .rs .input .cs ~~~ all-~~ dbg-fix dbg+
+     log-on log-off log-where log-id fclearstack inspect-version rs-full
+     contract-version=), each in its own process: works, errors, or wrong
+     output (wrong = differs from 0.7.3's output of the same probe,
+     after masking addresses and paths);
+   - =test/run.sh= with the 1.0 binaries first on =PATH=: pass/fail per
+     test and engine;
+   - =gmake -C pbt check= with the root Makefile's =PBT_ENV=, the 1.0
+     binaries first on =PATH=;
+   - every =stacks.jsonl= written: =test/validate.py= against the schema,
+     the I-1 prefix, and =hello.gforth=;
+   - for each failure, the 0.7.3 internal behind it and a one-line
+     reproducer that runs on plain gforth 1.0, without inspect.fs.
+5. *Verdict.*  The hypothesis holds if the load is free of errors in
+   every 1.0 engine, the log validates and keeps I-1, and =dbg-fix=,
+   =dbg+= and =.rs= fail.  Otherwise it is refuted, and the Log says which
+   clause failed.
+
+* Log
