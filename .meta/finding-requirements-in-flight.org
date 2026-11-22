@@ -1,13 +1,15 @@
-#+TITLE: Testing while the rules change
+#+TITLE: Requirements discovery
 #+STARTUP: showall
 
-2026-11-21: 25 decisions in one evening; =harden= moved six times mid-run.
+During requirements discovery:
 
-| rule                          | evidence                                              |
-|-------------------------------+-------------------------------------------------------|
-| Gate fixed before the run.     | 002's oracle survived a =json-str= rewrite.            |
-| Pin refs by hash.              | Every near-miss: default =INSPECT_REF=harden=.         |
-| Pin before and after.          | 18ebe2d vs fix proved #1.                             |
-| Rules in files, not briefs.    | 004 ran a stale brief; the file caught it.            |
-| Check new rules against old.   | MAJOR-on-break vs stop-on-MINOR: decision 12.         |
-| Log decisions as they land.    | [[file:decisions.org][decisions.org]]                                         |
+1. Pin at SHA.
+2. Log each run with an xrid.
+3. Xref the call to its output by xrid.
+4. Reflect in =.meta/=.
+
+xrid: one id on the call (ref SHA, inspect.fs blob, engine, seed, cwd) and
+on every record it produced (=log-id=).
+
+Evidence, 2026-11-21: 25 decisions in one evening; =harden= moved six
+times mid-run; every near-miss came from an unpinned ref.
