@@ -112,8 +112,10 @@ snapshot carries ="id":"<tag>"=, and =s" " log-id= clears it, after which
 the key is omitted. In the schema, =id= is an optional snapshot property
 of type string, and =x-version= stays 1.
 
-Log location: =$GFORTH_INSPECT_LOG_DIR=, falling back to
-=${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/=. A released file never
+Log location: =$GFORTH_INSPECT_LOG_DIR=, then the project's =.env=, then
+=${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/<owner>/<repo>/<worktree>/=
+(since 0.3.0; the exact rule and its reference implementation are in
+=contract/stacks-log.org=, "Files"). A released file never
 names a particular downstream project.
 
 * Gate: a release comes only from green
@@ -252,6 +254,7 @@ in this order. Each step is done before the next one starts:
 
 | version     | date       | change                                                                      | issue  |
 |-------------+------------+-----------------------------------------------------------------------------+--------|
+| 0.3.0       | 2026-11-22 | default log per project and worktree (=<owner>/<repo>/<worktree>=, =.env= opt-out); gforth >= 1.0 fails the dependency check at load; CONSUMER-AGENTS.md lists required and optional assets | #50    |
 | 0.1.1       | 2026-11-22 | after =dbg-fix=, =dbg= of a DEFER or DOES> word nests (it stepped over); =n= on a compiled defer or does> call still steps over | #39    |
 | 0.1.0       | 2026-11-21 | json-f: 17 significant digits, -0.0 kept, non-finite logged as null          | #1     |
 | 0.1.0       | 2026-11-21 | =all-~~= snapshots fill =where= / =src=                                         | #2     |

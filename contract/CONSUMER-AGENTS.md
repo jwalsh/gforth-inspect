@@ -7,6 +7,37 @@ COLLABORATION.org's "Registry" section. A
 "consumer" is any project that loads `inspect.fs` or reads `stacks.jsonl`.
 The reasoning behind each rule is in [COLLABORATION.org](../docs/COLLABORATION.org).
 
+## Requirements
+
+- gforth `>= 0.7.3, < 1.0`; 0.7.3 is the version tested, in `gforth`,
+  `gforth-fast` and `gforth-itc`. On 1.0 or later `inspect.fs` fails its
+  dependency check at load: one line on stderr, then the load throws.
+- The log: `stacks.jsonl` in `$GFORTH_INSPECT_LOG_DIR` when set, else in
+  the `GFORTH_INSPECT_LOG_DIR=` of your project's `.env`, else in a
+  directory per project and worktree under
+  `${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/`. Run
+  `gforth inspect.fs -e 'log-where bye'` in the project to see where, or
+  put `GFORTH_INSPECT_LOG_DIR=~/.local/state/gforth-inspect/shared` in each
+  worktree's `.env` to share one log. The rule: `stacks-log.org`, "Files".
+
+## Required assets
+
+Each release ships these flat, side by side (#50):
+
+| asset                    | required | why                                          |
+|--------------------------|----------|----------------------------------------------|
+| `inspect.fs`             | yes      | the inspector                                |
+| `stacks-log.schema.json` | yes      | what a record may contain                    |
+| `SHA256SUMS`             | yes      | checks the download                          |
+| `stacks-log.org`         | no       | the contract in prose, and its change log    |
+| `CONSUMERS.org`          | no       | producer and consumer obligations            |
+| `CONSUMER-AGENTS.md`     | no       | this file                                    |
+| `SKILL.md`               | no       | the skill                                    |
+| `WORDS.org`              | no       | every word, its stack effect and output      |
+
+Adding an optional asset is a MINOR change. A new required asset is
+announced one release ahead, in that release's notes and change log.
+
 ## Install the skill
 
 Each release ships `SKILL.md`. Copy it to

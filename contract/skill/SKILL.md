@@ -33,10 +33,12 @@ A declared stack effect is documentation, not evidence. Measure it with
 
 ## Read the log, never the user's terminal
 
-`log-on` appends one JSON object per line to
-`$GFORTH_INSPECT_LOG_DIR/stacks.jsonl` (by default
-`${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/`). To learn what a REPL
-holds, read that file.
+`log-on` appends one JSON object per line to `stacks.jsonl` in
+`$GFORTH_INSPECT_LOG_DIR`, else in a directory per project and worktree,
+`${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/<owner>/<repo>/<branch>/`;
+`gforth inspect.fs -e 'log-where bye'`, run in the project, prints it. To
+learn what a REPL holds, read that file. Requires gforth `>= 0.7.3, < 1.0`:
+on 1.0 or later `inspect.fs` stops at load with a one-line message.
 
 - **Never type into a tmux pane or REPL that someone else is using.** It
   changes their state and can kill their gforth. (`send-keys` reads a

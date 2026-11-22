@@ -69,6 +69,11 @@ change no contract at all.
 3. Validate records against the schema at the expected version. Ignore
    unknown keys only after that check passes.
 4. Never write to the stream.
+5. Find the stream where the producer says it is: run
+   =gforth inspect.fs -e 'log-where bye'= from the project directory, or set
+   =GFORTH_INSPECT_LOG_DIR= for both sides. The default is per project and
+   worktree since 0.3.0 (=stacks-log.org=, "Files"); do not hard-code
+   =~/.local/state/gforth-inspect/stacks.jsonl=.
 
 Simple consumers, like the jq one-liner, do not read =hello= and so cannot
 stop. The rules in RELEASING.org exist to protect them.
