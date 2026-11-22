@@ -4,7 +4,11 @@
 Downstream projects use only tagged releases, never branches. That makes a
 release a promise, and this file says what it promises. Who produces the
 stream, who consumes it, and what each owes the other is set out in
-[[file:CONSUMERS.org][CONSUMERS.org]].
+[[file:../contract/CONSUMERS.org][contract/CONSUMERS.org]]; what a consuming agent reads is
+[[file:../contract/CONSUMER-AGENTS.md][contract/CONSUMER-AGENTS.md]], and the skill an agent installs is
+[[file:../contract/skill/SKILL.md][contract/skill/SKILL.md]]. All three ship with every release: a consumer
+gets the inspector, the guidelines and the skill, never this repository's
+execution (tests, scripts, CI, experiments).
 
 * What a release is
 
@@ -23,8 +27,10 @@ stream, who consumes it, and what each owes the other is set out in
   | =inspect.fs=             | =env/inspect.fs=                  |
   | =stacks-log.schema.json= | =contract/stacks-log.schema.json= |
   | =stacks-log.org=         | =contract/stacks-log.org=         |
-  | =CONSUMERS.org=          | =CONSUMERS.org=                   |
-  | =SHA256SUMS=             | covering the four above           |
+  | =CONSUMERS.org=          | =contract/CONSUMERS.org=          |
+  | =CONSUMER-AGENTS.md=     | =contract/CONSUMER-AGENTS.md=     |
+  | =SKILL.md=               | =contract/skill/SKILL.md=         |
+  | =SHA256SUMS=             | covering the six above            |
 
   Downstream projects depend on these file names, so renaming, removing or
   moving an asset is a MAJOR change. The prose files have to render on
@@ -138,7 +144,7 @@ notes.
 * Mainline protection
 
 =main= is protected, so that what CI checks is what lands. The rule set is
-[[file:.github/branch-protection.json][.github/branch-protection.json]], in the shape the PUT endpoint takes:
+[[file:../.github/branch-protection.json][.github/branch-protection.json]], in the shape the PUT endpoint takes:
 
 | rule                                       | why                                                                       |
 |--------------------------------------------+---------------------------------------------------------------------------|
@@ -202,12 +208,17 @@ git switch main && git pull --ff-only
 gmake test && gmake -C pbt check PROFILE=ci && scripts/privacy-scan.sh
 gmake release-check   # builds dist/ as below and checks it
 # by hand, what release-check does:
-mkdir -p dist && cp env/inspect.fs contract/stacks-log.schema.json contract/stacks-log.org CONSUMERS.org dist/
+mkdir -p dist && cp env/inspect.fs contract/stacks-log.schema.json contract/stacks-log.org contract/CONSUMERS.org contract/CONSUMER-AGENTS.md contract/skill/SKILL.md dist/
 sed -i '' 's|\.\./CONSUMERS\.org|CONSUMERS.org|g' dist/stacks-log.org   # flatten sibling links
-(cd dist && shasum -a 256 inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org > SHA256SUMS)
+(cd dist && shasum -a 256 inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org CONSUMER-AGENTS.md SKILL.md > SHA256SUMS)
 scripts/privacy-scan.sh dist/*
 git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
 gh release create vX.Y.Z dist/* --notes-file dist/NOTES.md
+scripts/readme-release.sh vX.Y.Z    # README's Install names the real tag; refuses if the release isn't there
+git commit -am "docs(readme): install vX.Y.Z [skip ci]" && git push   # direct, as an admin
+# at v0.5.0: run the two lines above BEFORE flipping enforce_admins (Mainline protection);
+# after the flip, the README commit goes through a PR without [skip ci], because a
+# skipped required check never reports and the PR would wait forever
 #+end_src
 
 * Changing the contract or the tooling
