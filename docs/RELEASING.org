@@ -148,7 +148,7 @@ notes.
 | rule                                       | why                                                                       |
 |--------------------------------------------+---------------------------------------------------------------------------|
 | a pull request before merging, 0 approvals | one owner and several agents: the PR is the record, not a sign-off         |
-| status check =verify=, strict              | a PR merges only when CI is green on a head that is up to date with =main= |
+| status check =verify=, strict from v0.5.0  | a PR merges only when CI is green; from v0.5.0 also on a head up to date with =main= |
 | linear history                             | the repository squash-merges; =main= stays one commit per change          |
 | no force pushes, no deletion               | tags and downstream =DEVIATIONS.org= rows point at =main='s commits       |
 | conversation resolution                    | a review thread on the PR is resolved before merge, not left hanging      |
@@ -171,16 +171,23 @@ Change the job and this rule set together.
    without admin rights merges only through a PR with =verify= green. An
    agent that pushes with the owner's credentials is an admin to GitHub:
    for it, as for the owner, the PR and the green check are rules of
-   AGENTS.md, not of the protection.
+   AGENTS.md, not of the protection. The =verify= check is *not strict* in this
+   phase: a PR needs a green run on its own head, not on the latest
+   =main=. With strict on, every direct push to =main= restarted the
+   23-minute CI of every queued PR (issue #26); =main='s own CI run after
+   each merge catches the rare semantic clash instead.
 2. *From v0.5.0.* =enforce_admins= goes to true, and every change, the
    owner's and the agents' included, goes through a PR:
 
    #+begin_src sh
    gh api -X POST repos/{owner}/{repo}/branches/main/protection/enforce_admins
+   gh api -X PATCH repos/{owner}/{repo}/branches/main/protection/required_status_checks \
+     -F strict=true -f 'contexts[]=verify'
    #+end_src
 
-   Set ="enforce_admins": true= in =branch-protection.json= in the same
-   change, so the file and the live rules agree. =-X DELETE= on the same
+   Set ="enforce_admins": true= and ="strict": true= in
+   =branch-protection.json= in the same change, so the file and the live
+   rules agree. =-X DELETE= on the same
    path turns it back off, for an emergency.
 
 ** Changing the rules

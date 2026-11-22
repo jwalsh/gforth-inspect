@@ -47,3 +47,161 @@ reports how often a race was even possible.
    the signal to remove the xfail.
 
 * Log
+
+** 2026-11-21 setup: refs, pacing, decision on the xfail
+
+Provenance, pinned at the start:
+- =ref:18ebe2d@18ebe2d blob:76d34db7cd61=
+- =ref:6af19f0@6af19f0 blob:a7e5c141af51= (harden's head, local).  During
+  the run the =harden= name moved to =0842eda=, a release-check change; the
+  inspect.fs blob is the same, =a7e5c141af51=.
+- patched: =6af19f0 blob:a7e5c141af51 +seek-per-write=, made in a temp dir
+  by the sed in =pbt/_005_helpers.py= (=FIX_SED=).  It changes one line of
+  =log-write=, before =base @ >r decimal=:
+  =log-fid @ file-size throw log-fid @ reposition-file throw=.
+
+Pacing, checked by hand: gforth 0.7.3 on a pipe (no TTY) reads stdin a
+line at a time and runs each line as it arrives.  It echoes the line and
+flushes stdout before it reads the next, so =cr ." #ACK n" cr= at the end of
+each line is a reliable completion signal.  The marker has to start its own
+stdout line: the echo of the input holds the same characters.  Without a
+TTY no history prompt is involved, but gforth still writes
+=.gforth-history= to =$HOME=, so each producer gets its own temp =HOME=.
+No FIFO or =key= tricks were needed.  After the ACK the launcher polls the
+log for the record's marker (data stack =[5005, producer, seq]=, since
+18ebe2d has no =log-id=; on harden the =id= tag =p<producer>= is also
+checked).  A hello is awaited as the last line of the file: counting hellos
+does not work on an unfixed ref, where an earlier hello may be overwritten.
+
+Decision (coordinator, 2026-11-21): the default-ref test is ref-aware, not
+a blanket strict xfail.  It is xfail(strict) citing #17 only when the
+inspect.fs under test has no =reposition-file= inside =log-write=, and a
+plain test otherwise.  Reason: the #17 fix is about to land on =harden=
+through its own PR.  A blanket strict xfail would turn the suite red (XPASS)
+on main the moment it lands, for a change that is correct; the ref-aware
+form stays green on either side of the fix, and still goes red if a fixed
+producer regresses, because a fixed source runs as a plain test.  Gate item
+5 asked for the XPASS signal; this replaces it with "the xfail lifts itself,
+and the test then has to pass".
+
+Calibration runs with =--runxfail= so the red on unpatched harden is
+visible; the patched copy must be detected as fixed and pass.
+
+** 2026-11-21 review fixes
+
+=/code-review high= on #18 found ten issues.  Two change what the setup
+entry says:
+- The xfail is no longer decided by grepping for =reposition-file= in
+  =log-write=: a fix in another shape (a helper word, an append-mode open in
+  =log-on=) would have stayed xfail and gone XPASS.  It is now xfail(strict)
+  only while =log-on= and =log-write= are word for word those of a pinned
+  unfixed ref (18ebe2d or 6af19f0).  Any change to either word makes the
+  test plain, which then has to pass; edits elsewhere in inspect.fs keep
+  the xfail.  Same intent as the coordinator's decision, a sturdier test.
+- The fix has one definition, =patched()= in =pbt/_005_helpers.py=; the
+  separate =FIX_SED= is gone and the calibration calls =patched()=.  The
+  sed form, for the harden PR, is in the PR body.
+
+** 2026-11-21 results and verdict
+
+Run: =gmake -C pbt check SEED=5005= on 5e19064, default profile, which
+already runs the gate's 200 / 50 / 50 schedules per engine (=PROFILE=ci=
+runs five times that).  Pacing made the run reproducible: with the same
+seed, 18ebe2d and 6af19f0 got the same schedules and gave almost the same
+counts.
+
+Paced, per ref (schedules; lines that do not parse; records lost;
+records duplicated; hellos left of those written):
+
+| ref      | engine      | sched | parse | lost | dup | hellos  |
+|----------+-------------+-------+-------+------+-----+---------|
+| 18ebe2d  | gforth      |   200 |   159 |  699 |   0 | 454/627 |
+| 18ebe2d  | gforth-fast |    50 |    44 |  189 |   0 | 120/157 |
+| 18ebe2d  | gforth-itc  |    50 |    44 |  189 |   0 | 120/157 |
+| 6af19f0  | gforth      |   200 |   160 |  699 |   0 | 454/627 |
+| 6af19f0  | gforth-fast |    50 |    44 |  189 |   0 | 120/157 |
+| 6af19f0  | gforth-itc  |    50 |    44 |  189 |   0 | 120/157 |
+| patched  | gforth      |   200 |     0 |    0 |   0 | 627/627 |
+| patched  | gforth-fast |    50 |     0 |    0 |   0 | 157/157 |
+| patched  | gforth-itc  |    50 |     0 |    0 |   0 | 157/157 |
+
+The property test on the patched copy: 201 / 51 / 51 schedules, all green.
+No schema failures, no records from nowhere and no =id= tag mismatches on
+any ref.  Shrunk counterexample, the same on both unfixed refs and every
+engine: 2 producers, steps =[(0,1),(1,1),(0,1)]= (A on and writes, B on
+and writes, A writes again).  It is the =@example= in the test, and the
+issue's reproducer is its shell form.
+
+Uncoordinated, 50 runs of 2 to 4 producers with 20 to 200 snapshots each,
+all released at once on =gforth=:
+
+| ref     | lines | parse | lost  | hellos |
+|---------+-------+-------+-------+--------|
+| 18ebe2d |  7466 |   173 |  9348 | 70/159 |
+| 6af19f0 |  6652 |   203 | 10184 | 62/159 |
+| patched | 11884 |   622 |  5423 | 114/159 |
+
+The fix roughly halves the loss but does not stop it.  Reading log-write,
+the seek happens before the record is formatted, and the record reaches
+the kernel only at =flush-file=, so the race window covers the formatting,
+not one write call.  That is an inference from the code; it was not
+measured.  Only an =O_APPEND= open removes the window, and gforth 0.7.3
+has no append fam.  Formatting into a buffer and then seeking and writing
+it in one =write-file= would narrow the window to two system calls.
+
+Verdict per gate item:
+1. Interleavings: met.  Hypothesis-generated schedules of 2 to 4
+   producers, driven line by line with an ACK and a poll of the log, no
+   sleeps; 200 / 50 / 50 per engine on every ref.
+2. Result: hypothesis refuted on 18ebe2d and on 6af19f0, as predicted (the
+   counts are above); it holds on the patched copy under pacing.
+3. Uncoordinated: reported above.  This part of the prediction is
+   refuted: it said the fixed producer would hold "in practice" with N up
+   to 4, and it loses records under real concurrency.  The seek-per-write
+   fix closes #17 as a sequential bug, not as a concurrent one.
+4. Calibration: met.  =pbt/calibrate/005-seek-per-write.sh= is red on
+   unpatched harden on all three engines with "parse failures 1 ... lost
+   1", and green on the patched copy.
+5. Xfail: met in its changed form (decision above).  Strict xfail citing
+   #17 while the write path is that of a pinned unfixed ref; when the fix
+   lands on harden the test becomes a plain one and has to pass.
+
+** 2026-11-21 harden moved to 079de9c: pins, and the reworked fix
+
+The =harden= name now points at =079de9c= (blob =af95cdf354af=), which
+carries the #17 rework: the whole record is built in a buffer, then one
+seek and one =write-file= of the whole line.  "harden's head, unpatched"
+in the gate now means the pinned =0842eda= (blob =a7e5c141af51=, the same
+inspect.fs as =6af19f0= where 005 started).  It is pinned in code as
+=HARDEN_REF= in =pbt/_005_helpers.py=, and the calibration defaults to it.
+The moving =harden= name no longer stands for "unfixed".  =079de9c= is
+pinned as =FIXED_REF= and is a fourth side in the reports.
+
+The ref-aware xfail treats =079de9c= as fixed: its =log-write= differs
+from both pinned unfixed refs, so =test_concurrent_producers= runs as a
+plain test, and it passes on 201 / 51 / 51 schedules with every count at
+0.  =test_patched_copy= skips, because the write path changed.
+
+Run: =gmake -C pbt check SEED=5005= gave 98 passed, 3 skipped and 1
+xfailed (the xfail is not one of 005's); =gmake -C pbt calibrate= was red
+as expected on all 14 scripts.  Paced, =079de9c= matches the seek-only
+patch: 0 parse failures, 0 lost and 0 duplicated on every engine.
+
+Uncoordinated, 50 runs, seed 5005.  The schedules are the same for every
+side, so every side was asked for 16571 snapshots and 159 hellos.  The
+"kept" column counts snapshots that parsed and were valid:
+
+| ref                    | lines | parse | lost  | hellos  | kept            |
+|------------------------+-------+-------+-------+---------+-----------------|
+| 18ebe2d                |  7505 |   135 |  9264 |  63/159 |  7307 (44.1%)   |
+| 0842eda unfixed        |  6528 |   179 | 10278 |  56/159 |  6293 (38.0%)   |
+| 0842eda + seek-only    | 11902 |   557 |  5337 | 111/159 | 11234 (67.8%)   |
+| 079de9c buffer + write | 14658 |   212 |  2270 | 145/159 | 14301 (86.3%)   |
+
+Buffering the record narrows the window (14 % lost, against 32 % for
+seek-only), but a seek and a write are still two system calls, and true
+concurrency still loses records.  The harden PR measured 19149 of 30015
+lines kept with 3 producers of 2000 records each; these runs use smaller
+bursts (20 to 200 per producer) and 2 to 4 producers.  As before, only
+=O_APPEND= would close the window, and gforth 0.7.3 has no append fam.
+This stays report-only (gate item 3).

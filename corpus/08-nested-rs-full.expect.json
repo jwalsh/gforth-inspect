@@ -1,0 +1,39 @@
+{
+  "producer_exit": 0,
+  "jq": {
+    "exit": 0,
+    "lines": [
+      "{\"e\":\"hello\",\"w\":null,\"d\":null,\"f\":null}",
+      "{\"e\":\"snapshot\",\"w\":\"inner\",\"d\":[3],\"f\":[]}",
+      "{\"e\":\"snapshot\",\"w\":\"inner\",\"d\":[3],\"f\":[]}"
+    ]
+  },
+  "checker": {
+    "exit": 0,
+    "output": {
+      "event": "snapshot",
+      "where": "inner",
+      "src": "08-nested-rs-full.fs:4",
+      "data": [
+        3
+      ],
+      "float": [],
+      "rs": [
+        {
+          "word": "outer",
+          "off": 32
+        }
+      ],
+      "input": {
+        "file": "08-nested-rs-full.fs",
+        "line": 8,
+        "in": 20,
+        "text": "rs-full off 3 outer drop"
+      }
+    }
+  },
+  "mock_get_stacks": {
+    "status": 200,
+    "body": "{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"where\":\"inner\",\"src\":\"08-nested-rs-full.fs:4\",\"data\":[3],\"float\":[],\"rs\":[{\"word\":\"outer\",\"off\":32}],\"input\":{\"file\":\"08-nested-rs-full.fs\",\"line\":8,\"in\":20,\"text\":\"rs-full off 3 outer drop\"}}"
+  }
+}
