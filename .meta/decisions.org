@@ -43,6 +43,7 @@ D = Downstream (course session), H (D) = H via D.
 | D-35 | =.meta/= holds only agent-actionable rules and checkable facts; compression keeps every claim-bearing token                                                  | H     |                                    | [[file:README.org][README.org]] M-1, M-2 |
 | D-36 | by 1.0.0 the envelope (=v=, =event=, =t=, =hello.contract=) is frozen and versioned on its own; a far-future producer (contract 10.0) still emits it, so a 0.5-era consumer stops by version, never by crash | H | | exp 009 H3 (PR #30); issue #23 |
 | D-37 | the version check is compound: record =v=, =hello.contract=, =hello.inspect=, schema =$schema= / =x-version= / =x-contract=, the =GET /stacks= API spec; consumers check them together | H | D-11's single-field check | exp 009 H5 (PR #30) |
+| D-38 | invariant I-1, never changes: every log line begins ={"v":=<integer>=,=; =v= is never renamed, moved, retyped or dropped; consumers check the prefix first and fail early | H | | exp 009 H6 (PR #30) |
 
 | open | blocker                                                                                                 | owner |
 |------+---------------------------------------------------------------------------------------------------------+-------|
