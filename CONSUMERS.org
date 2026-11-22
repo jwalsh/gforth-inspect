@@ -29,7 +29,7 @@ The schema carries =x-version= (equal to =v=) and =x-contract= (equal to
 =hello.contract=). A producer writes exactly one contract version. It never
 writes an old and a new version side by side.
 
-Contract versions are not release versions. Release v0.1.0 announces
+Contract versions are not release versions. inspect 0.1.0 announces
 contract 1.1. A PATCH release changes neither number, and a release may
 change no contract at all.
 
