@@ -5,7 +5,7 @@
 
 A stack inspector for gforth. Load one file, type =.stacks=, and see the data,
 float, return and control-flow stacks and the input line. Turn on =log-on= to
-stream each snapshot to a log that an editor, a dashboard or an agent can follow.
+stream each snapshot to a log.
 
 [[file:demo/tour.gif]]
 
