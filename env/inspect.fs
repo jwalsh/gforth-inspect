@@ -1,4 +1,4 @@
-\ gforth-inspect v0.1.0
+\ gforth-inspect v0.1.1
 \ stacks-log schema v1
 \ SPDX-License-Identifier: GPL-3.0-or-later
 \
@@ -18,7 +18,7 @@
 \             including n (nest) into colon words
 \   dbg+      dbg-fix, and print .s f.s and return words at every step
 \   log-id    ( c-addr u -- )  tag following snapshots with "id"; s" " log-id clears
-\   inspect-version  ( -- c-addr u )  "0.1.0"
+\   inspect-version  ( -- c-addr u )  "0.1.1"
 \ The hello record announces "contract":"1.1" (contract/stacks-log.org).
 \
 \ Works in gforth, gforth-fast and gforth-itc 0.7.3.  None of these words
@@ -27,7 +27,7 @@
 \ ~~ (debugs.fs) and dbg (debug.fs) are already in the 0.7.3 image;
 \ REQUIRE-ing them again would redefine half the system.
 
-: inspect-version ( -- c-addr u ) s" 0.1.0" ;
+: inspect-version ( -- c-addr u ) s" 0.1.1" ;
 
 \ --- naming addresses ------------------------------------------------
 
@@ -462,16 +462,29 @@ variable bp-a  variable bp-b
     bp2 @       ?dup IF dt2 swap 2 cells move THEN
     0. bp2 2! ;
 
+: special-xt? ( x -- f )
+    \ x is the xt of a DEFER or DOES> word with a real header
+    dup aligned over <> IF drop false EXIT THEN
+    dup in-dictionary? 0= IF drop false EXIT THEN
+    dup >head-noprim ['] ??? >head-noprim = IF drop false EXIT THEN
+    dup >code-address dodefer: =  swap >does-code 0<>  or ;
+
 : nestXT+ ( x -- true | body false )
     \ the n (nest) key.  Stock nestXT treats the threaded cell as an xt and
     \ runs xt-see on it; in direct-threaded engines that cell is engine code,
     \ so xt-see shells out to gdb and dies (even nesting a colon word).
     \ Here a colon call is the cell `call`'s code address followed by the
     \ target body; anything else (primitive, literal) steps instead.
+    \ A DEFER or DOES> word with a real header goes to stock
+    \ nestXT-checkSpecial too (#39): it follows the defer chain, or leaves
+    \ the body for a does> word.  A defer chain that ends in a primitive
+    \ still steps over, since xt-see cannot read engine code.
     dup ['] call @ = IF drop ['] call THEN
-    dup ['] call = over colon-xt? or 0= IF
+    dup ['] call = over colon-xt? or over special-xt? or 0= IF
         drop cr ." (not a colon definition: stepped over)" true EXIT THEN
     nestXT-checkSpecial
+    dup colon-xt? over >does-code or 0= IF
+        drop cr ." (not a colon definition: stepped over)" true EXIT THEN
     DebugMode c-pass ! C-Output off  xt-see  C-Output on
     c-pass @ DebugMode = dup IF cr ." Cannot debug!!" THEN ;
 

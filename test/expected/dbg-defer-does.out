@@ -1,0 +1,34 @@
+## stdout
+
+: outer  
+Scanning code...
+
+Nesting debugger ready!
+[ 0 ] 
+ADDR ADDR 3              -> [ 1 ] 00003 
+ADDR ADDR dsq            -> 
+(not a colon definition: stepped over)[ 1 ] 00009 
+ADDR ADDR kon            -> 
+(not a colon definition: stepped over)[ 2 ] 00009 00042 
+ADDR ADDR +              -> [ 1 ] 00051 
+ADDR ADDR ;              -> 
+nesting defered...
+: sq  
+Scanning code...
+
+Nesting debugger ready!
+[ 1 ] 00003 
+ADDR ADDR dup            -> [ 2 ] 00003 00003 
+ADDR ADDR *              -> [ 1 ] 00009 
+ADDR ADDR ;              -> 
+create kon  
+
+Scanning code...
+
+Nesting debugger ready!
+[ 1 ] BIG 
+ADDR ADDR @              -> [ 1 ] 00041 
+ADDR ADDR 1+             -> [ 1 ] 00042 
+ADDR ADDR ;              -> 
+## stderr
+## exit 0
