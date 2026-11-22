@@ -9,8 +9,24 @@ stream, who consumes it, and what each owes the other is set out in
 * What a release is
 
 - A tag =vMAJOR.MINOR.PATCH= on =main=, published as a GitHub Release.
-- Assets: =inspect.fs=, =stacks-log.schema.json= and =SHA256SUMS= (covering
-  the other two). =canvas.fs= is not part of this project and never ships.
+- Each release carries its own spec and contract. The assets are
+  self-contained and flat (no directories):
+
+  | asset                    | from                              |
+  |--------------------------+-----------------------------------|
+  | =inspect.fs=             | =env/inspect.fs=                  |
+  | =stacks-log.schema.json= | =contract/stacks-log.schema.json= |
+  | =stacks-log.org=         | =contract/stacks-log.org=         |
+  | =CONSUMERS.org=          | =CONSUMERS.org=                   |
+  | =SHA256SUMS=             | covering the four above           |
+
+  Downstream projects depend on these file names, so renaming, removing or
+  moving an asset is a MAJOR change. The prose files have to render on
+  their own: in the =dist/= copies, every link between them names its
+  sibling in the same directory (=CONSUMERS.org=, not =../CONSUMERS.org=),
+  and a link to anything else is an absolute URL pinned to the tag. A
+  consumer reads the schema from its downloaded copy, never from a branch.
+  =canvas.fs= is not part of this project and never ships.
   It stays on =harden= only as a test bed until the end of the week of
   2026-11-21, and is removed by a PR before v0.1.0.
 - =inspect.fs= begins with these two lines:
@@ -110,8 +126,11 @@ into the notes.
 git switch main && git pull --ff-only
 # bump the version line in env/inspect.fs and inspect-version, then commit: chore(release): vX.Y.Z
 gmake test && gmake -C pbt check PROFILE=ci && scripts/privacy-scan.sh
-mkdir -p dist && cp env/inspect.fs contract/stacks-log.schema.json dist/
-(cd dist && shasum -a 256 inspect.fs stacks-log.schema.json > SHA256SUMS)
+gmake release-check   # builds dist/ as below and checks it
+# by hand, what release-check does:
+mkdir -p dist && cp env/inspect.fs contract/stacks-log.schema.json contract/stacks-log.org CONSUMERS.org dist/
+sed -i '' 's|\.\./CONSUMERS\.org|CONSUMERS.org|g' dist/stacks-log.org   # flatten sibling links
+(cd dist && shasum -a 256 inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org > SHA256SUMS)
 scripts/privacy-scan.sh dist/*
 git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
 gh release create vX.Y.Z dist/* --notes-file dist/NOTES.md
