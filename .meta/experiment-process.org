@@ -1,42 +1,39 @@
-#+TITLE: The experiment process
-#+DATE: 2026-11-21
+#+TITLE: Experiment process
 #+STARTUP: showall
-
-This follows the house process used by other projects here, with the
-local differences below.
 
 * Roles
 
-| who                                      | owns                                                             | does not touch                                              |
-|------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------|
-| coordinators (the owner and one session) | =main=, =experiments/README.org=, =.meta/=, the docs, promotion    | an experiment's code                                        |
-| an experiment's agent                    | its worktree =../gforth-inspect-NNN-slug=, branch =exp/NNN-slug= | =main=, other experiments, =env/= and =contract/= on =harden= |
-| the harden work                          | =env/*.fs=, =contract/=, =test/=, the top-level =Makefile=        | =pbt/=                                                      |
+| role                | owns                                                        | never touches                          |
+|---------------------+-------------------------------------------------------------+----------------------------------------|
+| coordinators        | =main=, =experiments/README.org=, =.meta/=, docs, merges       | an experiment's code                   |
+| experiment agent    | =../gforth-inspect-NNN-slug=, branch =exp/NNN-slug=, its Log | =main=, other experiments, =env/=, =contract/= |
+| producer work       | =env/=, =contract/=, =test/=, root =Makefile=                   | =pbt/=                                 |
 
-Experiments test the inspector; they do not fix it. A bug found in
-=env/inspect.fs= goes back to whoever owns the inspector as a shrunk case
-and a one-line reproducer. The test that found the bug stays red until the
-fix lands, and is not weakened to go green.
+Experiments test the inspector; they never fix it. Bug in =env/inspect.fs=:
+hand the owner a shrunk case and a one-line reproducer. The finding test
+stays red until the fix lands. Never weaken it.
 
-* The loop
+* Loop
 
-1. A coordinator adds a row to =experiments/README.org=, writes the
-   hypothesis and the gate into =experiments/NNN-slug/README.org=, and
-   commits both to =main= before the first run.
-2. An agent gets a worktree cut from =main=. Every run goes through
-   =gmake -C pbt check=. Each run is logged with its date, the inspect.fs
-   provenance (=gforth_run.py= prints it), the seed and the result.
-   Failures are logged too.
-3. The agent commits and pushes =exp/NNN-slug= as it goes, so the results
-   exist before the work is finished.
-4. When the gate passes, or a finding is solid, the agent opens a PR to
-   =main= and the coordinators ask the owner to merge it. A refuted
-   hypothesis gets merged as well, as a log with no code, because the
-   negative result is part of the record.
+1. Coordinator commits to =main=, before the first run: a row in
+   =experiments/README.org=, and =experiments/NNN-slug/README.org= with
+   hypothesis, prediction and gate.
+2. Agent works in a worktree cut from =main=; draft PR at once.
+3. Every run goes through =gmake -C pbt check=. Log each run: date,
+   inspect.fs provenance (printed by =gforth_run.py=), seed, result.
+   Log failures too.
+4. Commit and push as you go.
+5. Gate met, or finding solid: PR to =main=, through REVIEW.md;
+   coordinator merges. A refuted hypothesis merges too, as a Log.
+
+Gate and prediction: never edited after the first run. Log: append-only.
 
 * Isolation
 
-The inspector under test comes from =INSPECT_REF= (default =harden=), not
-from the working tree. That way every experiment tests the same blob, and
-the log can name it. Each gforth run gets its own =XDG_STATE_HOME= in a
-temp directory and a relative file name, so no record holds a real path.
+- Test a pinned blob, never a moving name. =INSPECT_REF= selects it; the
+  root =gmake verify= sets =INSPECT_REF=HEAD=. (Defaults in =pbt/= still name
+  =harden=: follow-up, change to =HEAD=.)
+- A calibration about an unfixed producer pins its own ref
+  (=CALIBRATE_005_REF=, default =0842eda=). Never follow =INSPECT_REF=.
+- Each gforth run: own temp dir, own =HOME= and =XDG_STATE_HOME=, relative
+  file names. No record may hold a real path.
