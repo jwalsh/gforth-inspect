@@ -59,7 +59,8 @@ jobs:
 
       - name: Install gforth, GNU make, jq
         run: |
-          brew install gforth make jq
+          brew install gforth make jq borkdude/brew/babashka
+          bb --version
           for engine in gforth gforth-fast gforth-itc; do
             version=$("$engine" --version 2>&1)
             echo "$engine: $version"

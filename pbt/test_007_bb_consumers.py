@@ -51,6 +51,10 @@ UNKNOWN = "x-unknown-004"
 sys.path.insert(0, str(CONSUMERS))
 import checker  # noqa: E402  (the original, imported as written; never edited)
 
+# bb runs the reference consumers (docs/RELEASING.org): on CI a missing bb is a
+# failure, never a skip; locally a skip, so the rest of the suite still runs.
+if shutil.which("bb") is None and os.environ.get("CI"):
+    raise RuntimeError("bb is not installed on CI; the reference consumers need it")
 pytestmark = pytest.mark.skipif(shutil.which("bb") is None, reason="bb is not installed")
 
 STATS: dict = {"records": 0, "logs": 0, "checker": 0, "server": 0, "bytes_identical": 0, "stdout_compared": 0,
