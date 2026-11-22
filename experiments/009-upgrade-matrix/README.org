@@ -30,6 +30,12 @@ H5. Compound version check. The version is a tuple, checked together: record
 =x-contract= (1.1), and the API spec of =GET /stacks=. A consumer that checks
 one field accepts a stream another field says it cannot read.
 
+H6. Invariant I-1 (D-38): every line of every log, in every version, past
+and future, begins with the bytes ={"v":= followed by a decimal integer
+(the envelope version) and =,=. =v= is never renamed, moved, retyped or
+dropped. A consumer that checks this prefix on the first line, before
+parsing, fails early on anything it cannot read.
+
 * Version ledger (pinned by blob; RD-1)
 
 | key | source                 | blob         | =hello.inspect= | =hello.contract= | role                          |
@@ -63,6 +69,7 @@ from the course's main worktree only; nothing from it is committed.
 | X7  | newest =hello= not at the top; two =hello= in a row with different contracts |
 | X8  | F5 (10.0) stream read by consumers built for 1.1               |
 | X9  | stream and schema disagree: =x-contract= 1.1 vs stream 1.2; =x-version= 1 vs =v= 2; schema =$schema= draft-07 under a 2020-12 validator |
+| X11 | I-1 broken: line starts ={"event":=; =v= second; ={"v":"1"=; ={ "v":1= (space); BOM before ={=; =v= = 999 |
 | X10 | =GET /stacks= response checked against its API spec (none today) |
 
 * Consumers (pinned)
@@ -107,6 +114,9 @@ all). Never attach to or type into any other tmux session.
 - P10. H5: no consumer checks the tuple. =checker.py= checks
   =hello.contract= only; X9 passes it. =GET /stacks= has no OpenAPI or other
   spec, so its version is unchecked: finding.
+- P12. H6: I-1 holds for V0–V5 and F1–F5 (every version writes
+  ={"v":1,"event":= first). No consumer checks it today; each X11 stream is
+  caught late (schema or field error) or not at all.
 - P11. H4: gaps exist; each is closed by a new corpus scenario.
 
 * Gate
@@ -130,7 +140,10 @@ all). Never attach to or type into any other tmux session.
    3.1 draft for =GET /stacks= whose =info.version= is in the tuple.
 7. H4: coverage table (schema path × value class × version); every gap
    closed by a corpus scenario before the gate passes.
-8. Outputs: =versions.org= (the ledger with rulings), =matrix.tsv=, the
+8. H6: a prefix check (=^\{"v":[0-9]+,=, then the integer known or stop)
+   red on every X11 stream, green on every ledger and fixture record; run
+   as step 0 of H2, before =SHA256SUMS=.
+9. Outputs: =versions.org= (the ledger with rulings), =matrix.tsv=, the
    coverage table, findings as issues. Counts and hashes only for Vc.
 
 * Log
