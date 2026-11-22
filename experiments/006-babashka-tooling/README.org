@@ -1,0 +1,344 @@
+#+TITLE: 006 babashka-tooling: port the test and dev tooling to Babashka, as a differential
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+Status: proposed. Decision 28 in [[file:../../.meta/decisions.org][.meta/decisions.org]]: port after
+v0.5.0, as a gated experiment; shell scripts are suspect; the frozen
+reference consumers stay as they are. Nothing is ported by this file. It
+is the assessment, the gate, and the order of work, written before the
+first line of Clojure so that the gate cannot be fitted to the port.
+
+* Hypothesis
+
+The property suite (=pbt/=), its planted-fault calibrations, the corpus
+recorder (PR #22) and the repo scripts can be rewritten in Babashka so that
+the rewrite is a faithful twin of the Python: red on exactly the same
+planted faults, for the same reason, and in agreement with the Python on
+every recorded corpus log. After it, Python is left only where it is
+frozen (=pbt/consumers/=) or bound to a host API (=lldb/gforth.py=), and
+=uv=, =pytest=, =hypothesis= and =jsonschema= leave CI.
+
+* Prediction (written before any port)
+
+- Holds for 002, 004, 005, the scripts and the corpus, at about the same
+  wall clock, once three things are built that babashka does not hand
+  over: a strict JSON reader (cheshire's defaults accept what the tests
+  must reject; measured below), a JSON Schema validator for the subset the
+  contract uses (there is none in babashka), and an expected-failure
+  marker for 005's strict xfail.
+- Weakest at 001. Its float generators are bit patterns. test.check's
+  integer generators are size-scaled and its shrinking is signed, so a
+  naive port samples the exponent field badly and shrinks a sign fault to
+  a NaN (measured below). Faithful only with generators built for it:
+  edge list, sign-plus-magnitude tuples, uniform 16-bit chunks, and
+  =gen/double= mapped to bits.
+- =demo/cast.py= does not port cleanly: babashka has no pty. =script(1)=
+  gives the child one and bb can timestamp its output (checked on macOS),
+  but that is BSD =script= syntax. Predicted outcome: cast.py stays, or is
+  replaced with a macOS-only bb task, owner's call.
+- Python cannot leave the repository entirely, and the hypothesis does not
+  claim it: the release gate runs the frozen =checker.py= and
+  =mock_server.py=, and a bb twin of either is an addition, never a
+  replacement (RELEASING.org: a changed reference consumer is a breaking
+  change).
+
+* Gate (fixed now; a port PR appends to the log and never edits this)
+
+The Python suite is the oracle until the gate passes. Both suites run, on
+the same inspect.fs blob, in the same CI job, for as long as the port is
+in review.
+
+1. *Planted-fault parity.* For every plant in =pbt/calibrate/= (12 on
+   main, plus 005's once #18 lands): the plant is applied once, by the
+   existing =sed=, and the planted file is handed to both suites, so the
+   two never test different bytes. Both go red. The set of failing test
+   ids is the same after normalisation (=test_p1_noninterference[dotstacks-gforth]=
+   and =p1-noninterference--dotstacks--gforth= are one id), and the
+   failure class is the same: P1 data/float, P2 float
+   sign/precision/non-finite, =[json]=/=[text]=,
+   =breaking consumer=X field=Y=. A plant that goes red in one suite only
+   is a refutation of the hypothesis for that experiment.
+2. *Clean parity.* On harden's head (pinned by hash in the log), both
+   suites are green on all three engines, at the default profile and at
+   the =ci= profile (1000 examples), at three logged seeds each.
+3. *Corpus agreement.* With PR #22 merged: for every
+   =corpus/NN-slug.jsonl=, the bb side's strict parse, schema verdict and
+   extracted fields equal what =corpus/NN-slug.expect.json= records.
+   Compared as values, floats by bit pattern, never as bytes: cheshire
+   prints =1e16= as =1.0E16= and Python as =1e+16=, the same double. If
+   =record.py= is ported, its =.jsonl= output is byte-identical (it is raw
+   gforth output with =t= masked) and its =.expect.json= equal as values.
+4. *Strict-JSON parity, by call site.* A table of lines (below, plus
+   =test/contract/bad.jsonl= on harden and one line from each 002 invalid
+   class) is read by each Python call site and by its bb replacement, and
+   they accept and reject the same lines. Divergences that are declared
+   here in advance, and only these, are allowed: bb rejects =NaN= and
+   =Infinity= at call sites where Python's bare =json.loads= accepts them.
+5. *The differential is itself calibrated.* Three faults are planted in
+   the port, never in the Python, and items 1, 3 and 4 must go red on them:
+   (a) the bb reader built with cheshire's default factory (unescaped
+   controls accepted); (b) the float comparison in the 001 port done with
+   ~=~ on doubles instead of bit patterns; (c) one of 001's three paths
+   dropped from the generated tests.
+6. *Shrink quality, 001.* For plants 001-a, -b and -c, over five seeds:
+   the bb counterexample replays the fault through its one-line
+   =gforth inspect.fs -e '...'= reproducer, and its median size (cases in
+   the batch, data depth, float depth) is at most twice the Python
+   counterexample's. A worse result is logged, not hidden; it is a
+   refutation of the 001 part only.
+7. *Cost.* =gmake -C pbt check= wall clock on the bb side within 1.5x of
+   the Python side on the same machine, default profile. CI install of bb
+   measured on the macOS runner and logged (not yet measured; see CI).
+8. *Retirement.* Python's test is removed experiment by experiment, only
+   after 1 to 6 hold for that experiment, by its own PR. =uv= leaves
+   =verify.yml= only when the last ported experiment is retired.
+
+* Inventory
+
+Lines as of =origin/main= 7ffa96f, the open PRs, and =origin/harden=.
+"Frozen" means RELEASING.org's reference-consumer rule applies.
+
+| file                                   | lines | what it does                                                                                         | depends on                                        | frozen | verdict        |
+|----------------------------------------+-------+------------------------------------------------------------------------------------------------------+---------------------------------------------------+--------+----------------|
+| =pbt/gforth_run.py=                    |   132 | selects inspect.fs (INSPECT_FS / INSPECT_REF / harden), runs one program in a temp dir, splits the log on LF | subprocess, tempfile, git                         | no     | port (first)   |
+| =pbt/conftest.py=                      |    16 | Hypothesis profiles: default 100, ci 1000, too_slow suppressed                                       | hypothesis                                        | no     | port (options) |
+| =pbt/test_001_stacks_roundtrip.py=     |   338 | P1 non-interference, P2 data/float/schema, float corpus; 3 paths x 3 engines                         | hypothesis, jsonschema, pytest, struct            | no     | port           |
+| =pbt/test_002_escaping.py= + helpers   |   550 | strict UTF-8 JSON and =input.text= mapping for byte classes; census                                  | hypothesis, jsonschema, pytest, subprocess        | no     | port           |
+| =pbt/test_003_declared_effects.py= + helpers | 633 | depth deltas against =model/data/words.json=; a census, done                                       | pytest, subprocess, random, git                   | no     | port last, or keep |
+| =pbt/test_004_reference_consumers.py= + helpers | 667 | the three consumers on old vs new records; version stop; default path                       | hypothesis, pytest, subprocess, urllib, jq, imports =checker= | no | port |
+| =pbt/test_005_concurrent_producers.py= + helpers (PR #18) | 688 | N gforths, one log, stdin paced by =#ACK=; strict xfail on #17                       | hypothesis (composite, @example), select, Popen, jsonschema | no | port |
+| =pbt/consumers/checker.py=             |   166 | reference consumer 2: version stop, strict last line, hand-written schema subset                     | stdlib                                            | *yes*  | keep; a bb twin may sit beside it |
+| =pbt/consumers/mock_server.py=         |    57 | reference consumer 3: =GET /stacks= serves the last line byte for byte                               | http.server                                       | *yes*  | keep; a bb twin may sit beside it |
+| =pbt/consumers/stacks.jq=              |     1 | reference consumer 1                                                                                 | jq                                                | *yes*  | keep           |
+| =corpus/record.py= (PR #22)            |   291 | records each scenario, masks =t=, runs the three consumers, writes =.expect.json= and PROVENANCE    | subprocess, select, urllib, imports =gforth_run=  | no     | port           |
+| =demo/cast.py= (PR #21)                |    71 | records a command on a pty as asciicast v2, keeps exit status                                        | pty, termios, fcntl, select                       | no     | keep (no pty in bb) |
+| =lldb/gforth.py= (harden)              |   877 | lldb commands for gforth's VM                                                                        | lldb's Python API                                 | no     | keep: host API |
+| =test/validate.py=, =test/consumer.py= (harden) | 206 | golden suite's schema check (jsonschema + built-in subset, cross-checked), consumer test       | json, optional jsonschema                         | no     | harden's; later |
+| =scripts/privacy-scan.sh=              |    43 | grep for home paths, mail, tokens; =--calibrate= plants six                                          | grep, git                                         | no     | bb task (bug below) |
+| =scripts/check-guides.sh=              |    87 | guides exist, relative links resolve, README has no dev words; =--calibrate=                        | grep, sed, find, tar, git                         | no     | bb task        |
+| =scripts/readme-release.sh=            |    40 | rewrites README Install for a published tag                                                          | bash, gh, embedded =python3 -I= heredoc           | no     | bb task, after v0.5.0 is cut |
+| =scripts/dist-links.sh= (harden)       |    54 | rewrites and checks dist/*.org links                                                                 | bash, grep, sed                                   | no     | bb task        |
+| =pbt/calibrate/*.sh=, =001-lib.inc=, =004.lib= | 246 | plant by sed, run pytest, read =FAILED=/=E AssertionError=/junit                              | sh, sed, uv, pytest output format                 | no     | port with the suite: a plant table |
+| =pbt/calibrate/005-seek-per-write.sh= (PR #18) | 56 | 005's plant; uses =--runxfail=                                                                | sh, pytest                                        | no     | port with 005  |
+| =corpus/calibrate.sh= (PR #22)         |    73 | plants a changed field and two private paths; drives =gmake=                                         | sh, sed, git                                      | no     | bb task        |
+| =corpus/Makefile= recipes (PR #22)     |    81 | record/check/engines with shell loops and =diff=                                                     | sh, diff                                          | no     | delegate to bb |
+| =demo/sandbox.sh=, =record.sh=, =tour-tmux.sh= (PR #21) | 96 | make a sandbox; type steps into gforth with pauses; tmux layout                           | bash, tmux, jq, sleep                             | no     | keep: it is terminal choreography |
+| =test/run.sh=, =selftest.sh=, =stress.sh=, =mask.pl= (harden) | 245 | golden runner, perl masking, =python3 -c= for =x-contract=                         | bash, perl, python3, timeout                      | no     | harden's; a second proposal |
+| =lldb/*.sh= (harden)                   |    74 | wrappers around lldb                                                                                 | lldb                                              | no     | keep           |
+
+Python to port: about 3,300 lines (=pbt/= 3,024 with 005, =record.py= 291).
+
+* Capability map
+
+Every row was checked with =bb -e= or a bb script on babashka v1.13.223,
+unless its last column says /inferred/.
+
+| need (where)                                 | Python                                   | babashka                                                                                                          | gap / cost                                                                                       | evidence |
+|----------------------------------------------+------------------------------------------+-------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------+----------|
+| property runner (all)                        | Hypothesis =@given=                      | =clojure.test.check= bundled: =quick-check=, =prop/for-all=                                                        | =defspec= (=clojure.test.check.clojure-test=) is *not* bundled; add =org.clojure/test.check= to bb.edn =:deps= (loads), or wrap =quick-check= in =deftest= as the house workshops do | checked |
+| seeds and replay (001, 005)                  | =--hypothesis-seed=, =PBT_SEED=, =@seed= | =quick-check ... :seed n=; result carries =:seed=                                                                  | none; =print_blob= has no analogue and is not needed (database is off)                             | checked |
+| fixed cases (005 =@example=)                 | =@example= always runs first             | none                                                                                                              | a plain =deftest= that calls the property body on the fixed schedule                              | inferred |
+| no-shrink mode (004 =PBT_004_NO_SHRINK=)     | =phases= without shrink                  | =gen/no-shrink=                                                                                                   | none                                                                                             | inferred |
+| health checks                                | too_slow suppressed; filter_too_much     | none                                                                                                              | 002's =.filter(_not_utf8)= becomes =gen/such-that=, which throws after 10 tries: build the invalid bytes constructively instead | inferred |
+| stateful testing                             | not used                                 | none                                                                                                              | none needed                                                                                      | checked (grep) |
+| =note()=, statistics                         | =note=, =--hypothesis-show-statistics=   | the =is= message; counters by hand                                                                                | the suites already keep their own counters                                                       | inferred |
+| 64-bit bit patterns (001, 004)               | =st.integers(0, 2^64-1)=                 | =gen/large-integer= is signed and size-scaled                                                                     | see the shrink table: build the generator                                                        | checked |
+| floats as floats (001, 004)                  | =st.floats(...).map(bits)=               | =gen/double= (=gen/double*= with =:infinite? :NaN?=)                                                              | shrinks to simple floats, like Hypothesis, to a different one                                    | checked |
+| strings by Unicode category (002)            | =st.characters(exclude_categories=Cs)=   | none                                                                                                              | code points by =gen/choose=, filtered by =Character/getType=, built with =Character/toChars= (astral = two UTF-16 units) | inferred |
+| bytes (002, 004)                             | =st.binary=                              | =gen/bytes=                                                                                                       | none                                                                                             | inferred |
+| xfail(strict), =--runxfail= (005)            | pytest                                   | none in clojure.test                                                                                              | about 20 lines: expected-failure wrapper, XPASS is a failure, env flag lifts it                  | inferred |
+| per-parameter test ids (calibration)         | =parametrize= ids, =-k=                  | cognitect test-runner =--vars=, =--nses=                                                                          | a macro that emits one =deftest= per path x engine, so calibration can name ids                  | inferred |
+| JSON numbers (all)                           | =json.loads=                             | cheshire: =-0.0= kept (bits =8000000000000000=), =1.0000000000000002= exact, =5e-324= exact, 2^64-1 a BigInteger, =1e400= Infinity, =1.0= a Double and =1= a Long | none for reading. 200,000 random finite bit patterns survived generate then parse with no bit changed | checked |
+| JSON writing (record, expect)                | =json.dumps=                             | cheshire                                                                                                          | prints =1.0E16= where Python prints =1e+16=; =##NaN= becomes the string ="NaN"=; key order is lost past 8 keys. Compare values, never bytes | checked |
+| strict JSON (002, 005, checker parity)       | =json.loads= rejects raw controls and trailing data, accepts duplicate keys and =NaN= | cheshire's default factory has =:allow-unquoted-control-chars true=, and =parse-string= returns the first value of ="{..}{..}"= and of ="{..} x"= | a factory with =:allow-unquoted-control-chars false=, =parsed-seq= and exactly one value per line; =:strict-duplicate-detection= per call site. Eight lines; all four cases then rejected | checked |
+| strict UTF-8 (002, 004)                      | =bytes.decode("utf-8")=                  | =CharsetDecoder= with =CodingErrorAction/REPORT=                                                                  | none: overlong, surrogate, past U+10FFFF and lone continuation bytes all rejected               | checked |
+| JSON Schema (001, 002, 005)                  | =jsonschema.Draft202012Validator=        | nothing bundled; JVM validators cannot be loaded into bb; no pod known                                            | a subset validator for the keywords the schema uses (=type required properties const items oneOf enum pattern additionalProperties=), about 80 lines, that fails closed on any other keyword. It loses the independence a third-party validator gives: keep one jsonschema cross-check on the corpus, or run that check on the JVM | checked (keywords); inferred (no pod) |
+| subprocesses (all)                           | =subprocess.run=, timeouts               | =babashka.process= =process=/=shell=, =deref= with timeout, =destroy-tree=                                         | known traps in the public spectre workshop's findings: 62 (=sh= after an options map), 60 (exit 0 on a broken =:in= pipe), 34 (=shell= inherits stdout) | checked (pacing) |
+| stdin pacing (005, record)                   | =Popen= + =select= + =os.read=           | =:in :pipe :out :pipe=, a writer, =readLine= in a =future= with =deref= timeout                                    | a timed-out =readLine= thread stays blocked until the process is killed. Two gforths, eight records, 23 ms, nothing lost or torn | checked |
+| http server (004, record)                    | =http.server= (frozen consumer)          | =org.httpkit.server= bundled, port 0, =server-port=                                                                | none: served a last line holding =0xFF= byte for byte; 404 elsewhere                             | checked |
+| http client (004, record)                    | =urllib.request=                         | =babashka.http-client= (=:as :bytes=)                                                                              | none                                                                                             | checked |
+| temp dirs, files (all)                       | =tempfile=, =pathlib=                    | =babashka.fs= =create-temp-dir=, =read-all-bytes=, =delete-tree=, =glob=                                           | none                                                                                             | checked |
+| pty (cast.py)                                | =pty.fork=, =TIOCSWINSZ=                 | none                                                                                                              | =script -q /dev/null sh -c 'stty cols C rows R; exec cmd'= with =:in :pipe= left open: the child saw a tty, =stty size= answered =34 110=, UTF-8 intact, exit status 3 came back. Closing stdin makes =script= echo =^D=. BSD syntax only; Linux =script= differs | checked (macOS) |
+| startup                                      | not measured                             | =bb -e= 0.02 s                                                                                                     | none                                                                                             | checked (bb side) |
+
+** Strict-JSON parity, by line
+
+| line                       | Python =json.loads= | cheshire default | bb strict reader | note                                            |
+|----------------------------+---------------------+------------------+------------------+-------------------------------------------------|
+| ={"a":1,"a":2}=            | accepts, last wins  | accepts, last wins | per call site  | test/validate.py rejects; pbt/ accepts            |
+| ="a<U+0001>b"= (raw)       | rejects             | *accepts*        | rejects          | 002's whole subject                              |
+| ={"a":1}{"b":2}=           | rejects             | *accepts* first  | rejects          | 005's torn-line failure mode                      |
+| ={"a":1}"t":3}=            | rejects             | accepts first    | rejects          | a fragment left behind (#17)                      |
+| =[NaN]=                    | *accepts*           | rejects          | rejects          | declared divergence (gate 4); checker rejects too |
+| ="\ud800"= (escape)        | accepts             | accepts          | accepts          | same everywhere                                   |
+| =1e400=                    | =inf=               | =Infinity=       | =Infinity=       | same; 001's =classify= handles it                 |
+
+** Shrinking on 001's bit patterns
+
+Three properties that fail on part of the float space, five seeds, 2000
+trials, the same in both libraries. Rows are properties, columns generators.
+
+| property fails when   | Hypothesis =integers(0,2^64-1)= | test.check =gen/large-integer= as bits | test.check sign + 63-bit tuple | Hypothesis =floats().map(bits)= | test.check =gen/double= to bits |
+|-----------------------+---------------------------------+----------------------------------------+--------------------------------+---------------------------------+---------------------------------|
+| sign bit set          | =0x8000000000000000= (-0.0), 5/5 | =0xFFFFFFFFFFFFFFFF=, a NaN, 5/5        | =0x8000000000000000=, 5/5       | =0x8000000000000000=, 5/5        | =0xBFF0000000000000= (-1.0), 5/5 |
+| pattern is a NaN      | =0x7FF0000000000001=, 5/5        | =0xFFFFFFFFFFFFFFFF=, 5/5               | never found, 5/5               | =0x7FF8000000000000=, 5/5        | =0x7FF8000000000000=, 5/5        |
+| =%.15g= loses the value | subnormals 1.06e-309 to 1.41e-309, 5/5 | subnormal or -DBL_MAX, 722 to 1982 shrink nodes | subnormal 1.0e-309, 599 to 1658 nodes | =1000000000000001.0=, 5/5 | =1.000030517578125=, 64 to 109 nodes |
+
+Coverage, measured over 2000 values drawn at quick-check's sizes:
+=large-integer* {:min 0}= gave 0 patterns with an all-ones exponent and
+225 with a normal exponent at all; =gen/large-integer= gave 904 all-ones
+exponents, nearly all from small negatives, which are NaNs; four
+=gen/choose 0 0xFFFF= chunks gave 2000 normal exponents and 1 all-ones.
+So the port's =float_bits= is a =gen/one-of= of the edge list, a
+sign-plus-mantissa tuple (subnormals), uniform chunks, and =gen/double=
+mapped to bits: the same four arms as 001's, each built for test.check.
+Every shrink node in the real suite is a gforth run; 2000 nodes at a few
+tens of milliseconds is a minute per failure, which is why gate 6 exists.
+
+* Shell: what moves and what stays
+
+The house rule, from the babashka workshops, is /Babashka, not Python/
+for scripting, and the incidents behind it are about logic in shell, not
+about shell as glue. Two of them, in the public spectre workshop's
+=.meta/findings.md=: 64, zsh did not split =$a= into words and three
+flagged names were saved as one argument; 65, a name flattened by
+=LC_ALL=C tr= (bytes) and by bb (characters) came out different, so one
+function now answers for both. The workshops' own Makefiles keep shell in
+recipes for tmux, Emacs and process glue. The rule applied here: a script
+that parses, loops over files or holds a table of plants is a bb task;
+a script that only starts programs in a terminal stays shell.
+
+Local incident, found by this assessment and not fixed here:
+=scripts/privacy-scan.sh= builds its file list with
+=set -- $(git ls-files ...)=, so a tracked file whose name has a space is
+split into words, both words fail to open, =2>/dev/null= hides it, and
+the scan says =clean=. Reproduced in a scratch repository: a file named
+=design notes.org= holding a home-directory path, scan exit 0, "clean (3
+files)" for two files. No tracked file has a space in its name today
+(=git ls-files | grep -c ' '= is 0), so the scan has not missed anything
+yet. A name that is a glob is expanded instead. This is the shape of
+finding 64, in the gate that decision 3 rests on.
+
+| script                         | verdict | why                                                                                                    |
+|--------------------------------+---------+--------------------------------------------------------------------------------------------------------|
+| =scripts/privacy-scan.sh=      | bb      | the word-splitting miss above; plants are a table; =git ls-files -z= read as data                       |
+| =scripts/check-guides.sh=      | bb      | link parsing in grep and sed regexes; it already needed a plant for a link with a space in it           |
+| =scripts/readme-release.sh=    | bb, after the v0.5.0 cut | bash with a =python3 -I= heredoc inside; it runs at the release, so not before it      |
+| =scripts/dist-links.sh=        | bb      | rewrites links by regex; harden's, so by harden's PR                                                   |
+| =pbt/calibrate/*=              | bb, with each experiment's port | they read pytest's output format (=FAILED=, =E AssertionError=, junit) and must read the bb runner's |
+| =corpus/calibrate.sh=, corpus recipes | bb | loops, =diff= and private-path scans; the scan is the same logic as privacy-scan and should be the same function |
+| =demo/*.sh=                    | shell   | tmux panes, pauses and a pipe into gforth: what is on screen is the shell                                |
+| =test/run.sh=, =mask.pl=       | later   | harden owns the golden runner; moving it would also drop perl and a =python3 -c=; a separate proposal   |
+| =lldb/*.sh=                    | shell   | one-line wrappers around lldb                                                                           |
+
+* Plan, file by file
+
+Effort is agent-days with the Python open beside it, and includes the
+parity run. Each step is its own PR, branch =exp/006-<step>=, and each
+leaves both suites green.
+
+| step | what                                                                                                   | effort | stays in Python, and why                         |
+|------+--------------------------------------------------------------------------------------------------------+--------+--------------------------------------------------|
+|    0 | =bb.edn=, =deps.edn= (standard v1: =:test :lint :fmt=), clj-kondo, cljfmt; =bb check= in =verify.yml= beside uv | 0.5 | everything                                     |
+|    1 | =privacy-scan= and =check-guides= as bb tasks, same plants, same messages; shell versions removed in the same PR once both calibrate | 0.5 | |
+|    2 | harness namespaces: run (=gforth_run=), strict JSON, strict UTF-8, schema subset, provenance; tests against =test/contract/= | 1 | the suites |
+|    3 | the parity driver: apply a plant once, run both suites, normalise ids and classes, compare (gates 1, 2, 5) | 1 | |
+|    4 | 001, with the built float generators; gate 6                                                            | 1 | 002 to 005 |
+|    5 | 002: byte-class generators, strict reader, census                                                       | 1.5 | 003 to 005 |
+|    6 | 005: paced producers, xfail wrapper, the =@example= schedule as a fixed test                            | 1 | 003, 004 |
+|    7 | 004: drives the frozen =checker.py= and =mock_server.py= as subprocesses, the way =record.py= already does, instead of importing =checker= | 1.5 | the consumers, forever |
+|    8 | =corpus/record.py= and =calibrate.sh=; gate 3                                                           | 1 | |
+|    9 | 003, or a recorded decision to leave it: it is done, a census, and the most code                        | 1.5 | 003 if left |
+|   10 | =readme-release.sh=, =dist-links.sh= (with harden)                                                      | 0.5 | |
+|   -  | =demo/cast.py=: owner's call between keeping it and a macOS-only =script(1)= task                       | 0.5 | cast.py if kept |
+
+About ten agent-days. Retirement of each Python test follows gate 8.
+
+* Risks
+
+- /Shrinking on bit patterns/ (001). Measured above: a signed generator
+  shrinks a sign fault to a NaN, and a size-scaled one never reaches the
+  exponent field. The built generator answers coverage; gate 6 answers
+  whether its counterexamples are as useful.
+- /A lenient reader passing for a strict one./ cheshire's defaults accept
+  a raw control character and the first object of a torn line, exactly the
+  two things 002 and 005 exist to catch. A port that called
+  =json/parse-string= would go green on harden's head and on several
+  plants. Gate 5(a) plants that port on purpose.
+- /One validator where there were two./ The subset validator replaces a
+  third-party one; a bug in it and the same bug in =checker.py='s subset
+  would agree. Keep a jsonschema run over the corpus, or run that check on
+  the JVM, until a second validator exists.
+- /Calibration coupled to pytest./ Every calibration script reads pytest
+  output. If the bb runner's ids or messages differ, a plant can look
+  caught for the wrong reason. Gate 1 compares normalised ids and classes,
+  not text.
+- /Comparing printed forms./ Python and cheshire print the same double
+  differently. Anything that diffs JSON as bytes across the two will
+  report differences that are not there. Compare values, as gate 3 says.
+- /Numeric equality./ Clojure's ~=~ says =1= and =1.0= differ; Python's
+  ~==~ says they are equal, and that =True == 1=. Every comparison in the
+  port says which it means.
+- /Blocked reads./ A =readLine= in a timed-out =future= keeps its thread
+  until the process dies; =finally= must =destroy-tree= every producer.
+- /Two suites for a while./ CI runs both for as long as the port is in
+  review, which costs minutes on every PR. Gate 8 ends it per experiment.
+- /The standard v1 runner is the JVM./ Its =bb test= is =clojure -M:test=,
+  which needs Java on the runner. The workshops run tests on bb directly
+  with the cognitect runner as a bb task. This proposal does the same, and
+  keeps =deps.edn= only for lint and format.
+
+* CI
+
+bb is not in homebrew-core (=formulae.brew.sh= answers 404 for
+=babashka=), so =brew install borkdude/brew/babashka= first taps a git
+repository and then fetches a release tarball: 27 MB for v1.13.230 on
+macos-aarch64. How long that takes on the macOS runner was *not measured*:
+no workflow was run for this proposal. Inferred: tens of seconds, on top of
+the gforth install the job already does. Step 0 measures it and logs it,
+against the pinned alternative the standard v1 =ci.yml= uses
+(=DeLaGuardo/setup-clojure= with =bb:= pinned), and against a direct
+download checked by SHA-256. Pin the bb version either way; local runs
+used 1.13.223, the tap's stable is 1.13.230, standard v1 pins 1.13.225.
+
+* Log
+
+** 2026-11-21 assessment (no port)
+
+Probes, all on babashka v1.13.223, macOS, gforth 0.7.3 from Homebrew,
+scripts kept outside the repository:
+
+- cheshire reading: =-0.0=, 17-digit doubles, least subnormal, 2^63,
+  2^64-1, =1e400=, =NaN=, duplicate keys, raw control, trailing value,
+  lone surrogate escape, key order. Writing: =-0.0=, =1e16=, =5e-324=,
+  =##NaN=, BigInteger, non-ASCII. 200,000 random finite bit patterns
+  round-tripped with no bit changed.
+- the same lines through Python 3's =json.loads=, for the parity table.
+- a strict reader: custom factory plus =parsed-seq=; all four bad lines
+  rejected, the good one kept =-0.0= and 17 digits.
+- strict UTF-8 by =CharsetDecoder=: five byte sequences.
+- namespaces: =babashka.process=, =babashka.fs=, =org.httpkit.server=,
+  =org.httpkit.client=, =babashka.http-client=, =babashka.cli=,
+  =clojure.test.check= and its generators and properties load;
+  =clojure.test.check.clojure-test= does not, and loads once
+  =org.clojure/test.check 1.1.1= is a dep.
+- shrinking: the table above, the same three properties under Hypothesis
+  (via =uv run --with hypothesis=) and test.check; and the coverage count.
+- pacing: two gforths on inspect.fs from =origin/harden=, one log, six
+  =.stacks= lines sent alternately with an =#ACK= each; 2 hellos and 6
+  snapshots, all parsed, 23 ms.
+- http-kit: last line holding =0xFF= served byte for byte, 404 elsewhere.
+- pty: =script(1)= under bb with stdin closed and with it a pipe; exit
+  status propagation.
+- privacy-scan in a scratch repository, with and without a glob-named file.
+- =bb -e= start time; the Homebrew formula API for =babashka=; the release
+  asset size with =gh release view=.
+
+Inferred, not checked: that no pod or bb-loadable library validates
+Draft 2020-12; the effort figures; the CI install time; every row marked
+/inferred/ in the capability map.
+
+Verdict proposed: port most. Scripts and the four live experiments, the
+harness and the corpus move to bb behind gates 1 to 8; the frozen
+consumers and =lldb/gforth.py= stay Python by rule; =cast.py= and 003 are
+the owner's call.
