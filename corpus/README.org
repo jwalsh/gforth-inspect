@@ -14,7 +14,7 @@ Each scenario is three files:
 | =NN-slug.jsonl=       | the log it wrote, byte for byte, except that every ="t"= is =0=                      |
 | =NN-slug.expect.json= | what the three frozen reference consumers produce from that =.jsonl=                 |
 
-The record format is the contract ([[file:../CONSUMERS.org][CONSUMERS.org]]; the schema and its
+The record format is the contract ([[file:../contract/CONSUMERS.org][CONSUMERS.org]]; the schema and its
 prose are =contract/stacks-log.schema.json= and =contract/stacks-log.org=).
 =PROVENANCE= names the =inspect.fs= and schema blobs the recordings came
 from.  These files show what one producer actually wrote. They do not
@@ -181,7 +181,7 @@ Consumers must not rely on =t=.
 
 The recordings change only when the producer changes: a new =inspect.fs=
 or schema.  So a diff in =corpus/= is a contract question.  Before you
-commit one, sort it by the table in [[file:../RELEASING.org][RELEASING.org]] ("Stable API, and
+commit one, sort it by the table in [[file:../docs/RELEASING.org][RELEASING.org]] ("Stable API, and
 what bumps what") and follow its checklist.  A change that would alter a
 reference consumer's output here (the =jq=, =checker= or
 =mock_get_stacks= values) is the kind that table calls MAJOR.
