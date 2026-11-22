@@ -66,6 +66,20 @@ green, a `/code-review` of your own branch, every finding answered, and the
 review recorded in the PR body. Coordinators merge. Agents never merge
 their own PRs.
 
+### What `/code-review` checks here
+
+`/code-review` reads this file, not REVIEW.md. On top of correctness, flag:
+
+| fault | rule |
+|---|---|
+| an inspector word moves what it reports | every stack bit-identical after any word that reads one (`.stacks` once printed its own return-stack frame) |
+| a word not in 0.7.3 | `{: :}`, `[: ;]`, `[{:` are gforth 1.0; check with `gforth -e 's" WORD" find-name 0<> . bye'` |
+| one engine only | threaded-code changes (`dbg`, `see`, return addresses) tested in `gforth`, `gforth-fast`, `gforth-itc` |
+| a record-format change | needs an issue, a schema change and a change-log row ([RELEASING.org](docs/RELEASING.org), "Changing the contract or the tooling"); must not break a reference consumer |
+| an uncalibrated gate | a new check has a planted fault that turns it red, for the right reason |
+| private data | absolute paths, names, addresses, tokens, other people's code, session transcripts, in files or test output |
+| developer notes in README.org | README is end-user only |
+
 ## What an agent owns
 
 - Its own worktree and branch, and the files its draft PR names.
