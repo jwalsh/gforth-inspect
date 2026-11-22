@@ -1,10 +1,11 @@
-#+TITLE: 011 log-paths: the per-project default log directory (D-43)
+#+TITLE: 012 log-paths: the per-project default log directory (D-43)
 #+DATE: 2026-11-22
 #+STARTUP: showall
 
 Written by the v0.3.0 agent in PR #52, not committed to =main= first as
 E-1 asks: the coordinator asked for the tests in the producer PR.  The
-coordinator decides the =experiments/README.org= row.
+coordinator decides the =experiments/README.org= row.  Numbered 012: 011
+is forth-lock (PR #53).
 
 * Hypothesis
 
@@ -24,13 +25,13 @@ injectivity also turn P1 or P3 red.
 
 * Gate
 
-1. =pbt/test_011_log_paths.py= green under =gmake -C pbt check= (100
+1. =pbt/test_012_log_paths.py= green under =gmake -C pbt check= (100
    examples a property; =PROFILE=ci= 1000), on the working tree's
    =inspect.fs= (=gmake verify=).
 2. Branch names come from a wide generator (Unicode, =/=, =.=, =@=, ={=,
    control characters, names up to 300 bytes) and are kept only when real
    git accepts them.
-3. =gmake -C pbt calibrate=: every =pbt/calibrate/011-*.sh= red.
+3. =gmake -C pbt calibrate=: every =pbt/calibrate/012-*.sh= red.
 4. Every gforth run has its own temp dir as =HOME=, =XDG_STATE_HOME= and
    cwd (E-10, #46); the driver only computes paths, nothing is logged.
 5. Pin-on-find: each shrunk counterexample becomes an =@example=.
@@ -39,7 +40,7 @@ injectivity also turn P1 or P3 red.
 
 ** 2026-11-22 first runs (inspect.fs 0.3.0, working tree)
 
-=pytest test_011_log_paths.py=: 9 passed, 64 s (default profile), all
+=pytest test_012_log_paths.py=: 9 passed, 64 s (default profile), all
 three engines drawn per example.  Two counterexamples on the way, both in
 the harness, neither in the rule:
 
@@ -50,18 +51,18 @@ the harness, neither in the rule:
 - APFS refuses some names (=EILSEQ=, e.g. U+1CC00): the fixture is
   rejected, not failed, and directory names are drawn from the BMP.
 
-Mutation table (=pbt/calibrate/011-*.sh=, 25 examples each, no shrinking):
+Mutation table (=pbt/calibrate/012-*.sh=, 25 examples each, no shrinking):
 
 | fault                                    | script                  | red    |
 |------------------------------------------+-------------------------+--------|
-| =/= passed through a slug                  | 011-slash-passes.sh     | P4 P1  |
-| no ASCII lowercasing                     | 011-no-lowercase.sh     | P4     |
-| no hash (slug only)                      | 011-no-hash.sh          | P4 P3  |
-| hash over the slug, not the name         | 011-hash-of-slug.sh     | P4 P3  |
-| wrong FNV prime                          | 011-fnv-prime.sh        | P4     |
-| FNV truncated to 32 bits                 | 011-fnv-32bit.sh        | P4 P3  |
-| leading =.= not stripped                   | 011-no-dot-strip.sh     | P4     |
-| =~= allowed in a plain name                | 011-tilde-plain.sh      | P4     |
+| =/= passed through a slug                  | 012-slash-passes.sh     | P4 P1  |
+| no ASCII lowercasing                     | 012-no-lowercase.sh     | P4     |
+| no hash (slug only)                      | 012-no-hash.sh          | P4 P3  |
+| hash over the slug, not the name         | 012-hash-of-slug.sh     | P4 P3  |
+| wrong FNV prime                          | 012-fnv-prime.sh        | P4     |
+| FNV truncated to 32 bits                 | 012-fnv-32bit.sh        | P4 P3  |
+| leading =.= not stripped                   | 012-no-dot-strip.sh     | P4     |
+| =~= allowed in a plain name                | 012-tilde-plain.sh      | P4     |
 
 32-bit truncation also breaks P3: the component shows the top 48 of 64
 bits, of which only 16 then carry hash, so collisions come within a batch.

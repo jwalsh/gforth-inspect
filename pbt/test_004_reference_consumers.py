@@ -542,10 +542,10 @@ def _contract_default() -> str:
     for this run: run_default_location keeps the runner's $PWD, so the log
     goes to state/gforth-inspect/<owner>/<repo>/<worktree>/ of the checkout
     the tests run in, or state/gforth-inspect/ without $PWD.  Computed by the
-    reference block in stacks-log.org (_011_helpers)."""
-    import _011_helpers
+    reference block in stacks-log.org (_012_helpers)."""
+    import _012_helpers
     environ = {b"XDG_STATE_HOME": b"state", b"HOME": b"home", b"PWD": os.environb.get(b"PWD", b"")}
-    return _011_helpers.reference.log_dir(environ).decode("utf-8", "surrogateescape") + "/stacks.jsonl"
+    return _012_helpers.reference.log_dir(environ).decode("utf-8", "surrogateescape") + "/stacks.jsonl"
 
 
 CONTRACT_DEFAULT = _contract_default()  # RELEASING.org "Log location"

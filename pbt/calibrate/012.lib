@@ -1,11 +1,11 @@
-# sourced by calibrate/011-*.sh (not itself a calibration: gmake globs *.sh)
+# sourced by calibrate/012-*.sh (not itself a calibration: gmake globs *.sh)
 #
 # A plant edits a temp copy of the inspect.fs under test (INSPECT_FS, else
 # INSPECT_REF, else HEAD), runs the inspect.fs properties of
-# test_011_log_paths.py against it, and exits 0 only if P4 (forth equals
+# test_012_log_paths.py against it, and exits 0 only if P4 (forth equals
 # the reference) went red, plus every property named in expect_red.  It
 # prints which properties went red: the mutation table in
-# experiments/011-log-paths/README.org.
+# experiments/012-log-paths/README.org.
 set -u
 calibrate_dir=$(cd "$(dirname "$0")" && pwd)
 pbt_dir=$(dirname "$calibrate_dir")
@@ -22,9 +22,9 @@ plant() {
 
 # expect_red [P1|P3 ...]: red on P4 and on each property named
 expect_red() {
-    out=$(cd "$pbt_dir" && INSPECT_FS="$tmp/inspect.fs" PBT_011_EXAMPLES=${PBT_011_EXAMPLES:-25} \
+    out=$(cd "$pbt_dir" && INSPECT_FS="$tmp/inspect.fs" PBT_012_EXAMPLES=${PBT_012_EXAMPLES:-25} \
         uv run --no-project --with hypothesis --with jsonschema --with pytest \
-        pytest -q -p no:cacheprovider -k forth test_011_log_paths.py 2>&1)
+        pytest -q -p no:cacheprovider -k forth test_012_log_paths.py 2>&1)
     red=""
     printf '%s\n' "$out" | grep -q '^FAILED.*test_forth_matches_reference' && red="$red P4"
     printf '%s\n' "$out" | grep -q '^FAILED.*test_forth_components_safe' && red="$red P1"

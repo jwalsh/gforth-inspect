@@ -1,4 +1,4 @@
-"""Helpers for experiment 011 (experiments/011-log-paths/README.org).
+"""Helpers for experiment 012 (experiments/012-log-paths/README.org).
 
 reference   the Python reference of the default log directory, executed
             from its block in contract/stacks-log.org (#+name:
@@ -49,7 +49,7 @@ def git_accepts(name: bytes) -> bool:
     """Real git's verdict; names it would rewrite (it prints them back) are refused too."""
     if not name or b"\0" in name:
         return False
-    with tempfile.TemporaryDirectory(prefix="gfi-011-git-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="gfi-012-git-") as tmp:
         proc = subprocess.run(["git", "check-ref-format", "--branch", name], cwd=tmp,
                               capture_output=True, env={**os.environ, "GIT_CEILING_DIRECTORIES": tmp})
     return proc.returncode == 0 and proc.stdout.rstrip(b"\n") == name
@@ -147,7 +147,7 @@ def raw_components(pwd: bytes) -> tuple:
 
 def forth_dirs(fixtures: list[Fixture], engine: str = "gforth") -> Batch:
     inspect_fs, _ = gforth_run.inspect_source()
-    with tempfile.TemporaryDirectory(prefix="gfi-011-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="gfi-012-") as tmp:
         tmp_path = Path(tmp)
         for sub in ("home", "state"):
             (tmp_path / sub).mkdir()

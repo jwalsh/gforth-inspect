@@ -1,7 +1,7 @@
-"""Experiment 011: the per-project default log directory (experiments/011-log-paths/README.org).
+"""Experiment 012: the per-project default log directory (experiments/012-log-paths/README.org).
 
 The rule is contract/stacks-log.org, "Files"; its Python reference is the
-block there, loaded by _011_helpers.  Properties:
+block there, loaded by _012_helpers.  Properties:
 
   P1 safe        every encoded component is non-empty, has no "/" or NUL,
                  is not "." or "..", is ASCII and at most 64 bytes
@@ -13,7 +13,7 @@ block there, loaded by _011_helpers.  Properties:
 
 P1-P3 run on the reference over arbitrary bytes and on git-valid branch
 names (kept only when `git check-ref-format --branch` accepts them); P1,
-P3 and P4 also run on what gforth prints.  pbt/calibrate/011-*.sh plant
+P3 and P4 also run on what gforth prints.  pbt/calibrate/012-*.sh plant
 faults in a copy of inspect.fs; each must turn P4 (and, where the fault
 breaks them, P1 or P3) red.
 
@@ -30,7 +30,7 @@ import unicodedata
 from hypothesis import Phase, example, given, note, reject, settings
 from hypothesis import strategies as st
 
-import _011_helpers as helpers
+import _012_helpers as helpers
 import gforth_run
 
 ref = helpers.reference
@@ -135,9 +135,9 @@ def fixtures(draw):
 batches = st.lists(fixtures(), min_size=1, max_size=8)
 engines = st.sampled_from(gforth_run.ENGINES)
 
-# calibrate/011.lib sets PBT_011_EXAMPLES: a few examples, no shrinking,
+# calibrate/012.lib sets PBT_012_EXAMPLES: a few examples, no shrinking,
 # enough to say which properties a planted fault turns red
-_CAL_EXAMPLES = int(os.environ.get("PBT_011_EXAMPLES", "0"))
+_CAL_EXAMPLES = int(os.environ.get("PBT_012_EXAMPLES", "0"))
 calibration = (settings(max_examples=_CAL_EXAMPLES, phases=[Phase.explicit, Phase.generate])
                if _CAL_EXAMPLES else (lambda test: test))
 
