@@ -535,7 +535,18 @@ def test_version_stop():
 
 DEFAULT_PROGRAM = "log-on 1 2 .stacks log-off"
 OLD_DEFAULT = "state/course-repo/stacks.jsonl"         # 18ebe2d, where today's consumers look
-CONTRACT_DEFAULT = "state/gforth-inspect/stacks.jsonl"  # RELEASING.org "Log location"
+
+
+def _contract_default() -> str:
+    """The documented default (contract/stacks-log.org, "Files", since 0.3.0)
+    for the last run_default_location run, from the reference block in
+    stacks-log.org (_012_helpers) and that run's real, physical cwd
+    (<tmp>/proj): state/gforth-inspect/_nogit/proj/_/ unless TMPDIR is
+    inside a checkout."""
+    import _012_helpers
+    environ = {b"XDG_STATE_HOME": b"state", b"HOME": b"home"}
+    cwd = os.fsencode(helpers.LAST_DEFAULT_CWD)
+    return _012_helpers.reference.log_dir(environ, cwd=cwd).decode("utf-8", "surrogateescape") + "/stacks.jsonl"
 
 
 class DefaultLocationBreak(AssertionError):
@@ -554,6 +565,7 @@ def test_default_location_old_precondition():
 
 def test_default_location_contract():
     written = helpers.run_default_location("new", DEFAULT_PROGRAM)
+    CONTRACT_DEFAULT = _contract_default()  # RELEASING.org "Log location"
     STATS.setdefault("gate_lines", []).append(
         f"default location, GFORTH_INSPECT_LOG_DIR unset: new wrote {list(written)}")
     if not written.get(CONTRACT_DEFAULT):

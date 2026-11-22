@@ -21,8 +21,8 @@ return <R:40> top first
 input  test/tilde3-recursive.fs:6 >in=35
 :noname ( -- ) 9 ~~~ drop ; execute
                                    ^
-## log state/gforth-inspect/stacks.jsonl
-{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.2.0","contract":"1.1"}
+## log state/gforth-inspect/golden/checkout/main/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
 {"v":1,"event":"snapshot","t":T,"where":"fact","src":"test/tilde3-recursive.fs:3","data":[4,3,2,1],"float":[],"rs":[{"word":"fact","off":96},{"word":"fact","off":96},{"word":"fact","off":96}],"input":{"file":"test/tilde3-recursive.fs","line":5,"in":7,"text":"4 fact 24 s\" fact\" assert="}}
 {"v":1,"event":"snapshot","t":T,"where":"???","src":"test/tilde3-recursive.fs:6","data":[9],"float":[],"rs":[],"input":{"file":"test/tilde3-recursive.fs","line":6,"in":35,"text":":noname ( -- ) 9 ~~~ drop ; execute"}}
 ## exit 0

@@ -1,0 +1,42 @@
+# sourced by calibrate/012-*.sh (not itself a calibration: gmake globs *.sh)
+#
+# A plant edits a temp copy of the inspect.fs under test (INSPECT_FS, else
+# INSPECT_REF, else HEAD), runs the inspect.fs properties of
+# test_012_log_paths.py against it, and exits 0 only if P4 (forth equals
+# the reference) went red, plus every property named in expect_red.  It
+# prints which properties went red: the mutation table in
+# experiments/012-log-paths/README.org.
+set -u
+calibrate_dir=$(cd "$(dirname "$0")" && pwd)
+pbt_dir=$(dirname "$calibrate_dir")
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+if [ -n "${INSPECT_FS:-}" ]; then cp "$INSPECT_FS" "$tmp/orig.fs"
+else git -C "$pbt_dir" show "${INSPECT_REF:-HEAD}:env/inspect.fs" > "$tmp/orig.fs" || exit 2; fi
+
+# plant PERL-SUBSTITUTION: the planted copy; refuse a plant that changed nothing
+plant() {
+    perl -pe "$1" "$tmp/orig.fs" > "$tmp/inspect.fs"
+    if cmp -s "$tmp/orig.fs" "$tmp/inspect.fs"; then echo "plant did not apply: $1"; exit 1; fi
+}
+
+# expect_red [P1|P3|P5 ...]: red on each property named, and on P4 unless
+# NO_P4=1 (a fault outside (log-dir-for), which P4 calls directly)
+expect_red() {
+    out=$(cd "$pbt_dir" && INSPECT_FS="$tmp/inspect.fs" PBT_012_EXAMPLES=${PBT_012_EXAMPLES:-25} \
+        uv run --no-project --with hypothesis --with jsonschema --with pytest \
+        pytest -q -p no:cacheprovider -k forth test_012_log_paths.py 2>&1)
+    red=""
+    printf '%s\n' "$out" | grep -c '^FAILED.*test_forth_matches_reference' >/dev/null && red="$red P4"
+    printf '%s\n' "$out" | grep -c '^FAILED.*test_forth_components_safe' >/dev/null && red="$red P1"
+    printf '%s\n' "$out" | grep -c '^FAILED.*test_forth_injective' >/dev/null && red="$red P3"
+    printf '%s\n' "$out" | grep -c '^FAILED.*test_forth_cwd_beats_pwd' >/dev/null && red="$red P5"
+    echo "red:${red:- none}"
+    if [ "${NO_P4:-0}" = 1 ]; then wants="$*"; else wants="P4 $*"; fi
+    for want in $wants; do
+        case " $red " in *" $want "*) ;; *)
+            echo "GREEN on $want: not caught"; printf '%s\n' "$out" | grep -E '^(FAILED|E )' | head -8; exit 1;;
+        esac
+    done
+    exit 0
+}

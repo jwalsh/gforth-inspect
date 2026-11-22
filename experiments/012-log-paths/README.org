@@ -1,0 +1,175 @@
+#+TITLE: 012 log-paths: the per-project default log directory (D-43)
+#+DATE: 2026-11-22
+#+STARTUP: showall
+
+Written by the v0.3.0 agent in PR #52, not committed to =main= first as
+E-1 asks: the coordinator asked for the tests in the producer PR.  The
+coordinator decides the =experiments/README.org= row.  Numbered 012: 011
+is forth-lock (PR #53).
+
+* Hypothesis
+
+The default log directory of 0.3.0 (=contract/stacks-log.org=, "Files")
+maps every project to =<base>/<owner>/<repo>/<worktree>= such that each
+component is one safe path component (P1), the same name always gives the
+same component (P2), different names never share one, also after
+case-folding (P3), and =inspect.fs= computes exactly what the Python
+reference in =stacks-log.org= computes, on real fixture trees (P4).
+
+* Prediction
+
+P1-P4 hold for every branch name =git check-ref-format --branch= accepts,
+for arbitrary owner and repo bytes, and for every accepted url form; each
+of nine planted faults turns P4 red, and the faults that break safety or
+injectivity also turn P1 or P3 red.
+
+* Gate
+
+1. =pbt/test_012_log_paths.py= green under =gmake -C pbt check= (100
+   examples a property; =PROFILE=ci= 1000), on the working tree's
+   =inspect.fs= (=gmake verify=).
+2. Branch names come from a wide generator (Unicode, =/=, =.=, =@=, ={=,
+   control characters, names up to 300 bytes) and are kept only when real
+   git accepts them.
+3. =gmake -C pbt calibrate=: every =pbt/calibrate/012-*.sh= red.
+4. Every gforth run has its own temp dir as =HOME=, =XDG_STATE_HOME= and
+   cwd (E-10, #46); the driver only computes paths, nothing is logged.
+5. Pin-on-find: each shrunk counterexample becomes an =@example=.
+
+* Log
+
+** 2026-11-22 first runs (inspect.fs 0.3.0, working tree)
+
+=pytest test_012_log_paths.py=: 9 passed, 64 s (default profile), all
+three engines drawn per example.  Two counterexamples on the way, both in
+the harness, neither in the rule:
+
+- a directory named CR: the first driver read the =$PWD= list with
+  =read-line=, which also ends a line at CR, so gforth saw the parent.  The
+  driver now reads NUL-terminated =$PWD=s with =slurp-file=.  Pinned as an
+  =@example= of =test_forth_matches_reference=.
+- APFS refuses some names (=EILSEQ=, e.g. U+1CC00): the fixture is
+  rejected, not failed, and directory names are drawn from the BMP.
+
+Mutation table (=pbt/calibrate/012-*.sh=, 25 examples each, no shrinking):
+
+| fault                                    | script                  | red    |
+|------------------------------------------+-------------------------+--------|
+| =/= passed through a slug                  | 012-slash-passes.sh     | P4 P1  |
+| no ASCII lowercasing                     | 012-no-lowercase.sh     | P4     |
+| no hash (slug only)                      | 012-no-hash.sh          | P4 P3  |
+| hash over the slug, not the name         | 012-hash-of-slug.sh     | P4 P3  |
+| wrong FNV prime                          | 012-fnv-prime.sh        | P4     |
+| FNV truncated to 32 bits                 | 012-fnv-32bit.sh        | P4 P3  |
+| leading =.= not stripped                   | 012-no-dot-strip.sh     | P4     |
+| =~= allowed in a plain name                | 012-tilde-plain.sh      | P4     |
+
+32-bit truncation also broke P3 on that run: the component shows the top
+48 of 64 bits, of which only 16 then carry hash, so collisions can come
+within a batch.  Not reliable at 25 examples: P4 only on the rerun below,
+P4 P3 again under =gmake release-check= at 1447510.
+
+** 2026-11-22 owner = every segment before the repo (coordinator's spec fix)
+
+The next-to-last segment alone merged GitLab subgroups:
+=ssh://host/group-a/sub/repo.git= and =.../group-b/sub/repo.git= both gave
+owner =sub=.  The owner is now all segments before the repo, joined by
+=/=, one component (=group-a-sub~046464b4cc65=).  New property
+=test_reference_owner_keeps_earlier_segments=; the url generator draws
+arbitrary earlier segments; two subgroup fixtures in the fixed batch and
+in the =log-dir-rule= golden.  =pytest test_012_log_paths.py=: 10 passed.
+Rerun of every plant:
+
+| fault                                    | script                  | red    |
+|------------------------------------------+-------------------------+--------|
+| =/= passed through a slug                  | 012-slash-passes.sh     | P4 P1  |
+| no ASCII lowercasing                     | 012-no-lowercase.sh     | P4     |
+| no hash (slug only)                      | 012-no-hash.sh          | P4 P3  |
+| hash over the slug, not the name         | 012-hash-of-slug.sh     | P4 P3  |
+| wrong FNV prime                          | 012-fnv-prime.sh        | P4     |
+| FNV truncated to 32 bits                 | 012-fnv-32bit.sh        | P4     |
+| leading =.= not stripped                   | 012-no-dot-strip.sh     | P4     |
+| =~= allowed in a plain name                | 012-tilde-plain.sh      | P4     |
+| owner = the next-to-last segment only    | 012-owner-last-only.sh  | P4 P3  |
+
+** 2026-11-22 the project is the current directory, never $PWD (P5)
+
+The coordinator reproduced a clobber: gforth started with cwd = linked
+worktree b and $PWD inherited from the main worktree logged to
+=acme/widget/main/=.  The brief said 0.7.3 has no getcwd; it has
+=get-dir= (all three engines, and 1.0.1), which ignores =$PWD=.  The
+project is now found from =get-dir='s physical path; =$PWD= is never read.
+The reference takes =cwd= instead of =PWD=.  New property P5,
+=test_forth_cwd_beats_pwd=: one gforth per fixture, started in it, =$PWD=
+naming another fixture or unset; pinned trio of two linked worktrees and
+the main checkout, one engine each.  =pytest test_012_log_paths.py=: 11
+passed.  New plant:
+
+| fault                                        | script                  | red |
+|----------------------------------------------+-------------------------+-----|
+| project from =$PWD= instead of =get-dir=       | 012-root-from-pwd.sh    | P5  |
+
+P4 calls =(log-dir-for)= with the directory directly, so it cannot see this
+fault (=NO_P4=1=); the goldens =log-dir-cwd-not-pwd= and =log-dir-no-pwd= go
+red on it too.  =test_004='s default-location run now starts in
+=<tmp>/proj= (=_004_helpers.py=), so its documented default is
+=state/gforth-inspect/_nogit/proj/_/stacks.jsonl=.
+
+** 2026-11-22 /code-review of 4397a90: four important findings, five nits
+
+All in the rule; the Forth matched the reference.  Fixed in this PR, the
+reference and stacks-log.org Files with it:
+
+- a relative =.env= value is relative to =<root>=, not the cwd;
+- reftable (=[extensions] refStorage = reftable=, or the stub =HEAD= =ref:
+  refs/heads/.invalid=): =_wt-<name>~<hash of root's path>=;
+- detached: hashed over =<root>='s physical path, not its name;
+- cells under 8 bytes, and versions below 0.7.3, fail the dependency check;
+- =.env= forms: =export=, blanks around ===, quotes, =#= comments, bare =~=;
+- =(file!)= opens, reads and closes itself (=slurp-file= leaked the fd when
+  the read failed, e.g. a =.env= directory);
+- path buffers hold a full =log-max= directory plus 256; past that, =<base>=;
+- TMPDIR inside a checkout: =test_004= takes the run's physical cwd, the
+  =_nogit= goldens SKIP with a reason;
+- =test/mask.pl= masks only the checkout's own components.
+
+Generators: the reftable stub and =[extensions]= sections, two detached
+worktrees with one name, the =.env= forms (=dotenv_lines=).  Pinned: a
+directory name holding LF with a relative =.env= value, which the P5 harness
+split on LF.  New plants:
+
+| fault                                          | script                       | red         |
+|------------------------------------------------+------------------------------+-------------|
+| detached hashed by its name only               | 012-detached-basename.sh     | P4 P3 P5    |
+| reftable not recognised                        | 012-reftable-ignored.sh      | P4 P3 P5    |
+
+The fd-leak golden was red on the old =(file!)= (=ulimit-files 64=), the
+detached and reftable pair asserts red on the name-only hash.
+
+=gmake release-check= at 1bf9764 then found a second harness bug: the P4
+driver printed one log dir per line, and a root named LF with a relative
+=.env= value puts LF inside a log dir, so every later line shifted (P4 and
+P1 red).  That was also the one-off P1 red under 012-fnv-prime.  The driver
+now NUL-terminates; the case is pinned.
+
+** 2026-11-22 second /code-review (694ed99): three important findings, four nits
+
+- =_local= and =_nogit= named by a directory's name alone: two scratch
+  repositories without origin, or two non-git =proj= directories, shared a
+  log.  Both are now hashed over a path (the common git dir, the cwd), like
+  =_detached-= and =_wt-=.  P5 and P3 fixtures =SAME_NAMES=; plant
+  012-name-only-local (P4 P3 P5).
+- run.sh ran every golden in the checkout, so its =.git= and =.env= decided
+  where they logged.  Goldens now run in a fixture checkout under =$WORK=
+  (selftest: a =.env= planted in a copy of the tree changes nothing; red
+  on the old run.sh, which exited 2).
+- =log-where= while logging names the open file, fixed at =log-on=
+  (golden: HEAD rewritten after =log-on=).
+- nits: consumer docs show encoded components and point to =log-where=;
+  BASE saved and decimal for the load, restored at its end and on a
+  dependency throw (golden under =hex=); the fit check reserves 13 bytes
+  for =/stacks.jsonl= and a too-long =.env= value warns; a =.env= value
+  with =..= or absolute outside =$HOME= is refused with a warning.
+
+The three new goldens were red on the inspect.fs before the change.
+

@@ -1,0 +1,16 @@
+## stdout
+
+$TMP/state/gforth-inspect/acme/tr/main/stacks.jsonl
+
+$TMP/state/gforth-inspect/acme/tr/main/stacks.jsonl
+
+$TMP/state/gforth-inspect/acme/tr/main/stacks.jsonl
+
+$TMP/home/_inside/stacks.jsonl
+
+$TMP/home/_tilde/stacks.jsonl
+## stderr
+gforth-inspect: ignoring .env GFORTH_INSPECT_LOG_DIR outside $HOME
+gforth-inspect: ignoring .env GFORTH_INSPECT_LOG_DIR outside $HOME
+gforth-inspect: ignoring .env GFORTH_INSPECT_LOG_DIR: too long
+## exit 0

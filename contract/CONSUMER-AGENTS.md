@@ -7,6 +7,49 @@ COLLABORATION.org's "Registry" section. A
 "consumer" is any project that loads `inspect.fs` or reads `stacks.jsonl`.
 The reasoning behind each rule is in [COLLABORATION.org](../docs/COLLABORATION.org).
 
+## Requirements
+
+- A 64-bit gforth `>= 0.7.3, < 1.0`; 0.7.3 is the version tested, in
+  `gforth`, `gforth-fast` and `gforth-itc`. Outside that range, or with
+  32-bit cells, `inspect.fs` fails its dependency check at load: one line
+  on stderr, then the load throws.
+- The log: `stacks.jsonl` in `$GFORTH_INSPECT_LOG_DIR` when set, else in
+  the `GFORTH_INSPECT_LOG_DIR=` of your project's `.env`, else in a
+  directory per project and worktree under
+  `${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/`: `<owner>/<repo>/<branch>`,
+  where `<repo>` is the last path segment of origin's url and `<owner>`
+  everything before it. Each is encoded as one path component per
+  `stacks-log.org`, "Files": `group/sub` becomes `group-sub~<12 hex>` and
+  branch `feat/x` becomes `feat-x~<12 hex>`, so don't build the path by
+  hand. Run `gforth inspect.fs -e 'log-where bye'` in the project to see
+  where (in a REPL that is logging, `log-where` prints the open file), or
+  put `GFORTH_INSPECT_LOG_DIR=~/.local/state/gforth-inspect/shared` in each
+  worktree's `.env` to share one log; a `.env` value must be relative, `~/…`
+  or under `$HOME` (a cloned `.env` is not trusted further). The rule:
+  `stacks-log.org`, "Files".
+  The project is found from gforth's own current directory, not `$PWD`.
+  On a case-insensitive disk, a repository cloned with differently-cased
+  urls gets a second log (a split, never a merge); set
+  `GFORTH_INSPECT_LOG_DIR` or the `.env` line to pin one.
+
+## Required assets
+
+Each release ships these flat, side by side (#50):
+
+| asset                    | required | why                                          |
+|--------------------------|----------|----------------------------------------------|
+| `inspect.fs`             | yes      | the inspector                                |
+| `stacks-log.schema.json` | yes      | what a record may contain                    |
+| `SHA256SUMS`             | yes      | checks the download                          |
+| `stacks-log.org`         | no       | the contract in prose, and its change log    |
+| `CONSUMERS.org`          | no       | producer and consumer obligations            |
+| `CONSUMER-AGENTS.md`     | no       | this file                                    |
+| `SKILL.md`               | no       | the skill                                    |
+| `WORDS.org`              | no       | every word, its stack effect and output      |
+
+Adding an optional asset is a MINOR change. A new required asset is
+announced one release ahead, in that release's notes and change log.
+
 ## Install the skill
 
 Each release ships `SKILL.md`. Copy it to

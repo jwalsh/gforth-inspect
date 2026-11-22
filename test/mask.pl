@@ -1,7 +1,10 @@
 #!/usr/bin/perl -p
 # mask.pl -- remove per-run noise from test output before diffing
-#   $TMP is the test's temp dir (env MASK_TMP)
-BEGIN { $tmp = $ENV{MASK_TMP} // "\0none"; }
+#   $TMP is the test's temp dir (env MASK_TMP, and MASK_TMP_REAL its physical
+#   path); log paths are not masked at all (run.sh runs every test in a
+#   fixture checkout, golden/checkout on main)
+BEGIN { $tmp = $ENV{MASK_TMP} // "\0none"; $real = $ENV{MASK_TMP_REAL} || "\0none"; }
+s/\Q$real\E/\$TMP/g;
 s/\Q$tmp\E/\$TMP/g;
 s/\$[0-9A-F]{5,}/\$ADDR/g;                       # hex. addresses
 s/^[0-9A-F]{8,} [0-9A-F]{8,} /ADDR ADDR /;       # dbg: ip and cell

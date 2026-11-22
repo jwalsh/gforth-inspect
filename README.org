@@ -105,8 +105,12 @@ $ cat logs/stacks.jsonl
 {"v":1,"event":"snapshot","t":1795370955,"where":null,"src":null,"data":[1,2,-3],"float":[1.5000000000000000E0 ],"rs":[],"input":{"file":"*OS command line*","line":-1,"in":27,"text":"log-on 1 2 -3 1.5e .stacks log-off bye"}}
 #+end_example
 
-Without =GFORTH_INSPECT_LOG_DIR=, the log is
-=${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/stacks.jsonl=. The fields
+Without =GFORTH_INSPECT_LOG_DIR=, each project and branch gets its own log
+under =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/=, one directory
+per owner, repository and branch, each name encoded as one path component
+(branch =feat/x= becomes =feat-x~= and 12 hex digits); =log-where= prints
+the path, so don't build it by hand. A =GFORTH_INSPECT_LOG_DIR== line in
+the project's =.env= sets it instead. The fields
 are defined in =stacks-log.schema.json=, shipped with each release. A float
 that is not finite is logged as =null=.
 

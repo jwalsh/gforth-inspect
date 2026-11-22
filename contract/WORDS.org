@@ -10,15 +10,20 @@ may change in any release.
 
 | gforth | engines                          | status                                                                 |
 |--------+----------------------------------+------------------------------------------------------------------------|
-| 0.7.3  | =gforth=, =gforth-fast=, =gforth-itc= | supported and tested: every word below, every release                  |
-| 1.0.x  | —                                | not supported, and does not load: on 1.0.0 and 1.0.1 (all engines) loading stops at an undefined word, because three 0.7.3 internals it uses (=interpret1=, =handler-intro,=, =.debugline-stderr=) are gone. =inspect.fs= first prints one line on stderr naming the gforth version |
+| 0.7.3, 64-bit | =gforth=, =gforth-fast=, =gforth-itc= | supported and tested: every word below, every release                  |
+| 0.7.3, 32-bit | —                                | not supported: load fails with =gforth-inspect requires a 64-bit gforth 0.7.3; this one has 4-byte cells= (the log-dir hash needs 64-bit cells) |
+| < 0.7.3 | —                               | not supported: load fails with the dependency message |
+| 1.0.x  | —                                | not supported: load fails with a dependency message. Since 0.3.0 the first lines of =inspect.fs=, before any definition, print =gforth-inspect requires gforth 0.7.3 (>= 0.7.3, < 1.0); this is gforth 1.0.1= on stderr and =-1 throw=: =gforth inspect.fs= exits 1 and =include inspect.fs= throws. Without that check it would stop at an undefined word: three 0.7.3 internals it uses (=interpret1=, =handler-intro,=, =.debugline-stderr=) are gone in 1.0.0 and 1.0.1 |
+| other 0.x | —                              | not tested: one line on stderr (=gforth-inspect: tested on gforth 0.7.3 only; this is gforth 0.7.9=), then it loads on as far as it can |
 
 =inspect.fs= uses only words present in 0.7.3. It uses no gforth 1.0
 words (={: :}=, =[: ;]=, =[{:=).
 
 * Guarantees
 
-- No word below changes =BASE= or the float =PRECISION=.
+- No word below changes =BASE= or the float =PRECISION=. Loading
+  =inspect.fs= reads its own numbers in decimal and leaves =BASE= as it
+  was, also when the dependency check stops the load.
 - A word that reads a stack leaves every stack bit-identical: data, float,
   return, control-flow.
 - The log is always decimal, whatever =BASE= is. In the text, depths
@@ -44,13 +49,18 @@ words (={: :}=, =[: ;]=, =[{:=).
 | =dbg+=            | ( -- )                       |                         | =dbg-fix=, plus a =D: F: R:= line before every step                                    |
 | =log-on=          | ( -- )                       |                         | opens the log (path below) for appending and writes a =hello= record              |
 | =log-off=         | ( -- )                       |                         | closes the log; later snapshots are printed, not logged                           |
-| =log-where=       | ( -- )                       |                         | prints the log's path on its own line                                            |
+| =log-where=       | ( -- )                       |                         | prints the log's path on its own line: the open log while logging                                            |
 | =log-id=          | ( c-addr u -- )              |                         | tags the following snapshots with ="id"=, at most 63 bytes; =s" " log-id= clears it |
 | =inspect-version= | ( -- c-addr u )              |                         | the release version, ="X.Y.Z"=, the same as the file's first line                   |
 | =contract-version= | ( -- c-addr u )             |                         | the log contract, ="MAJOR.MINOR"=, the same as =hello.contract=                       |
 
-Log path: =$GFORTH_INSPECT_LOG_DIR/stacks.jsonl= when that variable is set,
-else =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/stacks.jsonl=.
+Log path: =<dir>/stacks.jsonl=. =<dir>= is =$GFORTH_INSPECT_LOG_DIR= when that
+variable is set and non-empty; else the =GFORTH_INSPECT_LOG_DIR== line of the
+project's =.env=; else, per project and worktree,
+=${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/<owner>/<repo>/<worktree>=
+(=.../gforth-inspect= itself when the current directory cannot be read),
+from the process's current directory, never =$PWD=. The exact rule is
+[[file:stacks-log.org][stacks-log.org]], "Files".
 
 * Output formats
 
@@ -162,8 +172,13 @@ defer chain longer than 16 hops is reported and not run.
 
 ** =log-where=
 
-Prints an empty line, then the log's path as configured: relative when
-=GFORTH_INSPECT_LOG_DIR= is relative.
+Prints an empty line, then the log's path: while logging, the file
+=log-on= opened (fixed until =log-off=, whatever the branch or the current
+directory does since); otherwise the path =log-on= would open now,
+relative when =GFORTH_INSPECT_LOG_DIR= is relative.
+Without either, run from a checkout of =acme/widget= on branch =main=, it
+prints =$HOME/.local/state/gforth-inspect/acme/widget/main/stacks.jsonl=
+with =$HOME= expanded.
 
 * Versioning of this interface
 

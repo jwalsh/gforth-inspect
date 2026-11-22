@@ -65,9 +65,13 @@ def schema(side: str) -> dict:
         return gforth_run.schema()
 
 
+LAST_DEFAULT_CWD: str | None = None  # the physical cwd of the last run_default_location
+
+
 def run_default_location(side: str, program: str) -> dict[str, bytes]:
     """Run with GFORTH_INSPECT_LOG_DIR unset, so inspect.fs falls back to its
-    default.  cwd, XDG_STATE_HOME and HOME are fresh temp dirs.  Returns every
+    default.  cwd (<tmp>/proj, since 0.3.0 the default is per project:
+    _nogit/proj/_), XDG_STATE_HOME and HOME are fresh temp dirs.  Returns every
     file written under XDG_STATE_HOME, keyed by its path relative to it
     (prefixed `state/`), so the caller sees where the log went.
     """
@@ -78,10 +82,13 @@ def run_default_location(side: str, program: str) -> dict[str, bytes]:
         (tmp_path / "inspect.fs").write_bytes(inspect_fs.read_bytes())
         (tmp_path / "prog.fs").write_text(program + "\nbye\n")
         (tmp_path / "home").mkdir()
+        (tmp_path / "proj").mkdir()
+        global LAST_DEFAULT_CWD
+        LAST_DEFAULT_CWD = os.path.realpath(tmp_path / "proj")
         env = {key: value for key, value in os.environ.items() if key != "GFORTH_INSPECT_LOG_DIR"}
         env["XDG_STATE_HOME"] = str(tmp_path / "state")
         env["HOME"] = str(tmp_path / "home")
-        subprocess.run(["gforth", "inspect.fs", "prog.fs"], cwd=tmp_path, env=env,
+        subprocess.run(["gforth", "../inspect.fs", "../prog.fs"], cwd=tmp_path / "proj", env=env,
                        capture_output=True, timeout=30, stdin=subprocess.DEVNULL, check=False)
         written = {}
         for root in ("state", "home"):

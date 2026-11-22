@@ -1,0 +1,27 @@
+## stdout
+<base>/group-sub-acme~590ec786017f/widget/main
+<base>/group-sub-acme~590ec786017f/widget/feature-parser~eb9f8a4eb252
+<base>/group-sub-acme~590ec786017f/widget/fix-1
+<base>/_local/det~HASH/_detached-det~HASH
+<base>/_local/local.repo~HASH/main
+<base>/_local/local.repo~HASH/topic
+<base>/team/tools/main
+<base>/_/solo/main
+<base>/acme~84d1d48b0b85/widget~ae3bcbd78794/main
+<base>/me/fork/main
+<base>/group-a-sub~046464b4cc65/repo/main
+<base>/group-b-sub~271955d3d3f0/repo/main
+<base>/_local/wt~HASH/_detached-wt~HASH
+<base>/_local/wt~HASH/_detached-wt~HASH
+<base>/_local/main~HASH/_wt-main~HASH
+<base>/_local/main~HASH/_wt-w~HASH
+<base>/_nogit/aaaaaaa~HASH/_
+<base>
+<base>/_local/scratch~HASH/main
+<base>/_nogit/proj~HASH/_
+<base>/_nogit/x~HASH/_
+<base>/_nogit/my-proj~7519ee1eebbd/_
+<base>/_nogit/hidden~35e62fb3b679/_
+<base>
+## stderr
+## exit 0

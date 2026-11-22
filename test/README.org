@@ -46,7 +46,7 @@ the =jsonschema= package; without it only by the built-in validator.
    not bless any of those.
 
 Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
-=exit= (see the top of =test/run.sh=).  =test/lib/assert.fs= gives
+=exit=, =ulimit-files=, =tmp-outside-git= (see the top of =test/run.sh=).  =test/lib/assert.fs= gives
 =assert ( f c-addr u -- )=, =assert= ( actual expected c-addr u -- )= and
 =out-path ( c-addr u -- c-addr' u' )=.
 
@@ -56,7 +56,7 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 |---------------------+-------------------------------------------------------------|
 | data / float stack  | stacks-data, stacks-float, fclearstack                      |
 | return stack        | rs-nested (nested, do-loop params, recursion), rs-full, stacks-rp |
-| BASE untouched      | base-kept                                                   |
+| BASE untouched      | base-kept, base-hex-load (loaded under =hex=)                 |
 | input caret         | input-caret (tabs, evaluate)                                |
 | =~~~=               | tilde3-nested, tilde3-recursive (recurse, :noname), demo-env |
 | =~~= / =all-~~=     | tilde, all-tilde, all-tilde-where (where/src, prompt, evaluate, recursion) |
@@ -64,11 +64,12 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 | =dbg-fix= / =dbg+=  | dbg-step, dbg-nest-n, dbg-adjacent, dbg-loop-keys, dbg-demo, dbg-loop, dbg-nest |
 | log records         | log-records, version, log-id, all-tilde, base-kept          |
 | two producers (#17) | log-two-producers (a second gforth appends between records) |
-| log location        | log-dir-env, log-dir-xdg, log-dir-home                      |
+| log location        | log-dir-env, log-dir-xdg, log-dir-home, log-dir-project, log-dir-rule (owner/repo/worktree, linked worktrees, detached, no origin, url forms, no repository), log-dir-dotenv, log-dir-env-dotenv, log-dir-cwd-not-pwd (started in worktree b, $PWD inherited from worktree a: logs to b), log-dir-no-pwd, log-dir-dotenv-relative (a relative .env value is relative to the root), log-dir-env-is-dir (a .env directory, 64 open files at most), log-dir-dotenv-refused (outside $HOME, .., too long), log-where-while-logging (fixed at log-on) |
+| dependency check    | version-notice (0.7.9: notice, loads on), version-too-new (1.0.1: exit 1), version-too-old (0.7.0: exit 1), version-too-new-caught (9.9.9: =include= throws), cells-32bit (4-byte cells: exit 1) |
 | JSON                | json-escape (quotes, backslash, controls, UTF-8, invalid bytes), json-src, json-float |
 | lldb =brk= (no lldb) | demo                                                       |
 
-36 tests x 3 engines = 108 cases, plus =idle.fs= (skipped: it parks for
+53 tests x 3 engines = 159 cases, plus =idle.fs= (skipped: it parks for
 =lldb -p=).
 
 * Known limits
@@ -100,6 +101,30 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
   measured by experiment 005, not gated here.
 
 * Log
+
+** 2026-11-22 (0.3.0)
+
+The default log dir is per project (contract/stacks-log.org, "Files").  A
+golden run from the checkout logs to
+=state/gforth-inspect/<owner>/<repo>/<worktree>/=, which depends on where
+the checkout is and which branch it is on, so =test/mask.pl= (and the
+runner's =## log= line) printed the checkout's own components as
+=OWNER/REPO/WORKTREE= until the second review: now run.sh runs every
+gforth in =$WORK/run=, a fixture checkout (origin =golden/checkout=, branch
+=main=) that links =env/=, =test/= and =contract/=, so the default log is
+=state/gforth-inspect/golden/checkout/main/= in every checkout, nothing is
+masked, and the checkout's own =.git= and =.env= cannot reach a golden
+(=test/selftest.sh= plants a =.env= in a copy of the tree and checks).
+Names hashed over a temp path print as =~HASH= (=.log-dir-for-hash=).  The rule itself is tested where the components are
+known: =log-dir-rule= builds fixture trees under =$FX= (=$TMP/fx=) and
+prints =(log-dir-for)= for each with =test/lib/log-dir.fs=, unmasked; its
+hashes were checked against the Python reference.  The project is the
+current directory (=get-dir=), never =$PWD=: the black-box tests =set-dir=
+into their fixture (=log-dir-cwd-not-pwd= with =$PWD= naming another
+worktree, =log-dir-no-pwd= with it unset); with the project taken from
+=$PWD= instead, both go red (feature-a instead of feature-b; the shared
+base).  Re-recorded goldens changed only in the log path and the version.
+Tests 38 -> 46.
 
 ** 2026-11-21 (canvas removed)
 

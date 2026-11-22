@@ -1,0 +1,11 @@
+## stdout
+
+## stderr
+gforth-inspect requires a 64-bit gforth 0.7.3; this one has 4-byte cells
+
+in file included from *OS command line*:-1
+in file included from test/cells-32bit.fs:9
+env/inspect.fs:45: Aborted
+    base ! -1 >>>throw<<<
+Backtrace:
+## exit 1
