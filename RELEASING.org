@@ -5,7 +5,10 @@ Downstream projects use only tagged releases, never branches. That makes a
 release a promise, and this file says what it promises. Who produces the
 stream, who consumes it, and what each owes the other is set out in
 [[file:contract/CONSUMERS.org][contract/CONSUMERS.org]]; what a consuming agent reads is
-[[file:contract/CONSUMER-AGENTS.md][contract/CONSUMER-AGENTS.md]]. Both ship with every release.
+[[file:contract/CONSUMER-AGENTS.md][contract/CONSUMER-AGENTS.md]], and the skill an agent installs is
+[[file:contract/skill/SKILL.md][contract/skill/SKILL.md]]. All three ship with every release: a consumer
+gets the inspector, the guidelines and the skill, never this repository's
+execution (tests, scripts, CI, experiments).
 
 * What a release is
 
@@ -26,7 +29,8 @@ stream, who consumes it, and what each owes the other is set out in
   | =stacks-log.org=         | =contract/stacks-log.org=         |
   | =CONSUMERS.org=          | =contract/CONSUMERS.org=          |
   | =CONSUMER-AGENTS.md=     | =contract/CONSUMER-AGENTS.md=     |
-  | =SHA256SUMS=             | covering the five above           |
+  | =SKILL.md=               | =contract/skill/SKILL.md=         |
+  | =SHA256SUMS=             | covering the six above            |
 
   Downstream projects depend on these file names, so renaming, removing or
   moving an asset is a MAJOR change. The prose files have to render on
@@ -204,9 +208,9 @@ git switch main && git pull --ff-only
 gmake test && gmake -C pbt check PROFILE=ci && scripts/privacy-scan.sh
 gmake release-check   # builds dist/ as below and checks it
 # by hand, what release-check does:
-mkdir -p dist && cp env/inspect.fs contract/stacks-log.schema.json contract/stacks-log.org contract/CONSUMERS.org contract/CONSUMER-AGENTS.md dist/
+mkdir -p dist && cp env/inspect.fs contract/stacks-log.schema.json contract/stacks-log.org contract/CONSUMERS.org contract/CONSUMER-AGENTS.md contract/skill/SKILL.md dist/
 sed -i '' 's|\.\./CONSUMERS\.org|CONSUMERS.org|g' dist/stacks-log.org   # flatten sibling links
-(cd dist && shasum -a 256 inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org CONSUMER-AGENTS.md > SHA256SUMS)
+(cd dist && shasum -a 256 inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org CONSUMER-AGENTS.md SKILL.md > SHA256SUMS)
 scripts/privacy-scan.sh dist/*
 git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
 gh release create vX.Y.Z dist/* --notes-file dist/NOTES.md
