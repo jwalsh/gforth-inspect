@@ -43,7 +43,7 @@ input  test/json-escape.fs:9 >in=9
 	       	^
 ## stderr
 ## log state/gforth-inspect/stacks.jsonl
-{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.1","contract":"1.1"}
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.2.0","contract":"1.1"}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"*evaluated string*","line":-1,"in":7,"text":".stacks"}}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"*evaluated string*","line":-1,"in":8,"text":".stacks \\ \"quoted\" back\\\\slash"}}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"*evaluated string*","line":-1,"in":8,"text":".stacks \\ \t tab \u0001 \u001f  del \r cr \b bs \f ff"}}

@@ -19,7 +19,7 @@ is_draft=$(gh release view "$tag" -R "$repo" --json isDraft -q '.isDraft')
 [ "$is_draft" = false ] || { echo "release $tag is a draft" >&2; exit 1; }
 assets=$(gh release view "$tag" -R "$repo" --json assets -q '.assets[].name')
 for required in inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org \
-                CONSUMER-AGENTS.md SKILL.md SHA256SUMS; do
+                CONSUMER-AGENTS.md SKILL.md WORDS.org SHA256SUMS; do
     grep -qxF "$required" <<<"$assets" || { echo "release $tag has no $required" >&2; exit 1; }
 done
 scratch=$(mktemp -d); trap 'rm -r "$scratch"' EXIT

@@ -104,3 +104,6 @@ Unless the draft PR says so, an agent does not touch:
   as text and handed to a human to file.
 - Never type into another session's terminal or tmux pane. Read the logs
   it writes instead.
+- Every gforth run that loads `inspect.fs`, a one-off probe included, sets
+  `GFORTH_INSPECT_LOG_DIR` (or `HOME` and `XDG_STATE_HOME`) inside a temp
+  dir. The default log belongs to the person using the machine (#46).

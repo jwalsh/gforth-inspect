@@ -35,6 +35,9 @@ and the log format do not break.
 | =fclearstack=     | empties the float stack                                      |
 | =inspect-version= | ( -- c-addr u ) the loaded version                           |
 
+Every word's stack effect and output format: =WORDS.org=, shipped with each
+release.
+
 ** Every stack at once
 
 #+begin_example
