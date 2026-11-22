@@ -1,0 +1,140 @@
+#+TITLE: 009 upgrade-matrix: past, current, future producers × consumers × 0–5 live sessions
+#+DATE: 2026-11-22
+#+STARTUP: showall
+
+Rules: [[file:../../.meta/README.org][.meta]] (E-*, O-*, RD-*). Every run has an xrid (RD-2).
+
+* Hypothesis
+
+H1. For every producer transition A → B on the version ledger below,
+[[file:../../docs/RELEASING.org::*Rulings][RELEASING.org::*Rulings]] predict each consumer's behaviour (follow; same output;
+stop with a message), and the consumers do exactly that, with 0 to 5 live
+producer sessions.
+
+H2. [[file:../../contract/CONSUMER-AGENTS.md][CONSUMER-AGENTS.md]] "A new version", steps 1–5, can be executed as
+written for every transition, by a scripted consumer.
+
+H3. The envelope (=v=, =event=, =t=, and =hello.contract=) is separable from
+the payload: every record from every ledger version and every fixture,
+including contract 10.0, validates against one envelope schema, and every
+consumer handles a record it cannot use by stopping with a message, never by
+crashing or emitting wrong data. (D-36: the envelope is frozen and versioned
+by 1.0.0.)
+
+H4. The corpus is complete: every schema path, value class and event is
+exercised under every version that supports it.
+
+H5. Compound version check. The version is a tuple, checked together: record
+=v=, =hello.contract=, =hello.inspect=, the schema's =$schema= dialect
+(=https://json-schema.org/draft/2020-12/schema=), =x-version= (1) and
+=x-contract= (1.1), and the API spec of =GET /stacks=. A consumer that checks
+one field accepts a stream another field says it cannot read.
+
+* Version ledger (pinned by blob; RD-1)
+
+| key | source                 | blob         | =hello.inspect= | =hello.contract= | role                          |
+|-----+------------------------+--------------+---------------+----------------+-------------------------------|
+| V0  | 18ebe2d                | 76d34db7cd61 | none          | none           | past: course import, contract 1.0 |
+| V1  | 6238b09                | 1264ab7e38c0 | 0.1.0         | none           | past                          |
+| V2  | 31778b8 = 0842eda      | a7e5c141af51 | 0.1.0         | 1.1            | past: pre-#17                 |
+| V3  | 7f58633                | 8ee70482686b | 0.1.0         | 1.1            | past: seek-only #17           |
+| V4  | 7dff143                | d1d87b91d38e | 0.1.0         | 1.1            | past: buffered #17            |
+| V5  | 5aac06a = origin/harden | af95cdf354af | 0.1.0         | 1.1            | current: release candidate    |
+| Vc  | course's local copy    | (hash in local manifest only) | per file | 1.1   | downstream deviation          |
+| F1  | fixture from V5        | built in temp | 0.5.0 / 1.0.0 | 1.1           | future: the release bump      |
+| F2  | fixture from V5        | built in temp | +patch        | 1.1            | future: PATCH, fix toward true value |
+| F3  | fixture from V5        | built in temp | +minor        | 1.2            | future: optional new field    |
+| F4  | fixture from V5        | built in temp | +major        | 2.0            | future: renamed field         |
+| F5  | fixture from V5        | built in temp | 10.0.0        | 10.0           | far future: many new fields and events |
+
+Fixtures are made by sed in a temp dir, never in =env/= (E-6). Vc is read
+from the course's main worktree only; nothing from it is committed.
+
+* Pathological streams (fixtures)
+
+| key | stream                                                        |
+|-----+---------------------------------------------------------------|
+| X1  | no =hello= at all                                               |
+| X2  | =hello= without =contract=; without =inspect=; without =v=          |
+| X3  | =contract= malformed: ="1"=, ="1.1.1"=, =1.1= (number), =""=, ="x.y"=     |
+| X4  | =v=: 2, missing, string                                           |
+| X5  | unknown =event= type; unknown fields in =hello= and =snapshot=      |
+| X6  | one append-only file across an upgrade: V2 records, V5 =hello=, V5 records; then F3, then F4 |
+| X7  | newest =hello= not at the top; two =hello= in a row with different contracts |
+| X8  | F5 (10.0) stream read by consumers built for 1.1               |
+| X9  | stream and schema disagree: =x-contract= 1.1 vs stream 1.2; =x-version= 1 vs =v= 2; schema =$schema= draft-07 under a 2020-12 validator |
+| X10 | =GET /stacks= response checked against its API spec (none today) |
+
+* Consumers (pinned)
+
+- the three frozen reference consumers: =pbt/consumers/stacks.jq=, =checker.py --expect 1.1=, =mock_server.py=;
+- their bb twins at PR #28's head, if present;
+- the course's own follower (main worktree only; counts reported, no content);
+- a scripted consumer that runs H2's five steps.
+
+* Sessions
+
+N ∈ {0, 1, 2, 3, 4, 5}. N = 0: replay recorded logs, no live gforth. N ≥ 1:
+N tmux sessions =gforth-inspect-009-<xrid>=, each one gforth (engines
+rotate gforth / gforth-fast / gforth-itc) at one ledger version, own sandbox
+(=HOME=, =XDG_STATE_HOME=, cwd), own log dir, consumers following live.
+Upgrade orders: consumer first; producer first; rolling (one session at a
+time); mixed steady state (N sessions on N versions, one consumer following
+all). Never attach to or type into any other tmux session.
+
+* Prediction (before the first run)
+
+- P1. =hello.inspect= "0.1.0" names five blobs (V1–V5): a consumer cannot
+  tell them apart by version, so H2 step 3 cannot know whether the #17 fix
+  is present. H2 refuted for transitions inside 0.1.0.
+- P2. V0, V1, X1, X2: =checker.py= stops ("missing"); jq and the mock
+  server follow without stopping.
+- P3. V2 → V5, V5 → F1, V5 → F2: frozen consumer output identical except
+  fixes toward the true value. PATCH holds.
+- P4. F3: checker stops; jq and mock follow (unknown field ignored). F4:
+  checker stops; jq emits =null= for the renamed field: MAJOR, as ruled.
+- P5. F5, X3, X4, X5: at least one frozen consumer crashes or emits wrong
+  data instead of stopping. H3 refuted on today's consumers; this is what
+  the frozen envelope must fix before 1.0.0.
+- P6. X6: checker obeys the newest =hello= and judges older records by it.
+  Result reported, no prediction of correctness.
+- P7. H2 step 1 cannot run as written before a tag exists, or without
+  access to the repo while it is private; it runs against a staged local
+  release dir.
+- P8. Vc differs from every upstream blob, and at least one difference
+  has no issue and no reproducer, so H2 step 3 cannot run for it.
+- P9. N does not change any verdict when each session owns its log dir.
+- P10. H5: no consumer checks the tuple. =checker.py= checks
+  =hello.contract= only; X9 passes it. =GET /stacks= has no OpenAPI or other
+  spec, so its version is unchecked: finding.
+- P11. H4: gaps exist; each is closed by a new corpus scenario.
+
+* Gate
+
+1. Calibrate first: each consumer-behaviour check red on a planted fault
+   (a checker with its version stop disabled; a fixture labelled PATCH that
+   changes jq output; a consumer that crashes on X5 reported as "stopped").
+2. Matrix: every ledger transition in sequence (V0 → … → V5 → F1 → … → F5),
+   plus skips V2 → V5, Vc → V5, V5 → F4, V5 → F5; × N ∈ {0..5} × 4 orders;
+   every X-stream × every consumer. All 3 engines across N ≥ 1.
+3. Every cell: observed vs the ruling's prediction, with xrid. A mismatch is
+   a finding, never a re-labelled ruling.
+4. H2: each of the five steps logged per transition: ran / failed as
+   written / not applicable. A step that fails as written is a finding →
+   a CONSUMER-AGENTS.md change by PR, in D-9 order.
+5. H3: an envelope schema candidate (=contract/= change proposal only, in the
+   PR body; E-6) that every ledger, fixture and X-stream record validates
+   against or is rejected by with a named reason.
+6. H5: a compound check (all tuple fields agree, or stop naming the field)
+   as a proposal in the PR body, run over every X9 cell; plus an OpenAPI
+   3.1 draft for =GET /stacks= whose =info.version= is in the tuple.
+7. H4: coverage table (schema path × value class × version); every gap
+   closed by a corpus scenario before the gate passes.
+8. Outputs: =versions.org= (the ledger with rulings), =matrix.tsv=, the
+   coverage table, findings as issues. Counts and hashes only for Vc.
+
+* Log
+
+** 2026-11-22 registered
+
+Coordinator. Gate freezes at the first matrix run.
