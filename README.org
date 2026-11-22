@@ -3,8 +3,9 @@
 
 [[file:LICENSE][https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg]] [[https://gforth.org/][https://img.shields.io/badge/gforth-0.7.3-informational.svg]] [[https://gforth.org/][https://img.shields.io/badge/engines-gforth%20%7C%20gforth--fast%20%7C%20gforth--itc-informational.svg]] [[https://github.com/jwalsh/gforth-inspect/actions/workflows/verify.yml][https://github.com/jwalsh/gforth-inspect/actions/workflows/verify.yml/badge.svg]]
 
-Every gforth 0.7.3 stack and the input stream, from the REPL. Snapshots can
-also go to a JSON-lines log.
+A stack inspector for gforth. Load one file, type =.stacks=, and see the data,
+float, return and control-flow stacks and the input line. Turn on =log-on= to
+stream each snapshot as JSON Lines to an editor, a dashboard or an agent.
 
 * Install
 
