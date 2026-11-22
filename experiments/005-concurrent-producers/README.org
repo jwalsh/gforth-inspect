@@ -47,3 +47,42 @@ reports how often a race was even possible.
    the signal to remove the xfail.
 
 * Log
+
+** 2026-11-21 setup: refs, pacing, decision on the xfail
+
+Provenance, pinned at the start:
+- =ref:18ebe2d@18ebe2d blob:76d34db7cd61=
+- =ref:6af19f0@6af19f0 blob:a7e5c141af51= (harden's head, local).  During
+  the run the =harden= name moved to =0842eda=, a release-check change; the
+  inspect.fs blob is the same, =a7e5c141af51=.
+- patched: =6af19f0 blob:a7e5c141af51 +seek-per-write=, made in a temp dir
+  by the sed in =pbt/_005_helpers.py= (=FIX_SED=).  It changes one line of
+  =log-write=, before =base @ >r decimal=:
+  =log-fid @ file-size throw log-fid @ reposition-file throw=.
+
+Pacing, checked by hand: gforth 0.7.3 on a pipe (no TTY) reads stdin a
+line at a time and runs each line as it arrives.  It echoes the line and
+flushes stdout before it reads the next, so =cr ." #ACK n" cr= at the end of
+each line is a reliable completion signal.  The marker has to start its own
+stdout line: the echo of the input holds the same characters.  Without a
+TTY no history prompt is involved, but gforth still writes
+=.gforth-history= to =$HOME=, so each producer gets its own temp =HOME=.
+No FIFO or =key= tricks were needed.  After the ACK the launcher polls the
+log for the record's marker (data stack =[5005, producer, seq]=, since
+18ebe2d has no =log-id=; on harden the =id= tag =p<producer>= is also
+checked).  A hello is awaited as the last line of the file: counting hellos
+does not work on an unfixed ref, where an earlier hello may be overwritten.
+
+Decision (coordinator, 2026-11-21): the default-ref test is ref-aware, not
+a blanket strict xfail.  It is xfail(strict) citing #17 only when the
+inspect.fs under test has no =reposition-file= inside =log-write=, and a
+plain test otherwise.  Reason: the #17 fix is about to land on =harden=
+through its own PR.  A blanket strict xfail would turn the suite red (XPASS)
+on main the moment it lands, for a change that is correct; the ref-aware
+form stays green on either side of the fix, and still goes red if a fixed
+producer regresses, because a fixed source runs as a plain test.  Gate item
+5 asked for the XPASS signal; this replaces it with "the xfail lifts itself,
+and the test then has to pass".
+
+Calibration runs with =--runxfail= so the red on unpatched harden is
+visible; the patched copy must be detected as fixed and pass.
