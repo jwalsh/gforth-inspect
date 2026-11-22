@@ -42,6 +42,7 @@ a script or a setting. A decision with nothing enforcing it is a wish.
 | 27 | Ship v0.5.0 by 2026-11-22 for course use: =harden= is final, =canvas.fs= removed now (brings #8 forward). | Human | #8's end-of-week timing | issue #23 |
 | 28 | Port the tooling from Python to Babashka after v0.5.0, as a gated experiment; shell scripts are suspect. Frozen reference consumers stay as they are. | Human | | experiment 006 (proposal) |
 | 29 | A release is a contract: the inspector, the guidelines (=contract/CONSUMERS.org=, =contract/CONSUMER-AGENTS.md=) and the skill (=contract/skill/SKILL.md=), never this repository's execution. Consumer docs live in =contract/=, not the root. | Human | | RELEASING.org asset table; =scripts/check-guides.sh= |
+| 30 | The plugin is published from this repo's own marketplace (=.claude-plugin/marketplace.json=, source =./contract=), after v0.5.0, not listed in defrecord until a second consumer exists. One tag per release (=vX.Y.Z=); no separate =gforth--vX.Y.Z= plugin tag. The plugin version equals the release version. | Operator (skills-c2 advising) | | issue #23 |
 
 * Open
 
