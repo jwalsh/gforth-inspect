@@ -144,8 +144,11 @@ split on LF.  New plants:
 | reftable not recognised                        | 012-reftable-ignored.sh      | P4 P3 P5    |
 
 The fd-leak golden was red on the old =(file!)= (=ulimit-files 64=), the
-detached and reftable pair asserts red on the name-only hash.  Once, under
-012-fnv-prime, P1 went red as well; three reruns of 60 examples did not
-repeat it (=_run= asserts gforth's exit status, so a run that failed or
-timed out counts against P1).
+detached and reftable pair asserts red on the name-only hash.
+
+=gmake release-check= at 1bf9764 then found a second harness bug: the P4
+driver printed one log dir per line, and a root named LF with a relative
+=.env= value puts LF inside a log dir, so every later line shifted (P4 and
+P1 red).  That was also the one-off P1 red under 012-fnv-prime.  The driver
+now NUL-terminates; the case is pinned.
 

@@ -312,6 +312,12 @@ def _run(batch, engine):
 # pinned 2026-11-22: a directory named CR; the first driver read $PWDs with
 # read-line, which ends a line at CR as well (a harness bug, not the rule)
 @example([Fixture("main", "\r", "0", None, b"ref: refs/heads/0\n", None, 0)], "gforth")
+# pinned 2026-11-22: a root named LF with a relative .env value; the driver
+# printed one log dir per line, so the lines after it shifted (a harness
+# bug, not the rule; also the one-off P1 red under 012-fnv-prime)
+@example([Fixture("main", "\n", "0", None, b"0123456789abcdef0123456789abcdef01234567\n",
+                  b'GFORTH_INSPECT_LOG_DIR="rel dir"\n', 0),
+          Fixture("main", "W", "0", None, b"ref: refs/heads/0\n", None, 0)], "gforth")
 @example(TRICKY, "gforth")
 @given(batches, engines)
 @calibration

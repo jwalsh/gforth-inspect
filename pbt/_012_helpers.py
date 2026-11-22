@@ -106,11 +106,11 @@ def build(fixture: Fixture, parent: Path) -> bytes:
 DRIVER = """\
 : next-pwd ( c-addr u -- rest-a rest-u pwd-a pwd-u ) \\ split at the first NUL
     2dup 0 scan dup >r 2swap r> - 2swap dup IF 1 /string THEN 2swap ;
-: fixtures ( c-addr u -- ) \\ NUL-terminated $PWDs in, one log dir per line out
+: fixtures ( c-addr u -- ) \\ NUL-terminated directories in, NUL-terminated log dirs out
     BEGIN dup WHILE next-pwd
         0 log-dir# !  depth >r  (log-dir-for)
         depth r> 2 - <> IF ." STACK-CHANGED " THEN
-        log-dir log-dir# @ type 10 emit
+        log-dir log-dir# @ type 0 emit
     REPEAT 2drop ;
 base @ s" pwds.bin" slurp-file fixtures base @ <> [IF] .\" BASE-CHANGED\" [THEN]
 bye
@@ -172,7 +172,8 @@ def forth_dirs(fixtures: list[Fixture], engine: str = "gforth") -> Batch:
         environ = {os.fsencode(key): os.fsencode(value) for key, value in env.items()}
         expected = [reference.log_dir(environ, cwd=pwd) for pwd in pwds]
         raw = [raw_components(pwd) for pwd in pwds]
-        lines = proc.stdout.split(b"\n")
+        # NUL-separated: a log dir may hold LF (a .env value relative to a root named so)
+        lines = proc.stdout.split(b"\0")
         forth = lines[:len(pwds)]
         base = environ[b"XDG_STATE_HOME"] + b"/gforth-inspect"
         # temp paths never leave this function: the caller sees them relative
