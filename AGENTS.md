@@ -2,12 +2,12 @@
 
 These rules are for coding agents (Claude Code and others) and for the
 people directing them. They come in addition to
-[CONTRIBUTING.org](CONTRIBUTING.org): Forth style, gforth 0.7.3 only, all
+[CONTRIBUTING.org](docs/CONTRIBUTING.org): Forth style, gforth 0.7.3 only, all
 three engines, and no private data.
 
 Agents working for a project that *consumes* the inspector read
-[CONSUMER-AGENTS.md](CONSUMER-AGENTS.md) instead. How producer and
-consumers change things together is in [COLLABORATION.org](COLLABORATION.org).
+[contract/CONSUMER-AGENTS.md](contract/CONSUMER-AGENTS.md) instead. How producer and
+consumers change things together is in [COLLABORATION.org](docs/COLLABORATION.org).
 
 ## Start every piece of work in the open
 
@@ -61,7 +61,7 @@ first real edit, even when the work is speculative:
 
 ## Leaving draft
 
-A PR comes out of draft only through [REVIEW.md](REVIEW.md): `gmake verify`
+A PR comes out of draft only through [REVIEW.md](docs/REVIEW.md): `gmake verify`
 green, a `/code-review` of your own branch, every finding answered, and the
 review recorded in the PR body. Coordinators merge. Agents never merge
 their own PRs.

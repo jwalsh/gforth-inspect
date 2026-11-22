@@ -66,10 +66,9 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 | two producers (#17) | log-two-producers (a second gforth appends between records) |
 | log location        | log-dir-env, log-dir-xdg, log-dir-home                      |
 | JSON                | json-escape (quotes, backslash, controls, UTF-8, invalid bytes), json-src, json-float |
-| canvas              | canvas-line, canvas-plot, canvas-files (P1/P3/XBM), canvas-errors |
 | lldb =brk= (no lldb) | demo                                                       |
 
-40 tests x 3 engines = 120 cases, plus =idle.fs= (skipped: it parks for
+36 tests x 3 engines = 108 cases, plus =idle.fs= (skipped: it parks for
 =lldb -p=).
 
 * Known limits
@@ -99,6 +98,15 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
   measured by experiment 005, not gated here.
 
 * Log
+
+** 2026-11-21 (canvas removed)
+
+=env/canvas.fs= is not part of this project (decision 8) and was removed
+before the first tag (decision 27); the course keeps its own copy.  Its four
+tests went with it (canvas-line, canvas-plot, canvas-files, canvas-errors,
+and their goldens): 40 tests became 36, 120 cases 108.  The three canvas
+bugs once listed under the first log entry below were fixed in that copy and
+are now tested there, not here.
 
 ** 2026-11-21 (#17)
 
@@ -138,9 +146,6 @@ by running the suite against the previous =env/=):
 | ="src"= not escaped                                                 | json-src      |
 | =.cs= reads below the stack                                         | cs-guard      |
 | =.input= caret off after tabs                                       | input-caret   |
-| =canvas=: failed allocate then =canvas= = double free (abort)       | canvas-errors |
-| =.canvas= / =save-*= with no canvas loop 2^64 times                 | canvas-errors |
-| =save-*= header in hex under =hex=                                  | canvas-files  |
 
 Also: the log directory became =$GFORTH_INSPECT_LOG_DIR= or
 =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect= (was =.../sicpminus=),

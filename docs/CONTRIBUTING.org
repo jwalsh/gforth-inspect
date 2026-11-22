@@ -2,15 +2,15 @@
 #+STARTUP: showall
 
 These rules are for people and for coding agents. Each one exists because
-something went wrong without it. The incidents are in [[file:.meta/][.meta/]]. The
-release process is in [[file:RELEASING.org][RELEASING.org]]. [[file:README.org][README.org]] is for end users only,
+something went wrong without it. The incidents are in [[file:../.meta][.meta/]]. The
+release process is in [[file:RELEASING.org][RELEASING.org]]. [[file:../README.org][README.org]] is for end users only,
 so developer notes do not go there.
 
 * Layout
 
 | path                              | what                                                               |
 |-----------------------------------+--------------------------------------------------------------------|
-| =env/inspect.fs=                  | the released Forth (=env/canvas.fs= is a temporary test bed, not released) |
+| =env/inspect.fs=                  | the released Forth                                                 |
 | =contract/=                       | =stacks-log.schema.json= (the source of truth) and its prose          |
 | =test/=                           | golden-file tests, run by =gmake test= in all three engines          |
 | =pbt/=                            | property tests (Python + Hypothesis), run by =gmake -C pbt check=   |
@@ -34,7 +34,7 @@ every commit and every PR. It runs, in order:
    the guides exist, their links resolve, and README.org stays end-user only
 3. =gmake test=: the goldens in =gforth=, =gforth-fast= and =gforth-itc=,
    with every record validated against the schema; coverage, known limits
-   and the dated log are in [[file:test/README.org][test/README.org]]
+   and the dated log are in [[file:../test/README.org][test/README.org]]
 4. =gmake -C pbt check=, then =gmake -C pbt calibrate=
 
 CI runs this baseline on every pull request and every push to =main=, from

@@ -23,9 +23,12 @@ export VALIDATE
 CONTRACT := $(shell python3 -c 'import json; print(json.load(open("$(SCHEMA)"))["x-contract"])')
 export CONTRACT
 
-# canvas.fs is a test bed on harden only and never ships (RELEASING.org)
-RELEASE_FILES := env/inspect.fs $(SCHEMA) contract/stacks-log.org CONSUMERS.org
-DIST_FILES    := dist/inspect.fs dist/stacks-log.schema.json dist/stacks-log.org dist/CONSUMERS.org
+# The release assets (docs/RELEASING.org's table, decision 29), copied flat
+# into dist/ beside SHA256SUMS. Their basenames must be distinct.
+RELEASE_FILES := env/inspect.fs $(SCHEMA) contract/stacks-log.org contract/CONSUMERS.org \
+                 contract/CONSUMER-AGENTS.md contract/skill/SKILL.md
+ASSET_NAMES   := $(notdir $(RELEASE_FILES))
+DIST_FILES    := $(addprefix dist/,$(ASSET_NAMES))
 
 .PHONY: help deps test test-contract test-selftest test-goldens test-one goldens \
         stress test-lldb verify gate release-check clean
@@ -112,27 +115,34 @@ gate: ## Every gate, in order (the standard alias for verify)
 # release files must not name a machine, a person or the course that uses them
 LEAK := /Users/|/home/|/opt/homebrew|/private/|/var/folders|sicpminus|course\.el|[a-z0-9._-]+@[a-z0-9-]+\.[a-z]+
 
-release-check: verify ## verify + release hygiene + dist/ with SHA256SUMS
-	@echo "== release hygiene: $(RELEASE_FILES) contract/*"
-	@if grep -n -i -E '$(LEAK)' env/*.fs contract/*; then \
+release-check: verify ## verify + release hygiene + the 7 assets in dist/
+	@echo "== release hygiene: env/ contract/ ($(RELEASE_FILES))"
+	@test $(words $(sort $(ASSET_NAMES))) = $(words $(RELEASE_FILES)) || \
+	  { echo "release-check: two RELEASE_FILES share a basename"; exit 1; }
+	@if grep -rn -i -E '$(LEAK)' env contract; then \
 	  echo "release-check: machine, personal or course strings above"; exit 1; fi
 	@grep -q '^\\ gforth-inspect v[0-9]*\.[0-9]*\.[0-9]*$$' env/inspect.fs
 	@v=$$(sed -n 's/^\\ gforth-inspect v//p' env/inspect.fs); \
 	  grep -q "s\" $$v\" ;" env/inspect.fs || { echo "inspect-version != header v$$v"; exit 1; }
 	@test -f LICENSE || { echo "release-check: no LICENSE"; exit 1; }
 	mkdir -p dist && cp $(RELEASE_FILES) dist/
-	@stale=$$(ls dist | grep -vxE 'inspect\.fs|stacks-log\.schema\.json|stacks-log\.org|CONSUMERS\.org|SHA256SUMS' || true); \
-	  test -z "$$stale" || { echo "release-check: dist/ holds files not in RELEASE_FILES: $$stale (clear dist/ by hand)"; exit 1; }
+	@stale=$$(ls dist | grep -vxF -e SHA256SUMS $(addprefix -e ,$(ASSET_NAMES)) || true); \
+	  test -z "$$stale" || { echo "release-check: dist/ holds files not in RELEASE_FILES: $$stale (gmake clean)"; exit 1; }
 	bash scripts/dist-links.sh --calibrate
 	@v=$$(sed -n 's/^\\ gforth-inspect v//p' env/inspect.fs); \
 	  if [ "$${v%%.*}" = 0 ] && [ "$$(echo $$v | cut -d. -f2)" -lt 5 ]; then \
 	    ref=$$(git rev-parse HEAD); echo "release-check: dry run: v$$v is untagged (no tags before v0.5.0); links pin to $$ref"; \
 	  else ref=v$$v; fi; \
-	  bash scripts/dist-links.sh dist $$ref
-	cd dist && shasum -a 256 inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org > SHA256SUMS
+	  bash scripts/dist-links.sh dist $$ref $(RELEASE_FILES)
+	cd dist && shasum -a 256 $(ASSET_NAMES) > SHA256SUMS
+	@test "$$(ls dist | wc -l | tr -d ' ')" = $$(( $(words $(ASSET_NAMES)) + 1 )) || \
+	  { echo "release-check: dist/ is not exactly the assets plus SHA256SUMS:"; ls dist; exit 1; }
 	scripts/privacy-scan.sh $(DIST_FILES) dist/SHA256SUMS
-	@n=$$(cat $(DIST_FILES) | grep -c sicpminus || true); \
+	@if grep -n -i -E '$(LEAK)' $(DIST_FILES) dist/SHA256SUMS; then \
+	  echo "release-check: machine, personal or course strings in dist/ above"; exit 1; fi
+	@n=$$(cat $(DIST_FILES) dist/SHA256SUMS | grep -c sicpminus || true); \
 	  test "$$n" = 0 || { echo "release-check: sicpminus in assets"; exit 1; }
+	@ls dist
 	@cat dist/SHA256SUMS
 	@echo "release-check: dist/ ready; tagging (v0.5.0 and later only) and publishing are the owner's call"
 
