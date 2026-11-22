@@ -7,7 +7,7 @@ consumers are also the beta testers. They find problems first, may carry a
 local patch, and report what they find back here.
 How a consumer's agent reaches the producer, asks for a branch and
 upgrades is in [[file:CONSUMER-AGENTS.md][CONSUMER-AGENTS.md]]; the lifecycle, registry and
-support windows are in [[file:../COLLABORATION.org][COLLABORATION.org]].
+support windows are in [[file:../docs/COLLABORATION.org][COLLABORATION.org]].
 
 * Parties
 
@@ -15,7 +15,7 @@ support windows are in [[file:../COLLABORATION.org][COLLABORATION.org]].
 |---------------------+------------------------------------------------------------------------------------------------------------+----------------------------------------------|
 | producer            | =env/inspect.fs= (=log-on=)                                                                                | writing records that match the schema        |
 | contract owner      | this repository: =contract/stacks-log.schema.json=, =contract/stacks-log.org=, this file                    | versions, the change log, the release gate   |
-| reference consumers | (1) =tail -f stacks.jsonl \vert jq -c ...=, (2) an editor dashboard and checker, (3) a mock API serving the last record as =GET /stacks= | what counts as "breaking" ([[file:../RELEASING.org][RELEASING.org]]) |
+| reference consumers | (1) =tail -f stacks.jsonl \vert jq -c ...=, (2) an editor dashboard and checker, (3) a mock API serving the last record as =GET /stacks= | what counts as "breaking" ([[file:../docs/RELEASING.org][RELEASING.org]]) |
 | beta consumers      | downstream projects that pin a release, such as a course whose Emacs dashboard and checker run on it       | running pre-release code; =downstream-patch= issues |
 
 * The version is in the stream

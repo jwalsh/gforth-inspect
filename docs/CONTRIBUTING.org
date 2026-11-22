@@ -2,8 +2,8 @@
 #+STARTUP: showall
 
 These rules are for people and for coding agents. Each one exists because
-something went wrong without it. The incidents are in [[file:.meta/][.meta/]]. The
-release process is in [[file:RELEASING.org][RELEASING.org]]. [[file:README.org][README.org]] is for end users only,
+something went wrong without it. The incidents are in [[file:../.meta][.meta/]]. The
+release process is in [[file:RELEASING.org][RELEASING.org]]. [[file:../README.org][README.org]] is for end users only,
 so developer notes do not go there.
 
 * Layout

@@ -4,9 +4,9 @@
 Downstream projects use only tagged releases, never branches. That makes a
 release a promise, and this file says what it promises. Who produces the
 stream, who consumes it, and what each owes the other is set out in
-[[file:contract/CONSUMERS.org][contract/CONSUMERS.org]]; what a consuming agent reads is
-[[file:contract/CONSUMER-AGENTS.md][contract/CONSUMER-AGENTS.md]], and the skill an agent installs is
-[[file:contract/skill/SKILL.md][contract/skill/SKILL.md]]. All three ship with every release: a consumer
+[[file:../contract/CONSUMERS.org][contract/CONSUMERS.org]]; what a consuming agent reads is
+[[file:../contract/CONSUMER-AGENTS.md][contract/CONSUMER-AGENTS.md]], and the skill an agent installs is
+[[file:../contract/skill/SKILL.md][contract/skill/SKILL.md]]. All three ship with every release: a consumer
 gets the inspector, the guidelines and the skill, never this repository's
 execution (tests, scripts, CI, experiments).
 
@@ -144,7 +144,7 @@ notes.
 * Mainline protection
 
 =main= is protected, so that what CI checks is what lands. The rule set is
-[[file:.github/branch-protection.json][.github/branch-protection.json]], in the shape the PUT endpoint takes:
+[[file:../.github/branch-protection.json][.github/branch-protection.json]], in the shape the PUT endpoint takes:
 
 | rule                                       | why                                                                       |
 |--------------------------------------------+---------------------------------------------------------------------------|
