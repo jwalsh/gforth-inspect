@@ -6,7 +6,7 @@
 #
 # DIR holds the flat copies of the release assets; SRC... are their paths in
 # the repository (RELEASE_FILES), so that DIR/$(basename SRC) came from SRC.
-# REF is the tag (vX.Y.Z) or, in a dry run, the commit sha; either way it
+# REF is the tag being released (vX.Y.Z); it
 # names HEAD, the commit being released.
 #
 # Rewrite, for every relative link in an .org ([[file:T]], [[./T]], [[../T]])

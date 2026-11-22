@@ -469,22 +469,39 @@ variable bp-a  variable bp-b
     dup >head-noprim ['] ??? >head-noprim = IF drop false EXIT THEN
     dup >code-address dodefer: =  swap >does-code 0<>  or ;
 
+: defer-target ( xt -- xt' true | false )
+    \ follow a DEFER chain, at most 16 hops (a cycle would loop for ever)
+    16 0 DO
+        dup >code-address dodefer: <> IF true UNLOOP EXIT THEN
+        cr ." nesting defered..."  >body @
+    LOOP drop false ;
+
+: special-target ( xt -- xt | body xt | 0 )
+    \ what to nest into for a DEFER or DOES> word: a colon word (headerless
+    \ too), or a does> word with its body below; 0 when there is none
+    dup >code-address dodefer: = IF
+        defer-target 0= IF cr ." (defer chain too long: stepped over)" 0 EXIT THEN
+    THEN
+    dup >code-address docol: = IF EXIT THEN
+    dup >does-code IF dup >body swap EXIT THEN
+    drop cr ." (defer target cannot be debugged: stepped over)" 0 ;
+
 : nestXT+ ( x -- true | body false )
     \ the n (nest) key.  Stock nestXT treats the threaded cell as an xt and
     \ runs xt-see on it; in direct-threaded engines that cell is engine code,
     \ so xt-see shells out to gdb and dies (even nesting a colon word).
     \ Here a colon call is the cell `call`'s code address followed by the
     \ target body; anything else (primitive, literal) steps instead.
-    \ A DEFER or DOES> word with a real header goes to stock
-    \ nestXT-checkSpecial too (#39): it follows the defer chain, or leaves
-    \ the body for a does> word.  A defer chain that ends in a primitive
-    \ still steps over, since xt-see cannot read engine code.
+    \ A DEFER or DOES> word with a real header (#39) nests into its target:
+    \ the end of the defer chain, or a does> word with its body below.
     dup ['] call @ = IF drop ['] call THEN
-    dup ['] call = over colon-xt? or over special-xt? or 0= IF
-        drop cr ." (not a colon definition: stepped over)" true EXIT THEN
-    nestXT-checkSpecial
-    dup colon-xt? over >does-code or 0= IF
-        drop cr ." (not a colon definition: stepped over)" true EXIT THEN
+    dup ['] call = over colon-xt? or IF
+        nestXT-checkSpecial
+    ELSE dup special-xt? IF
+        special-target ?dup 0= IF true EXIT THEN
+    ELSE
+        drop cr ." (not a colon definition: stepped over)" true EXIT
+    THEN THEN
     DebugMode c-pass ! C-Output off  xt-see  C-Output on
     c-pass @ DebugMode = dup IF cr ." Cannot debug!!" THEN ;
 
