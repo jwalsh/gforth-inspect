@@ -10,11 +10,11 @@ A stack inspector for gforth 0.7.3.
 * Install
 
 #+begin_src sh
-gh release download v0.1.0 -R jwalsh/gforth-inspect -D forth-env/
+gh release download v0.1.1 -R jwalsh/gforth-inspect -D forth-env/
 (cd forth-env && shasum -a 256 -c SHA256SUMS) && gforth forth-env/inspect.fs
 #+end_src
 
-=inspect-version type= prints 0.1.0. Within one MAJOR version the words
+=inspect-version type= prints 0.1.1. Within one MAJOR version the words
 and the log format do not break.
 
 * Usage
@@ -97,8 +97,8 @@ engine fuses into superinstructions.
 #+begin_example
 $ GFORTH_INSPECT_LOG_DIR=logs gforth inspect.fs -e 'log-on 1 2 -3 1.5e .stacks log-off bye' >/dev/null
 $ cat logs/stacks.jsonl
-{"v":1,"event":"hello","t":1795307565,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
-{"v":1,"event":"snapshot","t":1795307565,"where":null,"src":null,"data":[1,2,-3],"float":[1.5000000000000000E0 ],"rs":[],"input":{"file":"*OS command line*","line":-1,"in":27,"text":"log-on 1 2 -3 1.5e .stacks log-off bye"}}
+{"v":1,"event":"hello","t":1795358062,"gforth":"0.7.3","inspect":"0.1.1","contract":"1.1"}
+{"v":1,"event":"snapshot","t":1795358062,"where":null,"src":null,"data":[1,2,-3],"float":[1.5000000000000000E0 ],"rs":[],"input":{"file":"*OS command line*","line":-1,"in":27,"text":"log-on 1 2 -3 1.5e .stacks log-off bye"}}
 #+end_example
 
 Without =GFORTH_INSPECT_LOG_DIR=, the log is
