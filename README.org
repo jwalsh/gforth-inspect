@@ -1,7 +1,7 @@
 #+TITLE: gforth-inspect
 #+STARTUP: showall
 
-[[file:LICENSE][https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg]] [[https://gforth.org/][https://img.shields.io/badge/gforth-0.7.3%20%C2%B7%20fast%20%C2%B7%20itc-informational.svg]] [[https://github.com/jwalsh/gforth-inspect/actions/workflows/verify.yml][https://github.com/jwalsh/gforth-inspect/actions/workflows/verify.yml/badge.svg]]
+[[file:LICENSE][https://img.shields.io/badge/license-GPLv3%2B-blue.svg]] [[https://gforth.org/][https://img.shields.io/badge/gforth-0.7.3%20%C2%B7%20fast%20%C2%B7%20itc-informational.svg]] [[https://github.com/jwalsh/gforth-inspect/actions/workflows/verify.yml][https://github.com/jwalsh/gforth-inspect/actions/workflows/verify.yml/badge.svg]]
 
 A stack inspector for gforth. Load one file, type =.stacks=, and see the data,
 float, return and control-flow stacks and the input line. Turn on =log-on= to
@@ -9,22 +9,12 @@ stream each snapshot as JSON Lines to an editor, a dashboard or an agent.
 
 * Install
 
-Until v0.5.0, copy =env/inspect.fs= from =main= and load it:
-
 #+begin_src sh
 curl -fsSLO https://raw.githubusercontent.com/jwalsh/gforth-inspect/main/env/inspect.fs
 gforth inspect.fs
 #+end_src
 
-From v0.5.0, download a release and check it against =SHA256SUMS=:
-
-#+begin_src sh
-gh release download vX.Y.Z -R jwalsh/gforth-inspect -D forth-env/
-(cd forth-env && shasum -a 256 -c SHA256SUMS) && gforth forth-env/inspect.fs
-#+end_src
-
-=inspect-version type= prints the loaded version. Within one MAJOR version
-the words and the log format do not break.
+=inspect-version type= prints the loaded version.
 
 * Usage
 
