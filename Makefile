@@ -131,10 +131,7 @@ release-check: verify ## verify + release hygiene + the 7 assets in dist/
 	  test -z "$$stale" || { echo "release-check: dist/ holds files not in RELEASE_FILES: $$stale (gmake clean)"; exit 1; }
 	bash scripts/dist-links.sh --calibrate
 	@v=$$(sed -n 's/^\\ gforth-inspect v//p' env/inspect.fs); \
-	  if [ "$${v%%.*}" = 0 ] && [ "$$(echo $$v | cut -d. -f2)" -lt 5 ]; then \
-	    ref=$$(git rev-parse HEAD); echo "release-check: dry run: v$$v is untagged (no tags before v0.5.0); links pin to $$ref"; \
-	  else ref=v$$v; fi; \
-	  bash scripts/dist-links.sh dist $$ref $(RELEASE_FILES)
+	  bash scripts/dist-links.sh dist v$$v $(RELEASE_FILES)
 	cd dist && shasum -a 256 $(ASSET_NAMES) > SHA256SUMS
 	@test "$$(ls dist | wc -l | tr -d ' ')" = $$(( $(words $(ASSET_NAMES)) + 1 )) || \
 	  { echo "release-check: dist/ is not exactly the assets plus SHA256SUMS:"; ls dist; exit 1; }
@@ -145,7 +142,7 @@ release-check: verify ## verify + release hygiene + the 7 assets in dist/
 	  test "$$n" = 0 || { echo "release-check: sicpminus in assets"; exit 1; }
 	@ls dist
 	@cat dist/SHA256SUMS
-	@echo "release-check: dist/ ready; tagging (v0.5.0 and later only) and publishing are the owner's call"
+	@echo "release-check: dist/ ready; tagging and publishing are the owner's call"
 
 # Only git-ignored files under dist/; test scratch is a mktemp dir that
 # test/run.sh removes itself.
