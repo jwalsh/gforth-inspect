@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # dist-links.sh --- make dist/*.org render standalone, then prove it.
 #
-#   scripts/dist-links.sh DIR VERSION     rewrite and check DIR/*.org
+#   scripts/dist-links.sh DIR REF         rewrite and check DIR/*.org (REF: tag or commit sha)
 #   scripts/dist-links.sh --calibrate     plant a ../ link; the check must fail
 #
 # Rewrite: [[file:../NAME]] or [[file:NAME]] where NAME is in DIR -> [[file:NAME]];
-# any other file: link -> https://github.com/jwalsh/gforth-inspect/blob/vVERSION/PATH.
+# any other file: link -> https://github.com/jwalsh/gforth-inspect/blob/REF/PATH.
 # Check: every [[file:...]] left in DIR/*.org names a file inside DIR.
 set -eu
 
@@ -25,8 +25,8 @@ check() { # DIR -> 0 when every file: link resolves inside DIR
   return $bad
 }
 
-rewrite() { # DIR VERSION
-  local dir=$1 version=$2 org
+rewrite() { # DIR REF
+  local dir=$1 ref=$2 org
   for org in "$dir"/*.org; do
     perl -i -pe '
       BEGIN { ($dir, $url) = @ARGV[0,1]; @ARGV = @ARGV[2..$#ARGV] }
@@ -34,7 +34,7 @@ rewrite() { # DIR VERSION
         my $p = $1; (my $base = $p) =~ s{.*/}{};
         (-f "$dir/$base") ? "[[file:$base]" : "[[$url/" . ($p =~ s{^(\.\./)+}{}r) . "]"
       }ge;
-    ' "$dir" "$repo_url/v$version" "$org"
+    ' "$dir" "$repo_url/$ref" "$org"
   done
 }
 
@@ -48,7 +48,7 @@ if [ "${1:-}" = --calibrate ]; then
   exit 0
 fi
 
-dir=${1:?usage: dist-links.sh DIR VERSION | --calibrate}; version=${2:?version}
-rewrite "$dir" "$version"
+dir=${1:?usage: dist-links.sh DIR REF | --calibrate}; ref=${2:?ref}
+rewrite "$dir" "$ref"
 check "$dir"
 echo "dist-links: every file: link in $dir/*.org resolves inside $dir"

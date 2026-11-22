@@ -29,7 +29,7 @@ check() {
     for guide in $REQUIRED; do
         [ -f "$root/$guide" ] || { echo "missing guide: $guide"; status=1; }
     done
-    docs=$(cd "$root" && find . -path ./.git -prune -o -type f \( -name '*.org' -o -name '*.md' \) -print)
+    docs=$(cd "$root" && find . \( -path ./.git -o -path ./dist \) -prune -o -type f \( -name '*.org' -o -name '*.md' \) -print)
     broken=$(
         printf '%s\n' "$docs" | while IFS= read -r doc; do
             [ -n "$doc" ] || continue

@@ -90,11 +90,17 @@ release-check: verify
 	  grep -q "s\" $$v\" ;" env/inspect.fs || { echo "inspect-version != header v$$v"; exit 1; }
 	@test -f LICENSE || { echo "release-check: no LICENSE"; exit 1; }
 	mkdir -p dist && cp $(RELEASE_FILES) dist/
+	@stale=$$(ls dist | grep -vxE 'inspect\.fs|stacks-log\.schema\.json|stacks-log\.org|CONSUMERS\.org|SHA256SUMS' || true); \
+	  test -z "$$stale" || { echo "release-check: dist/ holds files not in RELEASE_FILES: $$stale (clear dist/ by hand)"; exit 1; }
 	bash scripts/dist-links.sh --calibrate
-	@v=$$(sed -n 's/^\\ gforth-inspect v//p' env/inspect.fs); bash scripts/dist-links.sh dist $$v
+	@v=$$(sed -n 's/^\\ gforth-inspect v//p' env/inspect.fs); \
+	  if [ "$${v%%.*}" = 0 ] && [ "$$(echo $$v | cut -d. -f2)" -lt 5 ]; then \
+	    ref=$$(git rev-parse HEAD); echo "release-check: dry run: v$$v is untagged (no tags before v0.5.0); links pin to $$ref"; \
+	  else ref=v$$v; fi; \
+	  bash scripts/dist-links.sh dist $$ref
 	cd dist && shasum -a 256 inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org > SHA256SUMS
 	scripts/privacy-scan.sh $(DIST_FILES) dist/SHA256SUMS
 	@n=$$(cat $(DIST_FILES) | grep -c sicpminus || true); \
 	  test "$$n" = 0 || { echo "release-check: sicpminus in assets"; exit 1; }
 	@cat dist/SHA256SUMS
-	@echo "release-check: dist/ ready; tagging and publishing are the owner's call"
+	@echo "release-check: dist/ ready; tagging (v0.5.0 and later only) and publishing are the owner's call"
