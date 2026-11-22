@@ -4,6 +4,7 @@
 #
 #   probe.sh -o OUTDIR [-b BINDIR] [-e "gforth gforth-fast gforth-itc"] [probes/x.fs ...]
 #     -b BINDIR    put BINDIR first on PATH (a gforth 1.0 prefix's bin/)
+#     -p FILE      load FILE before inspect.fs (the diagnostic shim only)
 #   INSPECT_REF    git ref the inspector comes from (default v0.1.1)
 #
 # Each run gets its own mktemp dir as cwd, HOME and XDG_STATE_HOME, with
@@ -14,12 +15,13 @@
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
-outdir="" bindir="" engines="gforth gforth-fast gforth-itc"
-while getopts "o:b:e:" opt; do
+outdir="" bindir="" preload="" engines="gforth gforth-fast gforth-itc"
+while getopts "o:b:e:p:" opt; do
   case $opt in
     o) outdir=$OPTARG ;;
     b) bindir=$OPTARG ;;
     e) engines=$OPTARG ;;
+    p) preload=$OPTARG ;;
     *) exit 2 ;;
   esac
 done
@@ -54,12 +56,14 @@ for engine in $engines; do
     mkdir -p "$tmp/home" "$tmp/state"
     cp "$outdir/inspect.fs" "$tmp/inspect.fs"
     cp "$probe" "$tmp/probe.fs"
+    files=(inspect.fs probe.fs)
+    if [ -n "$preload" ]; then cp "$preload" "$tmp/preload.fs"; files=(preload.fs "${files[@]}"); fi
     keys=$(sed -n 's/^\\ probe: stdin *//p' "$probe")
     # shellcheck disable=SC2059
     printf -- "$keys" > "$tmp/stdin"
     (cd "$tmp" && env -u GFORTH_INSPECT_LOG_DIR HOME="$tmp/home" XDG_STATE_HOME="$tmp/state" \
         GFORTH_INSPECT_LOG_DIR="$tmp/state/gforth-inspect" \
-        "${limit[@]}" "$engine" inspect.fs probe.fs -e bye \
+        "${limit[@]}" "$engine" "${files[@]}" -e bye \
         < "$tmp/stdin" > "$tmp/stdout" 2> "$tmp/stderr")
     rc=$?
     log="$tmp/state/gforth-inspect/stacks.jsonl"
@@ -68,7 +72,7 @@ for engine in $engines; do
       echo "## stderr"; MASK_TMP=$tmp perl "$root/test/mask.pl" "$tmp/stderr"
       if [ -f "$log" ]; then echo "## log"; MASK_TMP=$tmp perl "$root/test/mask.pl" "$log"; fi
       echo "## exit $rc"
-    } > "$outdir/$engine/$name.out"
+    } | LC_ALL=C sed -E 's#/[^ :]*/share/gforth/#GFORTH/share/gforth/#g' > "$outdir/$engine/$name.out"
     rm -f "$outdir/$engine/$name.jsonl"
     [ -f "$log" ] && cp "$log" "$outdir/$engine/$name.jsonl"
     stray=$(find "$tmp" -name stacks.jsonl ! -path "$log")

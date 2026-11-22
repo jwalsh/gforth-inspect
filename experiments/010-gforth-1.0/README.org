@@ -148,3 +148,86 @@ by =find-name= in all of 0.7.3's engines, so the tokenizer drops nothing
 
 The real =~/.local/state/gforth-inspect/stacks.jsonl= before any run:
 2600 bytes, mtime 1795358250 (gate 2 baseline).
+
+** 2026-11-22 builds, and a libcc wrapper that is not about the inspector
+
+Both builds finished (=gmake -j2=, nice 19) and gave =gforth=,
+=gforth-fast=, =gforth-itc= and =gforth-ditc=, each reporting
+=version-string= =1.0.0= / =1.0.1=.  =gmake install= stops in
+=install-libcc= on the two X11 wrappers (=libgfx=, =libgfxrandr=: no X11
+headers), after the other libcc wrappers are installed; =gmake -k install=
+completes everything else.
+
+On this install every start of every engine prints two =dlopen(...)=
+errors to stderr, for =libgflibc.so= and =libgfpthread.so=: the first
+entry on 1.0's libcc search path is =$HOME/.cache/gforth/arm64/libcc-tmp/.libs/=,
+which a fresh HOME does not have, and =engine/support.c= prints
+=dlerror()= on each miss before the next entry (the installed
+=libcc-named/=) succeeds.  That would fail every golden on stderr alone,
+for a reason that has nothing to do with inspect.fs.  So every run below
+goes through a four-line wrapper per engine that sets =libccnameddir= to a
+directory whose =.libs= links to the installed =libcc-named/=; with it,
+start-up is silent and creates nothing in HOME.  Whether a packaged 1.0
+(Homebrew, Debian) shows the same noise was not checked.
+
+** 2026-11-22 results: load, words, internals
+
+Runs: =probe.sh= on 1.0.0 and 1.0.1, four engines each, inspector
+=ref:v0.1.1 blob:82860519a7d3=; =internals.sh= per engine.  Summaries
+are committed as =results/probes.tsv= (=summarize.sh=, verdict per run,
+engine and probe against 0.7.3's output) and =results/internals.tsv=.
+
+*Load: refuted, in all eight engine builds.*  =gforth inspect.fs -e bye=
+exits 1:
+
+#+begin_example
+inspect.fs:40:5: warning: name>int is obsolete
+inspect.fs:56:26: warning: .name is obsolete
+inspect.fs:73:13: error: Undefined word
+    dup ['] >>>interpret1<<< = over ['] interpret = or over ['] handler-intro, = or
+#+end_example
+
+gforth 1.0 also stops processing the command line at that error, so a
+program named after inspect.fs never runs: all 16 public-word probes
+(and json-parts) end with the same error and exit 1, no log is written,
+and the probe's own output never appears.  Only =colon-xt?=, =enclosing=,
+=.where=, =stack-region?= and =inspect-version= get defined, and
+=inspect-version= is never reachable from the command line.  The
+prediction named the wrong first stop (line 39, =>head-noprim=):
+=>head-noprim= still exists in 1.0, it just means something else (below).
+
+*Internals.*  Of the 197 system words inspect.fs names, 181 are found in
+1.0.x's image and 16 are not (identical in 1.0.0 and 1.0.1, and in every
+engine).  13 of the 16 are debug.fs internals that 1.0 keeps in the
+=see-voc= wordlist (=also see-voc= finds them); three are gone:
+=interpret1=, =handler-intro,= and =.debugline-stderr=.
+
+*Diagnostic second layer.*  To see what fails after the load error,
+=shim-1.0.fs= is loaded first: =also see-voc=, and the three missing
+names defined as empty words that never appear on a return stack.  It
+is not a port and makes nothing correct; it only lets names resolve.
+Shimmed, the load completes with warnings (=name>int= and =.name=
+obsolete, five times; ="0." is a double-cell integer= twice;
+=redefined .stacks=, since 1.0's =status-line.fs= has its own).  Then,
+the same in 1.0.0 and 1.0.1 and in all four engines unless noted:
+- works: =inspect-version=, =contract-version=, =.input=, =fclearstack=
+  (1.0 has its own, so the =[undefined]= guard keeps it), =log-off=,
+  =log-where=, =log-id=, =log-on= and its hello record;
+- errors, "Invalid memory address", then exit 139 (SIGSEGV): every word
+  that walks the return stack, which is =.stacks=, =.rs=, =rs-full=, =~~~=,
+  =all-~~= =~~= and every snapshot record.  The crash is in =colon-xt?=:
+  1.0's =>head-noprim= returns its argument (an nt is the xt now), so on
+  an arbitrary cell it hands =name>int= a non-header and dies;
+- errors, "Cannot allocate memory" in =patch-colon=: =dbg-fix=, =dbg+=, in
+  =gforth=, =gforth-fast= and =gforth-ditc=.  Rolling =dp= back into an
+  existing body and =compile,=-ing there trips 1.0's peephole bitmap;
+- wrong: =dbg-fix= / =dbg+= in =gforth-itc= patch without error, but =dbg t=
+  prints "(not a colon definition: stepped over)" and just runs =t=: no
+  step is shown, because =colon-xt?= tests =xt @ docol: == and in 1.0 a
+  colon word's code field cell is not =docol:= (=>code-address= is);
+- wrong: =.cs= prints its header and no items: 1.0's control-flow stack
+  items are tagged with addresses, not 0.7.3's small integers 0 to 5.
+
+The JSON writer itself is unchanged: =json-data=, =json-float= and
+=json-input= on 1.0.x print byte-for-byte what they print on 0.7.3
+(=json-parts=), including =-0.0=, =1e300= and 17-digit floats.
