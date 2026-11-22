@@ -1,10 +1,6 @@
 #+TITLE: Oracles
 #+STARTUP: showall
 
-=inspect.fs= is a reporter: it describes state gforth already holds. Check
-the report against that state, read by a path that does not pass through
-the reporter.
-
 | oracle                                                   | exact?                 | live?        | good for                                       |
 |----------------------------------------------------------+------------------------+--------------+------------------------------------------------|
 | lldb at a Forth-side =brk= (=call-c= flushes sp/fp/rp/lp) | yes                    | no (offline) | ground truth for a handful of cases            |

@@ -1,8 +1,7 @@
 #+TITLE: gforth 0.7.3 facts, 2026-11-21
 #+STARTUP: showall
 
-Found by hand while the inspector was written, before =pbt/= existed. Each is
-re-checkable.
+Hand-found before =pbt/=.
 
 | ID   | fact                                                                                                                                                       | rule                                                   |
 |------+------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------|
