@@ -1,15 +1,15 @@
 #+TITLE: Requirements discovery
 #+STARTUP: showall
 
-During requirements discovery:
+| ID   | WHEN                        | DO                                   | NEVER                    | CHECK                                 |
+|------+-----------------------------+--------------------------------------+--------------------------+---------------------------------------|
+| RD-1 | requirements still changing | pin at SHA                           | test a branch name       | provenance names SHA + blob           |
+| RD-2 | each run                    | log with an xrid                     | unlabelled runs          | every record has =log-id= = xrid       |
+| RD-3 | reading results             | xref call ↔ output by xrid           | infer which run wrote it | each record → 1 call; each call → its records |
+| RD-4 | a rule lands                | reflect it in =.meta/= with an ID    | leave it in a brief      | rule cited by ID                      |
 
-1. Pin at SHA.
-2. Log each run with an xrid.
-3. Xref the call to its output by xrid.
-4. Reflect in =.meta/=.
+xrid: id shared by the call (ref SHA, inspect.fs blob, engine, seed, cwd)
+and every record it wrote.
 
-xrid: one id on the call (ref SHA, inspect.fs blob, engine, seed, cwd) and
-on every record it produced (=log-id=).
-
-Evidence, 2026-11-21: 25 decisions in one evening; =harden= moved six
-times mid-run; every near-miss came from an unpinned ref.
+Source: 2026-11-21, =harden= moved 6 times mid-run; every near-miss was an
+unpinned ref.
