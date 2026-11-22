@@ -301,3 +301,22 @@ A first try at 14:34Z ran on the wrong candidate: a manifest edit had not
 taken, so candidate and older were both =af95cdf354af=, and the G6 blob
 plant went green (red 0).  The plant caught it; the harness now refuses an
 older ref whose blob is the candidate's.
+
+** 2026-11-22 soak started (agent): the gate is frozen from here
+
+Run =soak-20261122=, tmux session =gforth-inspect-soak=, harness at
+=416bae7=, 10 slots.  First counted tick: *2026-11-22T14:43:47Z*
+(09:43:47 EST).  Pinned: v0.1.1, =inspect.fs= blob
+=82860519a7d34e65888ea1aae1e142c17fde0155=, tag commit =59d7b4c=,
+=SHA256SUMS= sha256 =c02fb626...81c7=; older v0.1.0, blob =af95cdf354af=, tag
+commit =7a58bd8=.  G8 differential at start: 48 runs (16 corpus programs,
+3 engines, installed against the tag's file), 0 differ.  Slot 0 is the long
+session (=s0=, gforth, installed, =GFORTH_INSPECT_LOG_DIR=), slot 1 the
+upgrade session (=s1=, gforth-fast, v0.1.0, XDG fallback; v0.1.1 installed
+over it at 10 counted hours).
+
+Status: =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect-soak/status.txt=,
+rewritten every minute (=gmake status=); the run's files are under
+=.../gforth-inspect-soak/runs/soak-20261122/= (=events.log=,
+=violations.jsonl=, =external.jsonl=, =state.json=, one directory per
+xrid).  To stop early: =touch .../runs/soak-20261122/STOP=.
