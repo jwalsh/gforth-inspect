@@ -23,7 +23,6 @@ export VALIDATE
 CONTRACT := $(shell python3 -c 'import json; print(json.load(open("$(SCHEMA)"))["x-contract"])')
 export CONTRACT
 
-# canvas.fs is a test bed on harden only and never ships (RELEASING.org)
 RELEASE_FILES := env/inspect.fs $(SCHEMA) contract/stacks-log.org CONSUMERS.org
 DIST_FILES    := dist/inspect.fs dist/stacks-log.schema.json dist/stacks-log.org dist/CONSUMERS.org
 

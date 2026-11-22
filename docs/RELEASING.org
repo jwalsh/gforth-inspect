@@ -38,9 +38,8 @@ execution (tests, scripts, CI, experiments).
   sibling in the same directory (=CONSUMERS.org=, not =../CONSUMERS.org=),
   and a link to anything else is an absolute URL pinned to the tag. A
   consumer reads the schema from its downloaded copy, never from a branch.
-  =canvas.fs= is not part of this project and never ships.
-  It stays on =harden= only as a test bed until the end of the week of
-  2026-11-21, and is then removed by a PR, well before the first tag.
+  =canvas.fs= is not part of this project and never ships. It was a test
+  bed on =harden= and was removed before the first tag (decision 27).
 - =inspect.fs= begins with these two lines:
   #+begin_example
   \ gforth-inspect vX.Y.Z

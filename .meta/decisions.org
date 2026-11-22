@@ -49,6 +49,6 @@ a script or a setting. A decision with nothing enforcing it is a wish.
 - *Before going public:* the history of =lldb=, =model= and =harden= holds
   absolute paths. The choice is to rewrite history, or to leave those
   branches unpublished. The Human decides (#25).
-- *=canvas.fs= removal:* at the end of the week of 2026-11-21 (#8).
+- *=canvas.fs= removal:* done before v0.5.0: decision 27 brought decision 8 forward, and PR #27 removed it from =harden=.
 - *The =harden= PR:* it needs the Makefile standard (#22), the #17
   concurrent-producer fix, and its own review (#16).

@@ -10,7 +10,7 @@ so developer notes do not go there.
 
 | path                              | what                                                               |
 |-----------------------------------+--------------------------------------------------------------------|
-| =env/inspect.fs=                  | the released Forth (=env/canvas.fs= is a temporary test bed, not released) |
+| =env/inspect.fs=                  | the released Forth                                                 |
 | =contract/=                       | =stacks-log.schema.json= (the source of truth) and its prose          |
 | =test/=                           | golden-file tests, run by =gmake test= in all three engines          |
 | =pbt/=                            | property tests (Python + Hypothesis), run by =gmake -C pbt check=   |
