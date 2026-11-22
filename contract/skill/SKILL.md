@@ -1,6 +1,6 @@
 ---
 name: gforth-inspect
-description: Use gforth-inspect to see a gforth 0.7.3 program's stacks and input, and to read its JSON Lines log, instead of guessing from source or typing into someone's REPL. Use when debugging a Forth word, explaining what a definition leaves on the stack, checking a stack effect, watching a REPL session, or reading stacks.jsonl; and before upgrading a pinned gforth-inspect release.
+description: Use gforth-inspect to see a gforth 0.7.3 program's stacks and input, and to read the log it streams, instead of guessing from source or typing into someone's REPL. Use when debugging a Forth word, explaining what a definition leaves on the stack, checking a stack effect, watching a REPL session, or reading stacks.jsonl; and before upgrading a pinned gforth-inspect release.
 ---
 
 # gforth-inspect

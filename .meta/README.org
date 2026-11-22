@@ -1,27 +1,13 @@
-#+TITLE: .meta --- findings that outlive this repository
-#+DATE: 2026-11-21
+#+TITLE: .meta
 #+STARTUP: showall
 
-These are portable findings, filed under the house's three-tier convention:
-=experiments/= holds local evidence, =.meta/= holds what generalises, and
-anything that two repositories agree on is published as research.
+| file                     | holds                                               |
+|--------------------------+-----------------------------------------------------|
+| [[file:methodology-delta.org][methodology-delta.org]]    | the oracles, their strength, what each can check     |
+| [[file:experiment-process.org][experiment-process.org]]   | roles, the experiment loop, isolation                |
+| [[file:decisions.org][decisions.org]]            | every decision: who, what it replaced, what enforces it |
+| [[file:findings-2026-11-21.org][findings-2026-11-21.org]] | gforth 0.7.3 facts, each checkable                   |
+| [[file:finding-requirements-in-flight.org][finding-requirements-in-flight.org]] | rules for testing while the rules still change |
 
-The files are written while the work is going on, not after it. This
-directory holds only what is different here.
-
-| file                     | holds                                                                                                   |
-|--------------------------+---------------------------------------------------------------------------------------------------------|
-| [[file:methodology-delta.org][methodology-delta.org]]    | what oracles this project has, how strong each is, and which properties each can check                  |
-| [[file:experiment-process.org][experiment-process.org]]   | how experiments fan out here: roles, worktrees, gates, promotion through PR                            |
-| [[file:findings-2026-11-21.org][findings-2026-11-21.org]] | what the first day showed about gforth 0.7.3, lldb and the in-image inspector, before this repo had tests |
-| [[file:decisions.org][decisions.org]]            | every decision, in order: who made it, what it replaced, and what enforces it                          |
-| [[file:finding-requirements-in-flight.org][finding-requirements-in-flight.org]] | the rules moved faster than the experiments; what kept the results meaningful             |
-
-* What this directory is not
-
-It is not =CONTRIBUTING.org=. That file says what to do. These files say
-what was found to be true, and why each rule exists.
-
-It is also not a session log. The test of a finding is whether it still
-reads correctly once the context here is gone. Everything in this directory
-is public, so the privacy rules in =CONTRIBUTING.org= apply to it too.
+An entry earns its place only if an agent can act on it or check it. Public:
+CONTRIBUTING.org's privacy rules apply.
