@@ -80,28 +80,9 @@ change must not break.
 
 ## What a review here checks for
 
-On top of correctness, these are the faults this repository has actually
-had:
-
-- **An inspector word that moves what it reports.** Any word that reads a
-  stack must leave every stack bit-identical. `.stacks` once printed its
-  own return-stack frame.
-- **Words that are not in 0.7.3.** `{: :}`, `[: ;]` and `[{:` are gforth
-  1.0. Check every new word with
-  `gforth -e 's" WORD" find-name 0<> . bye'`.
-- **One engine only.** A change to threaded-code handling (`dbg`, `see`,
-  return addresses) has to be tested in `gforth`, `gforth-fast` and
-  `gforth-itc`.
-- **A change to the record format** without an issue, a schema change and
-  a change-log row (RELEASING.org, "Changing the contract or the
-  tooling"), or one that would break a reference consumer.
-- **An uncalibrated gate.** A new check needs a planted fault that turns
-  it red, and the red has to be for the right reason.
-- **Private data.** Absolute paths, names, addresses, tokens, other
-  people's code, or session transcripts, in files or in test output.
-  `scripts/privacy-scan.sh` catches the common forms. The review catches
-  the rest.
-- **Developer notes in README.org.** The README is for end users only.
+The checklist lives in [AGENTS.md](../AGENTS.md), "What `/code-review` checks
+here": `/code-review` loads AGENTS.md (there is no CLAUDE.md) and never reads
+this file.
 
 ## Anti-goals
 
