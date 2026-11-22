@@ -3,7 +3,7 @@
 
 | oracle                                                   | exact?                 | live?        | good for                                       |
 |----------------------------------------------------------+------------------------+--------------+------------------------------------------------|
-| lldb at a Forth-side =brk=                                | yes (why: F-1a)        | no (offline) | ground truth for a handful of cases            |
+| lldb stopped at a Forth-side =brk=                        | yes, the stacks are exact there (F-1a) | no (offline) | ground truth for a handful of cases |
 | in-image =depth= =pick= =fdepth= =fpick= =rp@=              | yes for data and float | yes          | O-1, O-2                                       |
 | engine differential: gforth / gforth-fast / gforth-itc   | relative               | yes          | any output that should not depend on threading |
 | the JSON schema                                          | shape only             | yes          | every record from every run                    |

@@ -18,7 +18,7 @@
 | E-7 | gate passes or finding solid | PR to =main= via [[file:../docs/REVIEW.md][REVIEW.md]]; coordinator merges; a refuted hypothesis merges as a Log with no code | merge own PR      | PR body has a Review section                |
 | E-8 | choosing the inspector       | take it from =INSPECT_REF=                                                                       | test the working tree implicitly | provenance line names the blob |
 | E-9 | calibrating an unfixed bug   | pin its own ref: =CALIBRATE_005_REF= (default =0842eda=)                                         | follow =INSPECT_REF=                      | red on pinned ref, green on the fix         |
-| E-10 | each gforth run             | own =XDG_STATE_HOME= in a temp dir; relative file name                                          | a record holding a real path            | no absolute path in any record              |
+| E-10 | each gforth run             | give it its own temp dir as =XDG_STATE_HOME= (so its log lands there), and load files by relative name | let a record hold a real path | no absolute path in any record |
 
 | re  | kind  | claim                                                    |
 |-----+-------+----------------------------------------------------------|
