@@ -1,0 +1,205 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "gforth-inspect stacks log: GET /stacks",
+    "version": "1.1",
+    "summary": "the last record of stacks.jsonl, byte for byte (reference consumer 3)",
+    "license": {
+      "name": "GPL-3.0-or-later",
+      "identifier": "GPL-3.0-or-later"
+    },
+    "x-contract": "1.1",
+    "x-version": 1,
+    "x-envelope": "1.0.0"
+  },
+  "paths": {
+    "/stacks": {
+      "get": {
+        "operationId": "getStacks",
+        "summary": "the newest line of the log, unchanged",
+        "description": "The body is one record: often a snapshot, so it does not carry hello.contract. The API version is this document's info.version; the proposed X-Stacks-Contract header carries the newest hello.contract of the log being served.",
+        "responses": {
+          "200": {
+            "description": "the last line of the log",
+            "headers": {
+              "X-Stacks-Contract": {
+                "description": "PROPOSAL: the newest hello.contract in the log; absent from the frozen mock server",
+                "required": false,
+                "schema": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Record"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "no log file, or a log with no line"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Record": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "stacks-log.schema.json",
+        "title": "gforth stacks log record",
+        "description": "One line of <dir>/stacks.jsonl, where <dir> is $GFORTH_INSPECT_LOG_DIR or ${XDG_STATE_HOME:-~/.local/state}/gforth-inspect. Producer: env/inspect.fs (log-on). Prose: stacks-log.org.",
+        "x-version": 1,
+        "x-contract": "1.1",
+        "type": "object",
+        "required": [
+          "v",
+          "event",
+          "t"
+        ],
+        "properties": {
+          "v": {
+            "const": 1
+          },
+          "event": {
+            "enum": [
+              "hello",
+              "snapshot"
+            ]
+          },
+          "t": {
+            "type": "integer",
+            "description": "Unix seconds"
+          }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "event": {
+                "const": "hello"
+              },
+              "gforth": {
+                "type": "string"
+              },
+              "inspect": {
+                "type": "string",
+                "description": "inspect-version of the producer (optional, since 0.1.0)"
+              },
+              "contract": {
+                "type": "string",
+                "pattern": "^[0-9]+\\.[0-9]+$",
+                "description": "MAJOR.MINOR of the log contract (since 1.1); consumers refuse a stream whose newest hello announces another MAJOR.MINOR, or none"
+              }
+            },
+            "required": [
+              "gforth"
+            ]
+          },
+          {
+            "properties": {
+              "event": {
+                "const": "snapshot"
+              },
+              "id": {
+                "type": "string",
+                "description": "tag set by log-id (optional, since 1.1)"
+              },
+              "where": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "src": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "float": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "rs": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "const": "sp"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "word",
+                        "off"
+                      ],
+                      "properties": {
+                        "word": {
+                          "type": "string"
+                        },
+                        "off": {
+                          "type": "integer"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "input": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "line",
+                  "in",
+                  "text"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string"
+                  },
+                  "line": {
+                    "type": "integer"
+                  },
+                  "in": {
+                    "type": "integer"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "where",
+              "src",
+              "data",
+              "float",
+              "rs",
+              "input"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

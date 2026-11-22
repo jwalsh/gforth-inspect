@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "stacks-log.envelope.schema.json",
+  "title": "gforth stacks log envelope (candidate, experiment 009)",
+  "description": "PROPOSAL, not part of contract/ (E-6). What every line of every stacks.jsonl carries, in every version (D-36): v, event, t, and on hello the contract. The payload is everything else and is versioned by the contract schema, not here. Byte rule I-1 (D-38), which a schema cannot state: every line begins with {\"v\": then a decimal integer then a comma.",
+  "x-envelope": "1.0.0",
+  "type": "object",
+  "required": ["v", "event", "t"],
+  "properties": {
+    "v": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "record version: the MAJOR of hello.contract; never renamed, moved, retyped or dropped (I-1)"
+    },
+    "event": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "record kind; a consumer stops by version, never by event, on one it does not know"
+    },
+    "t": {
+      "type": "integer",
+      "description": "Unix seconds; consumers must not rely on it"
+    }
+  },
+  "if": {
+    "properties": { "event": { "const": "hello" } },
+    "required": ["event"]
+  },
+  "then": {
+    "required": ["contract"],
+    "properties": {
+      "contract": {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+        "description": "MAJOR.MINOR of the payload contract; MAJOR equals v"
+      },
+      "inspect": {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+        "description": "the producer release, X.Y.Z (optional in the envelope; the compound check requires it)"
+      }
+    }
+  }
+}
