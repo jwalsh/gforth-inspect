@@ -33,7 +33,8 @@ the file, so producers that take turns (a REPL and a one-shot
 =gforth -e=) never lose a record. Producers writing at the same instant
 make an interleaved or lost line rare, but not impossible: gforth 0.7.3
 cannot open a file in append mode, so the seek to the end and the write
-are two separate calls.
+are separate calls, and a record longer than the stdio buffer can reach
+the file in more than one write.
 
 * Data flow
 

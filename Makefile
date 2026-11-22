@@ -1,4 +1,5 @@
 # gforth-inspect -- GNU make (gmake on BSD/macOS)
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Follows the house standard Makefile; `gmake help` lists the targets.
 # The recordings are test/expected/ (the goldens): `goldens` records them,
@@ -37,7 +38,7 @@ help: ## Show this help
 DEP_PROBES := "gforth --version" "gforth-fast --version" "gforth-itc --version" \
               "gforth -e 's\" fpick\" find-name 0= throw bye'" \
               "uv --version" "jq --version" "git --version" \
-              "python3 --version" "perl -v" "shasum --version" "timeout --version"
+              "python3 --version" "perl -v" "shasum -a 256 /dev/null" "timeout 5 true"
 deps: ## Run every tool and print what it answered; a missing one fails
 	@for probe in $(DEP_PROBES); do \
 	  if output=$$(eval "$$probe" 2>&1 </dev/null); then \
@@ -72,8 +73,8 @@ test-one: ## One test, every engine: gmake test-one T=test/x.fs
 	test/run.sh -e "$(ENGINES)" $(T)
 
 goldens: ## Record test/expected/ afresh (review the diff); refuses one naming the home dir
+	@case "$(HOME)" in ""|/) echo "goldens: HOME is '$(HOME)', so test/expected/ cannot be checked for it"; exit 1;; esac
 	test/run.sh -u -e "$(ENGINES)"
-	@test -n "$(HOME)" || { echo "goldens: HOME is empty, cannot check test/expected/"; exit 1; }
 	@if grep -rlF "$(HOME)" test/expected >/dev/null 2>&1; then \
 	  echo "goldens: test/expected/ contains the home directory:"; grep -rlF "$(HOME)" test/expected; \
 	  echo "goldens: refused; restore with git checkout -- test/expected"; exit 1; fi
@@ -94,12 +95,13 @@ verify: ## The CONTRIBUTING.org baseline: privacy, guides, test, pbt check + cal
 	bash scripts/check-guides.sh --calibrate
 	bash scripts/check-guides.sh
 	$(MAKE) test
-	INSPECT_REF=$(INSPECT_REF) $(MAKE) -C pbt check
-	INSPECT_REF=$(INSPECT_REF) $(MAKE) -C pbt calibrate
+	$(PBT_ENV) $(MAKE) -C pbt check
+	$(PBT_ENV) $(MAKE) -C pbt calibrate
 
-# pbt/ reads inspect.fs from a git ref (pbt/gforth_run.py, default the
-# `harden` branch). verify tests this checkout's own commit instead.
-INSPECT_REF ?= HEAD
+# pbt/ would read inspect.fs from the `harden` branch (pbt/gforth_run.py).
+# verify points it at this working tree, as CI does; the calibrate scripts
+# that plant a fault with `git show REF:env/inspect.fs` use this commit.
+PBT_ENV := INSPECT_FS=$(CURDIR)/env/inspect.fs SCHEMA_JSON=$(CURDIR)/$(SCHEMA) INSPECT_REF=HEAD
 
 # Every gate, in order; each has been seen red on a planted fault.
 GATES := verify
