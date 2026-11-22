@@ -1,0 +1,33 @@
+{
+  "producer_exit": 1,
+  "jq": {
+    "exit": 0,
+    "lines": [
+      "{\"e\":\"hello\",\"w\":null,\"d\":null,\"f\":null}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[1],\"f\":[]}"
+    ]
+  },
+  "checker": {
+    "exit": 0,
+    "output": {
+      "event": "snapshot",
+      "where": null,
+      "src": null,
+      "data": [
+        1
+      ],
+      "float": [],
+      "rs": [],
+      "input": {
+        "file": "15-error-partial.fs",
+        "line": 5,
+        "in": 9,
+        "text": "1 .stacks"
+      }
+    }
+  },
+  "mock_get_stacks": {
+    "status": 200,
+    "body": "{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"where\":null,\"src\":null,\"data\":[1],\"float\":[],\"rs\":[],\"input\":{\"file\":\"15-error-partial.fs\",\"line\":5,\"in\":9,\"text\":\"1 .stacks\"}}"
+  }
+}

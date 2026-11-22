@@ -1,0 +1,31 @@
+{
+  "producer_exit": 0,
+  "jq": {
+    "exit": 0,
+    "lines": [
+      "{\"e\":\"hello\",\"w\":null,\"d\":null,\"f\":null}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[],\"f\":[]}"
+    ]
+  },
+  "checker": {
+    "exit": 0,
+    "output": {
+      "event": "snapshot",
+      "where": null,
+      "src": null,
+      "data": [],
+      "float": [],
+      "rs": [],
+      "input": {
+        "file": "11-utf8.fs",
+        "line": 4,
+        "in": 8,
+        "text": ".stacks \\ λ → ∀ 日本 🙂 bad:� end"
+      }
+    }
+  },
+  "mock_get_stacks": {
+    "status": 200,
+    "body": "{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"where\":null,\"src\":null,\"data\":[],\"float\":[],\"rs\":[],\"input\":{\"file\":\"11-utf8.fs\",\"line\":4,\"in\":8,\"text\":\".stacks \\\\ λ → ∀ 日本 🙂 bad:\\ufffd end\"}}"
+  }
+}

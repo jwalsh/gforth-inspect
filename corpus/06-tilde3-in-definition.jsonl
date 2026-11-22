@@ -1,0 +1,3 @@
+{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"snapshot","t":0,"where":"scale","src":"06-tilde3-in-definition.fs:3","data":[7],"float":[1.2500000000000000E0 ],"rs":[],"input":{"file":"06-tilde3-in-definition.fs","line":5,"in":14,"text":"7 1.25e scale .stacks"}}
+{"v":1,"event":"snapshot","t":0,"where":null,"src":null,"data":[70],"float":[2.5000000000000000E0 ],"rs":[],"input":{"file":"06-tilde3-in-definition.fs","line":5,"in":21,"text":"7 1.25e scale .stacks"}}
