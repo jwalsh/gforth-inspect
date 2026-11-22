@@ -83,13 +83,13 @@ stop. The rules in RELEASING.org exist to protect them.
    comment, and records the patch on its own side (for example in a
    =DEVIATIONS.org=).
 3. A local patch that changes records follows the same MAJOR/MINOR rules
-   and announces its own =contract= in =hello=, so the stream always says
-   what is in it.
-4. This repository adopts the patch or redoes it, and the release notes
-   say =Closes #N=.
+   and adds an optional =local= key to =hello= (=contract= stays
+   =MAJOR.MINOR=), so the stream always says what is in it.
+4. This repository adopts the patch or redoes it. The fixing PR says
+   =Closes #N=, and the release notes list =Fixed: #N=.
 5. On each release, the consumer runs every patched issue's reproducer
    against the release assets. It drops the patches the release covers and
-   files any it does not cover as new issues.
+   reopens the issue for any it does not cover.
 
 * Release gate
 

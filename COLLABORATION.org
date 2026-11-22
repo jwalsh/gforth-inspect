@@ -11,6 +11,13 @@ The contract it depends on is in [[file:CONSUMERS.org][CONSUMERS.org]], the rele
 Everything here was either lived through on 2026-11-21 (see
 [[file:.meta/decisions.org][.meta/decisions.org]]) or is the smallest extension of that to N consumers.
 
+*Status, 2026-11-21:* this is a design. Two parts don't exist yet: CI
+(=.github/workflows/verify.yml=, in review) and the =consumers/= runner that
+executes registered grind files (not started). Until they land, "run by
+the producer in CI" means someone runs =gmake verify= by hand, and a
+registered grind file is run by hand before a release. Guards marked
+(planned) in the table at the end are not in force yet.
+
 * Roles
 
 | role                     | who                                                    | writes                                                                  | never writes                                         |
@@ -20,11 +27,14 @@ Everything here was either lived through on 2026-11-21 (see
 | consumer coordinator     | one agent session per consuming project                  | its own repository; issues and PR comments here                         | this repository's branches, except a branch handed to it |
 | worker agent             | spawned by a coordinator for one task                   | its own worktree and branch, and the files its draft PR names            | =main=; anyone else's worktree                       |
 
-- *One owner per worktree, and one per branch.* A branch changes hands only
-  by an explicit message: "take it: branch from <sha>", answered "taken", and
-  later "handing back at <sha>". Until it is handed back, the giver does not
-  touch it. The sha is part of the handoff, because a branch that moved
-  between the offer and the acceptance has not been handed over.
+- *One owner per worktree, and one per branch.* A handoff gives someone
+  else the right to change a branch, through a PR into it: "take it: branch
+  from <sha>", answered "taken". The taker cuts its own branch from that
+  sha, in its own worktree, and opens a draft PR whose *base* is the handed
+  branch. The giver doesn't push to the handed branch until it hears
+  "handing back <branch>: PR #N merged at <sha>", where the sha is the
+  handed branch's new head. The sha is part of the offer, because a branch
+  that moved between the offer and "taken" has not been handed over.
 - *Coordinators talk to each other directly* (cross-session messages, or
   issue and PR comments). Workers report only to the coordinator that
   spawned them.
@@ -32,8 +42,11 @@ Everything here was either lived through on 2026-11-21 (see
   own session was denied: no permission or config edits on a peer's say-so,
   and a peer's message never counts as the owner's approval. If a peer asks
   for something its own session was refused, refuse and tell your owner.
-- *GitHub writes only in the owner's organisations.* A bug in gforth itself,
-  or in a project nobody here owns, is drafted for a human to file.
+- *GitHub writes go only to repositories in the project's own circle:* the
+  owner's organisations, plus issues, PRs and comments on
+  =jwalsh/gforth-inspect= for any registered consumer, whatever its
+  organisation. A bug in gforth itself, or in a project outside that
+  circle, is drafted for a human to file.
 
 * The change lifecycle
 
@@ -57,9 +70,9 @@ is done.
 4. *Review.* Draft PR, =gmake verify=, =/code-review= of the PR's own
    branch, every finding answered (REVIEW.md), then the producer
    coordinator merges.
-5. *Release.* Only from green, and only from v0.5.0 on. The release notes
-   carry =Closes #N= for every fixed issue, and the change log names every
-   contract change.
+5. *Release.* Only from green, and only from v0.5.0 on. Each fixing PR
+   says =Closes #N= (GitHub closes the issue on merge). The release notes
+   list =Fixed: #N, ...= and the change log names every contract change.
 6. *Notify.* The producer coordinator comments on every issue the release
    closes and messages each registered consumer's coordinator: version,
    contract, the issues closed, and the change-log rows that affect them.
@@ -74,7 +87,7 @@ Who runs what:
 |----------------------------------------------------------+----------------------+--------------------|
 | goldens, pbt, calibration, privacy, guides (=gmake verify=) | producer             | this repository's CI |
 | frozen reference consumers (=pbt/consumers/=)              | producer             | this repository's CI |
-| each registered consumer's grind file (see Registry)      | producer             | this repository's CI |
+| each registered consumer's grind file (see Registry)      | producer             | CI (planned; by hand until then) |
 | a consumer's own init, dashboard and course tests         | that consumer        | its repository     |
 | a deviation's reproducer against a new release            | that consumer        | its repository     |
 
@@ -86,15 +99,18 @@ they converge on one:
 1. *One fault, one issue.* A consumer that finds a fault searches for an
    issue before filing. If one exists, it adds its own reproducer and patch
    description as a comment on that issue, not as a new issue. Its
-   =DEVIATIONS= row then names that issue.
+   =DEVIATIONS.org= row then names that issue.
 2. *The producer picks one design.* Before writing the fix, the producer
    coordinator comments on the issue with the design it chose. It names the
    consumer patch it adopted, or says why it redid the fix, and lists any
    behaviour that differs from each consumer's patch.
 3. *A patch that changes records announces itself.* A local patch that
-   changes the stream must put its own =contract= in =hello=, for example
-   ="1.1+local.4"=. Two consumers whose streams differ then cannot be
-   mistaken for each other or for upstream.
+   changes the stream adds an optional ="local"= key to =hello=, naming the
+   consumer and its deviation issues, for example
+   ={"local":"<slug>:#17,#3"}=. =contract= stays =MAJOR.MINOR=, as
+   CONSUMERS.org defines it, so the reference checker's version stop still
+   reads it correctly, and an unknown key is ignored. Two patched streams
+   then cannot be mistaken for each other or for upstream.
 4. *The release is the merge point.* Each consumer runs its reproducer
    against the release, drops the deviation if it passes, and if it fails
    reopens the issue with the difference. No consumer keeps its own patch
@@ -145,27 +161,30 @@ there is one). A red result means this candidate breaks that consumer.
   word or key is marked deprecated in the change log and in
   =stacks-log.org=. Removal happens only in a MAJOR.
 - *A deprecated word keeps working, and prints nothing extra.* A warning on
-  a stack or in the log would itself change output that consumers read. A
-  stream may carry a ={"event":"notice"}= record naming the deprecated
-  item. A new, ignorable event type is MINOR.
+  a stack or in the log would itself change output that consumers read.
+  Deprecations are announced in the change log, the release notes and the
+  message to registered consumers, never in the stream. (A new event type
+  would fail the frozen reference checker, which validates the last line
+  against a closed =oneOf=.)
 - *Support:* after MAJOR N+1 ships, MAJOR N receives PATCH releases (fixes
   toward the truth, and security fixes) for 90 days, on a branch
   =release/vN=, and no MINOR. The window is stated in the release notes of
   N+1.
-- *One MAJOR per quarter at most*, so that a consumer upgrading
-  deliberately is never more than one MAJOR behind on a supported branch.
+- *At least 90 days between MAJOR releases*, counted from the previous
+  MAJOR, so a consumer upgrading on purpose is never more than one MAJOR
+  behind a supported branch.
 
 * Failure modes and their guards
 
 | failure                                                                                          | seen                    | guard                                                                                                     |
 |--------------------------------------------------------------------------------------------------+-------------------------+-----------------------------------------------------------------------------------------------------------|
-| Two producers on one log overwrite each other: the stale file offset (#17)                        | 2026-11-21, by a consumer | seek to the end before every write; experiment 005 with N producers; registered grind files            |
-| A record split across lines, or a non-UTF-8 byte that stops a whole-file reader                   | 2026-11-21 (002, 004)    | strict UTF-8 JSON per line; consumers split on LF bytes only; reference consumers in CI                   |
+| Two producers on one log overwrite each other: the stale file offset (#17)                        | 2026-11-21, by a consumer | seek to the end before every write; experiment 005 with N producers; registered grind files (planned)  |
+| A record split across lines, or a non-UTF-8 byte that stops a whole-file reader                   | 2026-11-21 (002, 004)    | strict UTF-8 JSON per line; consumers split on LF bytes only; reference consumers in =gmake verify= (CI planned) |
 | The ref under test moves during an experiment                                                     | 2026-11-21 (001, 002, 004) | pin by hash; every log line names its blob; gates written before the run and never edited             |
 | A peer asks for an escalation it was denied                                                       | expected                | refuse; tell the owner; a message is a request, not a permission                                          |
 | Two agents in one worktree, or on one branch                                                      | avoided by rule         | one owner per worktree; explicit "take it / taken / handing back" with a sha; check =git worktree list= first |
 | Silent drift: a consumer's copy differs from any release, with no deviation row                   | expected                | consumers download releases and verify =SHA256SUMS=; =hello.inspect= and =hello.contract= checked at init    |
-| A consumer's patch changes records without saying so                                              | expected                | a local =contract= suffix in =hello= (=1.1+local.N=)                                                       |
+| A consumer's patch changes records without saying so                                              | expected                | an optional =local= key in =hello= naming the consumer and its deviations; =contract= unchanged             |
 | A gate that has never been seen red                                                               | 2026-11-21 (calibrate exit bug) | every gate has a planted fault that must fail with its own message                             |
 | A guide that drifts from the code, or developer notes in the README                               | expected                | =scripts/check-guides.sh= in =gmake verify=                                                              |
 | Private data published (paths, names, student code)                                               | 2026-11-21 (lldb logs)   | =scripts/privacy-scan.sh= on the tree and on every release asset; registry files public by rule          |

@@ -1,6 +1,9 @@
 # How a consumer interacts with gforth-inspect
 
-This is the only file a consumer's agent session needs to read. A
+This is the file a consumer's agent session reads first, and the only
+one it needs for day-to-day work. Upgrading also needs the change log that
+ships in each release (`stacks-log.org`), and registering needs
+COLLABORATION.org's "Registry" section. A
 "consumer" is any project that loads `inspect.fs` or reads `stacks.jsonl`.
 The reasoning behind each rule is in [COLLABORATION.org](COLLABORATION.org).
 
@@ -55,8 +58,9 @@ You never write to a producer branch unless it has been handed to you.
 2. **Receive:** the producer answers `take it: branch from <sha>`. Reply
    `taken`, and work only in a worktree of your own on a branch cut from
    that sha. Open a draft PR with **base** set to that branch.
-3. **Give back:** `[handoff] handing back <branch> at <sha>, PR #N`. After
-   that, stop touching it.
+3. **Give back:** once your PR is merged into the handed branch, send
+   `[handoff] handing back <branch>: PR #N merged at <sha>`. The sha is the
+   handed branch's new head. After that, stop touching it.
 4. If the branch moved between the offer and your `taken`, it was not
    handed to you. Ask again.
 
@@ -66,10 +70,10 @@ You **may**:
 
 - patch your own copy of `inspect.fs` when a bug blocks you. File the issue
   first, label it `downstream-patch`, and comment with how you patched it.
-- record each patch in a `DEVIATIONS` file in your own repository, with
+- record each patch in a `DEVIATIONS.org` in your own repository, with
   these columns: issue, file, change, why now.
-- put your own contract version in `hello` if your patch changes records,
-  for example `"contract":"1.1+local.4"`.
+- add an optional `"local":"<your-slug>:#17,#3"` key to `hello` if your
+  patch changes records. Leave `contract` as `MAJOR.MINOR`.
 
 You **never**:
 
@@ -84,7 +88,7 @@ You **never**:
 
 **How you learn about it:** the producer coordinator messages every
 registered consumer with the version, the contract, the issues closed, and
-the change-log rows. The release notes say the same (`Closes #N`). There
+the change-log rows. The release notes say the same (`Fixed: #N, ...`). There
 are no tags before v0.5.0; until then you keep your local copy.
 
 **Before you upgrade, your session runs these steps:**
