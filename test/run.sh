@@ -62,7 +62,7 @@ run_one() { # engine test -> writes $tmp/actual, returns 0 if output usable
   tmp=$WORK/$e-$name
   mkdir -p "$tmp/home" "$tmp/state" "$tmp/out"
   local -a cmd=("$e")
-  [ -z "$(directive "$t" noinspect)" ] && cmd+=(env/inspect.fs)
+  grep -q '^\\ test: noinspect' "$t" || cmd+=(env/inspect.fs)
   cmd+=(test/lib/assert.fs)
   while read -r f; do [ -n "$f" ] && cmd+=("$f"); done < <(directive "$t" load)
   cmd+=("$t" -e bye)

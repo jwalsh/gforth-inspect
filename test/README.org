@@ -87,9 +87,11 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 - lldb cannot attach inside a sandbox that denies =task_for_pid=;
   =gmake test-lldb= then prints SKIP.  =lldb/log/= is the last transcript
   from outside one, with machine paths masked.
-- =gmake verify= runs =gmake -C pbt calibrate=, which is owned by =pbt/=.
-  It passes =INSPECT_REF=HEAD=, so the property tests load this
-  checkout's committed =env/inspect.fs=, not the =harden= branch.
+- =gmake verify= runs =gmake -C pbt check= and =calibrate=, which are owned
+  by =pbt/=.  It sets =INSPECT_FS= to this working tree's =env/inspect.fs=, so
+  the property tests load the working copy (uncommitted edits included);
+  =INSPECT_REF=HEAD= reaches only the calibrate scripts that plant a fault
+  with =git show REF:env/inspect.fs=.
 - Two producers on one log are safe when they take turns
   (=log-two-producers=).  Each record is built in memory and written as
   one line, but two producers writing at the same instant can still

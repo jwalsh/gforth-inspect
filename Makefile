@@ -85,6 +85,7 @@ goldens: ## Record test/expected/ afresh (review the diff); refuses one naming t
 
 stress: ## Load real programs with and without inspect.fs: CORPUS="dir/*.fs ..."
 	@test -n "$(CORPUS)" || { echo 'usage: gmake stress CORPUS="dir/*.fs ..."'; exit 2; }
+	@test -n "$(wildcard $(CORPUS))" || { echo 'stress: CORPUS matches no file: $(CORPUS)'; exit 2; }
 	test/stress.sh $(wildcard $(CORPUS))
 
 test-lldb: ## lldb/check.sh; skipped where debugserver cannot attach
