@@ -3,7 +3,7 @@
 
 | oracle                                                   | exact?                 | live?        | good for                                       |
 |----------------------------------------------------------+------------------------+--------------+------------------------------------------------|
-| lldb at a Forth-side =brk= (=call-c= flushes sp/fp/rp/lp) | yes                    | no (offline) | ground truth for a handful of cases            |
+| lldb at a Forth-side =brk=                                | yes (why: F-1a)        | no (offline) | ground truth for a handful of cases            |
 | in-image =depth= =pick= =fdepth= =fpick= =rp@=              | yes for data and float | yes          | O-1, O-2                                       |
 | engine differential: gforth / gforth-fast / gforth-itc   | relative               | yes          | any output that should not depend on threading |
 | the JSON schema                                          | shape only             | yes          | every record from every run                    |
@@ -15,6 +15,11 @@
 | O-1 | testing non-interference                | run the same program with and without the inspector                  | infer it from the report              | stacks bit-identical (exp 001) |
 | O-2 | testing faithfulness                    | independent read: =depth= + =pick=, =fdepth= + =fpick=; floats as their bits | let a printer's rounding stand in for agreement | exact match (exp 001) |
 | O-3 | a fault could be shared by =depth= and the inspector | check from outside the image: engine differential or offline lldb | trust in-image oracles alone | outside check run        |
-| O-4 | =words.json= and a measured delta disagree | report both: gforth or the model is wrong                           | decide which side from the property   | finding names both sides    |
+| O-4 | =words.json= and a measured delta disagree | report both sides                                                   | decide which side from the property   | finding names both sides    |
 | O-5 | gforth-fast step counts differ          | mask (TOS in a register, fused superinstructions: documented)         | count it as a finding                 | mask in the test            |
 | O-6 | need a stack value as data              | read the log                                                         | parse =.s= or =f.s=                     |                             |
+
+| re  | kind | claim                                                                 |
+|-----+------+-----------------------------------------------------------------------|
+| O-4 | why  | a disagreement means gforth or the model is wrong                     |
+| O-4 | limit | the property finds the disagreement; it cannot say which side is wrong |

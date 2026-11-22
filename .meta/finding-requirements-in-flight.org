@@ -16,7 +16,9 @@ every record it wrote.
 |------------------------------------------------------------------------------------------------------------+------|
 | 25 decisions in one evening ([[file:decisions.org][decisions.org]]), most landing mid-run                                                  | RD-4 |
 | =harden= moved six times: 18ebe2d, cda47e2, ea4ae27, 9b92746, fc283da, 1b2aee9                               | RD-1 |
-| 002 written against 18ebe2d's escaping; =json-str= rewritten before its first run; shipped two oracles, picked from =hello= | RD-1, E-5 |
+| 002 was written against 18ebe2d's escaping                                                                 | RD-1 |
+| =json-str= was rewritten on =harden= before 002's first run                                                      | RD-1 |
+| 002 kept its pre-registered gate and shipped two oracles, chosen by the =hello= record                         | E-5  |
 | 004 briefed against 9b92746, first run on fc283da, which had added a contract version stop               | RD-4 |
 | 001's float verdict depended on which blob the default ref named that minute                             | RD-1 |
 | "v0.1.0 is the first release" replaced within the hour by "v0.5.0 is the first tag" ([[file:decisions.org][D-19]])                   | RD-4 |
