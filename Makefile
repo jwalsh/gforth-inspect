@@ -1,16 +1,14 @@
 # gforth-inspect -- GNU make (gmake on BSD/macOS)
 #
-#   gmake test           goldens in every engine + schema validation + selftests
-#   gmake test-one T=test/x.fs   one test, every engine
-#   gmake goldens        regenerate test/expected/ (review the diff!)
-#   gmake stress CORPUS="dir/*.fs ..."   load real programs with/without inspect.fs
-#   gmake test-lldb      lldb/check.sh; skipped where debugserver cannot attach
-#   gmake verify         the CONTRIBUTING.org baseline
-#   gmake release-check  verify + release hygiene + dist/ with SHA256SUMS
+# Follows the house standard Makefile; `gmake help` lists the targets.
+# The recordings are test/expected/ (the goldens): `goldens` records them,
+# `test-goldens` re-runs in a scratch dir and diffs, `gate` runs verify.
 
 SHELL   := /bin/bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := test
+# A recipe that fails must not leave a half-written target behind.
+.DELETE_ON_ERROR:
 
 ENGINES ?= gforth gforth-fast gforth-itc
 SCHEMA  := contract/stacks-log.schema.json
@@ -28,12 +26,28 @@ export CONTRACT
 RELEASE_FILES := env/inspect.fs $(SCHEMA) contract/stacks-log.org CONSUMERS.org
 DIST_FILES    := dist/inspect.fs dist/stacks-log.schema.json dist/stacks-log.org dist/CONSUMERS.org
 
-.PHONY: test test-contract test-selftest test-goldens test-one goldens \
-        stress test-lldb verify release-check
+.PHONY: help deps test test-contract test-selftest test-goldens test-one goldens \
+        stress test-lldb verify gate release-check clean
 
-test: test-contract test-selftest test-goldens
+help: ## Show this help
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_.-]+:.*?## / {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-test-contract:
+# One probe per tool. A probe RUNS the tool, and the verdict is its exit
+# status ("command not found" is output too). Each probe is one quoted word.
+DEP_PROBES := "gforth --version" "gforth-fast --version" "gforth-itc --version" \
+              "gforth -e 's\" fpick\" find-name 0= throw bye'" \
+              "uv --version" "jq --version" "git --version"
+deps: ## Run every tool and print what it answered; a missing one fails
+	@for probe in $(DEP_PROBES); do \
+	  if output=$$(eval "$$probe" 2>&1 </dev/null); then \
+	    answer=$$(printf '%s\n' "$$output" | grep -v '^$$' | head -1 || true); \
+	    printf '  ok       %-44s %s\n' "$$probe" "$${answer:-(exit 0)}"; \
+	  else printf '  MISSING  %-44s %s\n' "$$probe" "$$(printf '%s\n' "$$output" | head -1 || true)"; missing=1; fi; \
+	done; exit $${missing:-0}
+
+test: test-contract test-selftest test-goldens ## Goldens in every engine + schema validation + selftests
+
+test-contract: ## Good records validate, bad ones are rejected; the consumer rule
 	@echo "== contract: good records validate, bad ones are rejected ($(VALIDATE))"
 	$(VALIDATE) test/validate.py $(SCHEMA) test/contract/good.jsonl
 	$(VALIDATE) test/validate.py --expect-invalid $(SCHEMA) test/contract/bad.jsonl
@@ -45,31 +59,34 @@ test-contract:
 	@grep -q 's" $(CONTRACT)" ;' env/inspect.fs || \
 	  { echo "contract-version in inspect.fs != schema x-contract $(CONTRACT)"; exit 1; }
 
-test-selftest:
+test-selftest: ## The runner goes red on planted failures
 	@echo "== runner selftest: failures must fail"
 	test/selftest.sh
 
-test-goldens:
+test-goldens: ## Re-run test/*.fs in a scratch dir and diff against test/expected/
 	@echo "== goldens: $(ENGINES)"
 	test/run.sh -e "$(ENGINES)"
 
-test-one:
+test-one: ## One test, every engine: gmake test-one T=test/x.fs
 	test/run.sh -e "$(ENGINES)" $(T)
 
-goldens:
+goldens: ## Record test/expected/ afresh (review the diff); refuses one naming the home dir
 	test/run.sh -u -e "$(ENGINES)"
+	@if grep -rl "$(HOME)" test/expected >/dev/null 2>&1; then \
+	  echo "goldens: test/expected/ contains the home directory:"; grep -rl "$(HOME)" test/expected; \
+	  echo "goldens: refused; restore with git checkout -- test/expected"; exit 1; fi
 	git status --short test/expected
 
-stress:
+stress: ## Load real programs with and without inspect.fs: CORPUS="dir/*.fs ..."
 	@test -n "$(CORPUS)" || { echo 'usage: gmake stress CORPUS="dir/*.fs ..."'; exit 2; }
 	test/stress.sh $(wildcard $(CORPUS))
 
-test-lldb:
+test-lldb: ## lldb/check.sh; skipped where debugserver cannot attach
 	@if /usr/bin/lldb -b -o run -- /usr/bin/true >/dev/null 2>&1; then \
 	  lldb/check.sh; \
 	else echo "SKIP test-lldb: debugserver cannot launch here (sandbox?)"; fi
 
-verify:
+verify: ## The CONTRIBUTING.org baseline: privacy, guides, test, pbt check + calibrate
 	scripts/privacy-scan.sh --calibrate
 	scripts/privacy-scan.sh
 	bash scripts/check-guides.sh --calibrate
@@ -78,10 +95,16 @@ verify:
 	$(MAKE) -C pbt check
 	$(MAKE) -C pbt calibrate
 
+# Every gate, in order; each has been seen red on a planted fault.
+GATES := verify
+gate: ## Every gate, in order (the standard alias for verify)
+	@for target in $(GATES); do $(MAKE) --no-print-directory $$target || exit 1; done
+	@echo "gate: all green"
+
 # release files must not name a machine, a person or the course that uses them
 LEAK := /Users/|/home/|/opt/homebrew|/private/|/var/folders|sicpminus|course\.el|[a-z0-9._-]+@[a-z0-9-]+\.[a-z]+
 
-release-check: verify
+release-check: verify ## verify + release hygiene + dist/ with SHA256SUMS
 	@echo "== release hygiene: $(RELEASE_FILES) contract/*"
 	@if grep -n -i -E '$(LEAK)' env/*.fs contract/*; then \
 	  echo "release-check: machine, personal or course strings above"; exit 1; fi
@@ -104,3 +127,8 @@ release-check: verify
 	  test "$$n" = 0 || { echo "release-check: sicpminus in assets"; exit 1; }
 	@cat dist/SHA256SUMS
 	@echo "release-check: dist/ ready; tagging (v0.5.0 and later only) and publishing are the owner's call"
+
+# Only git-ignored files under dist/; test scratch is a mktemp dir that
+# test/run.sh removes itself.
+clean: ## Remove the git-ignored files under dist/
+	git clean -fdX -- dist/
