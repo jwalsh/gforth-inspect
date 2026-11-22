@@ -26,6 +26,15 @@ prints the file's path.  An embedding project points
 Append-only. One complete object per line, UTF-8, terminated by a newline;
 a consumer that wants "now" reads the last line.
 
+*One producer per =GFORTH_INSPECT_LOG_DIR= is the supported setup.*
+Several producers on one log are best-effort. The producer builds each
+record in memory and writes it as one whole line at the current end of
+the file, so producers that take turns (a REPL and a one-shot
+=gforth -e=) never lose a record. Producers writing at the same instant
+make an interleaved or lost line rare, but not impossible: gforth 0.7.3
+cannot open a file in append mode, so the seek to the end and the write
+are two separate calls.
+
 * Data flow
 
 One producer, a file as the interface, independent read-only consumers.
@@ -142,4 +151,4 @@ follows the same path, in one commit:
 | 2026-11-21 | snapshot floats: 17 digits, =-0.0= kept  | PATCH (values only) | #1  | 0.1.0      | none needed        |
 | 2026-11-21 | =all-~~= snapshots fill =where= / =src=  | PATCH (values only) | #2  | 0.1.0      | none needed        |
 | 2026-11-21 | 1.1: snapshot =id= (optional), word =log-id=; =hello.contract=; consumers stop on a MAJOR or MINOR change | MINOR | #3 | 0.1.0 | checker, dashboard |
-| 2026-11-21 | append-only with several producers on one log: =log-write= seeks to the end before every record | PATCH (no schema change) | #17 | 0.1.0 | none needed |
+| 2026-11-21 | =log-write= builds each record in memory, seeks to the end, and writes it as one whole line. Producers that take turns never lose a record. Concurrent producers are best-effort (rare, not impossible, interleaving); one producer per =GFORTH_INSPECT_LOG_DIR= is supported | PATCH (no schema change) | #17 | 0.1.0 | none needed |

@@ -240,14 +240,40 @@ create snap-id 64 allot  0 snap-id c!
     jc s" inspect" jkey inspect-version json-str
     jc s" contract" jkey contract-version json-str  [char] } emit cr ;
 
-: log-write ( xt -- )
-    \ run xt with output to the log, in decimal; BASE is restored after.
-    \ Seek to the end first: another producer may have appended (#17).
+\ A record is built in memory, then written to the log in one piece (#17).
+\ 0.7.3 has no append fam, so the seek to the end and the write are two
+\ calls: producers that take turns are safe, and producers writing at the
+\ same instant rarely, but possibly, interleave.
+variable log-buf  0 log-buf !  variable log-buf#  variable log-buf-max
+create log-char 1 allot
+
+: (log-room) ( u -- )
+    \ grow log-buf to hold u more bytes
+    log-buf# @ + dup log-buf-max @ <= IF drop EXIT THEN
+    2* 256 max dup log-buf-max !
+    log-buf @ ?dup IF swap resize ELSE allocate THEN throw log-buf ! ;
+: (log-type) ( c-addr u -- )
+    dup (log-room)  tuck log-buf @ log-buf# @ + swap move  log-buf# +! ;
+: (log-emit) ( c -- ) log-char c!  log-char 1 (log-type) ;
+
+: (log-capture) ( xt -- )
+    \ run xt with type and emit appending to log-buf; both are restored
+    action-of type >r  action-of emit >r
+    ['] (log-type) is type  ['] (log-emit) is emit
+    catch  r> is emit  r> is type  throw ;
+: (log-append) ( -- )
+    \ log-buf as one write at the current end: another producer may
+    \ have appended since the last record
     log-fid @ file-size throw log-fid @ reposition-file throw
-    base @ >r decimal
-    log-fid @ ['] outfile-execute catch
-    r> base !  throw
+    log-buf @ log-buf# @ log-fid @ write-file throw
     log-fid @ flush-file throw ;
+
+: log-write ( xt -- )
+    \ build xt's record in memory, in decimal (BASE is restored after),
+    \ then append it to the log
+    0 log-buf# !  base @ >r decimal
+    ['] (log-capture) catch
+    r> base !  throw  (log-append) ;
 : log-snapshot ( -- ) logging @ IF ['] (snapshot) log-write THEN ;
 
 : log-on ( -- )

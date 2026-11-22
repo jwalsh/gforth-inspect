@@ -36,7 +36,8 @@ help: ## Show this help
 # status ("command not found" is output too). Each probe is one quoted word.
 DEP_PROBES := "gforth --version" "gforth-fast --version" "gforth-itc --version" \
               "gforth -e 's\" fpick\" find-name 0= throw bye'" \
-              "uv --version" "jq --version" "git --version"
+              "uv --version" "jq --version" "git --version" \
+              "python3 --version" "perl -v" "shasum --version" "timeout --version"
 deps: ## Run every tool and print what it answered; a missing one fails
 	@for probe in $(DEP_PROBES); do \
 	  if output=$$(eval "$$probe" 2>&1 </dev/null); then \
@@ -72,8 +73,9 @@ test-one: ## One test, every engine: gmake test-one T=test/x.fs
 
 goldens: ## Record test/expected/ afresh (review the diff); refuses one naming the home dir
 	test/run.sh -u -e "$(ENGINES)"
-	@if grep -rl "$(HOME)" test/expected >/dev/null 2>&1; then \
-	  echo "goldens: test/expected/ contains the home directory:"; grep -rl "$(HOME)" test/expected; \
+	@test -n "$(HOME)" || { echo "goldens: HOME is empty, cannot check test/expected/"; exit 1; }
+	@if grep -rlF "$(HOME)" test/expected >/dev/null 2>&1; then \
+	  echo "goldens: test/expected/ contains the home directory:"; grep -rlF "$(HOME)" test/expected; \
 	  echo "goldens: refused; restore with git checkout -- test/expected"; exit 1; fi
 	git status --short test/expected
 
@@ -92,8 +94,12 @@ verify: ## The CONTRIBUTING.org baseline: privacy, guides, test, pbt check + cal
 	bash scripts/check-guides.sh --calibrate
 	bash scripts/check-guides.sh
 	$(MAKE) test
-	$(MAKE) -C pbt check
-	$(MAKE) -C pbt calibrate
+	INSPECT_REF=$(INSPECT_REF) $(MAKE) -C pbt check
+	INSPECT_REF=$(INSPECT_REF) $(MAKE) -C pbt calibrate
+
+# pbt/ reads inspect.fs from a git ref (pbt/gforth_run.py, default the
+# `harden` branch). verify tests this checkout's own commit instead.
+INSPECT_REF ?= HEAD
 
 # Every gate, in order; each has been seen red on a planted fault.
 GATES := verify
