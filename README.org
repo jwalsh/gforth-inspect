@@ -3,9 +3,7 @@
 
 [[file:LICENSE][https://img.shields.io/badge/license-GPLv3%2B-blue.svg]] [[https://gforth.org/][https://img.shields.io/badge/gforth-0.7.3%20%C2%B7%20fast%20%C2%B7%20itc-informational.svg]]
 
-A stack inspector for gforth. Load one file, type =.stacks=, and see the data,
-float, return and control-flow stacks and the input line. Turn on =log-on= to
-stream each snapshot to a log.
+A stack inspector for gforth 0.7.3.
 
 [[file:demo/tour.gif]]
 
@@ -16,9 +14,23 @@ curl -fsSLO https://raw.githubusercontent.com/jwalsh/gforth-inspect/main/env/ins
 gforth inspect.fs
 #+end_src
 
-=inspect-version type= prints the loaded version.
-
 * Usage
+
+| word              | does                                                         |
+|-------------------+--------------------------------------------------------------|
+| =.stacks=         | prints every stack and the input line                        |
+| =.rs=             | the return stack, top first; =rs-full on= adds interpreter frames |
+| =.input=          | file:line, =>IN=, and the current line with a caret            |
+| =.cs=             | (immediate, inside a definition) the control-flow stack      |
+| =~~~=             | =~~= that prints every stack                                   |
+| =all-~~=          | plain =~~= then does what =~~~= does                             |
+| =dbg-fix=         | stock =dbg= in every engine, =n= (nest) included                 |
+| =dbg+=            | =dbg-fix=, plus the stacks at each step                        |
+| =log-on= / =log-off= | stream each snapshot to a log / stop                      |
+| =log-where=       | prints the log's path                                        |
+| =s" x" log-id=    | tags the next snapshots with =x=                               |
+| =fclearstack=     | empties the float stack                                      |
+| =inspect-version= | ( -- c-addr u ) the loaded version                           |
 
 ** Every stack at once
 
@@ -35,18 +47,7 @@ input  *OS command line*:-1 >in=19
 
 Identical in =gforth-fast= and =gforth-itc=.
 
-| word          | shows                                                                 |
-|---------------+-----------------------------------------------------------------------|
-| =.stacks=     | all of the below                                                      |
-| =.rs=         | the return stack, top first; =rs-full on= includes interpreter frames  |
-| =.input=      | file:line, =>IN=, and the current line with a caret                    |
-| =.cs=         | (immediate, inside a definition) the compile-time control-flow stack  |
-| =fclearstack= | empties the float stack, which 0.7.3 does not do for you              |
-
 ** Inside a definition
-
-=~~~= is =~~= that prints every stack, with the return stack taken at the
-=~~~= itself. After =all-~~=, a plain =~~= does the same.
 
 #+begin_example
 $ cat demo.fs
@@ -66,9 +67,7 @@ input  demo.fs:2 >in=10
 
 ** Stepping
 
-Stock =dbg= in 0.7.3 works only in =gforth-itc=. =dbg-fix= makes it work in
-every engine, including =n= (nest). =dbg+= also prints the stacks at each
-step. Each =->= waits for a key.
+Each =->= waits for a key.
 
 #+begin_example
 $ cat avg.fs
@@ -91,9 +90,6 @@ Addresses differ per run. In =gforth-fast=, =dbg= skips the steps that
 engine fuses into superinstructions.
 
 ** Logging
-
-After =log-on=, every =.stacks=, =~~~= and (after =all-~~=) =~~= appends
-one JSON object per line. =log-where= prints the path; =log-off= stops.
 
 #+begin_example
 $ GFORTH_INSPECT_LOG_DIR=logs gforth inspect.fs -e 'log-on 1 2 -3 1.5e .stacks log-off bye' >/dev/null
