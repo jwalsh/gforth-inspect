@@ -1,0 +1,106 @@
+# verify -- the verify baseline (CONTRIBUTING.org) on a macOS runner.
+# Branch protection on main requires the check `verify`, which is this job's
+# id. The workflow's own name does not matter to that rule; renaming the job
+# or giving it a `name:` does, so change RELEASING.org's rule set with it.
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A newer push to a PR supersedes the older run. Pushes to main are never
+# cancelled: every commit on main keeps a result.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      # pbt/ reads `git show harden:...` and `model:...` (falling back to
+      # origin/*), and experiment 004 pins commits that live on harden.
+      - name: Fetch every branch and make harden and model resolvable
+        run: |
+          git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          for branch in harden model; do
+            if git rev-parse --verify -q "refs/remotes/origin/$branch" >/dev/null; then
+              git branch -f "$branch" "origin/$branch"
+              echo "$branch -> $(git rev-parse --short "$branch")"
+            else
+              echo "::warning::origin/$branch is absent; tests that read it will fail"
+            fi
+          done
+
+      # Test the tree under review, not harden's copy, once the tree has an
+      # inspector. Until then pbt/ falls back to the harden ref by design.
+      - name: Select the inspector under test
+        run: |
+          if [ -f env/inspect.fs ] && [ -f contract/stacks-log.schema.json ]; then
+            echo "INSPECT_FS=$GITHUB_WORKSPACE/env/inspect.fs" >> "$GITHUB_ENV"
+            echo "SCHEMA_JSON=$GITHUB_WORKSPACE/contract/stacks-log.schema.json" >> "$GITHUB_ENV"
+            echo "inspector: this tree's env/inspect.fs"
+          else
+            echo "inspector: harden's env/inspect.fs (this tree has none)"
+          fi
+
+      - name: Install gforth, GNU make, jq
+        run: |
+          brew install gforth make jq
+          for engine in gforth gforth-fast gforth-itc; do
+            version=$("$engine" --version 2>&1)
+            echo "$engine: $version"
+            case "$version" in
+              "gforth 0.7.3"*) ;;
+              *) echo "::error::$engine is not gforth 0.7.3"; exit 1 ;;
+            esac
+          done
+          gmake --version | head -1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: false
+
+      - name: Is there a root gmake verify?
+        id: baseline
+        run: |
+          if [ -f Makefile ] && grep -q '^verify:' Makefile; then
+            echo "root=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "root=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: gmake verify
+        if: steps.baseline.outputs.root == 'true'
+        run: gmake verify
+
+      # The parts of the baseline that exist before the root Makefile lands.
+      - name: Privacy scan (calibrate, then scan)
+        if: steps.baseline.outputs.root != 'true'
+        run: |
+          scripts/privacy-scan.sh --calibrate
+          scripts/privacy-scan.sh
+
+      - name: Guide check (calibrate, then check)
+        if: steps.baseline.outputs.root != 'true'
+        run: |
+          scripts/check-guides.sh --calibrate
+          scripts/check-guides.sh
+
+      - name: Property tests and planted-fault calibration
+        if: steps.baseline.outputs.root != 'true'
+        run: gmake -C pbt check && gmake -C pbt calibrate
