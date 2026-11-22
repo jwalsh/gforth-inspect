@@ -200,3 +200,17 @@ The hypothesis is refuted for =18ebe2d= exactly where the prediction said
 inf, and the greatest subnormal / least normal collapsing to one literal.
 Nothing differed between engines or between paths in either run, so the
 three ways =snap-rp= is stored did not matter to the data or float fields.
+
+** 2026-11-22 Correction to the BEFORE entry (review of PR #14)
+
+"P1 held in 48 456 batched cases per path" is wrong: 48 456 is the total
+over all 9 (path, engine) pairs (9 x 5384). Per path it is 16 152 (3
+engines x 5384), and per pair 5384. The same holds for P2 data and P2
+schema. The gate and the verdict are unchanged.
+
+Review fixes in the same push: =SEED= (=--hypothesis-seed=) now wins over
+the old =PBT_SEED= fallback instead of being silently overridden; the
+corpus test reports a short =float= array as class =depth= rather than
+an IndexError; =classify= maps an out-of-range JSON integer to
+=non-finite=; each calibration sed must change exactly one line; the
+calibration helper runs under =set -f=, so test ids are not globbed.

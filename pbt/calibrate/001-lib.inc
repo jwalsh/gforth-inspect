@@ -6,6 +6,7 @@
 # EXPECT_MESSAGE).  Exit 0 only if all of that holds.
 
 calibrate_001() {
+    set -f  # test ids hold [...]; never let the shell glob them
     name=$1 sed_expr=$2 selection=$3 expect_failed=$4 expect_message=$5
     pbt_dir=$(cd "$(dirname "$0")/.." && pwd)
     ref=${INSPECT_REF:-harden}
@@ -15,6 +16,11 @@ calibrate_001() {
     sed "$sed_expr" "$work/clean.fs" > "$work/planted.fs"
     if cmp -s "$work/clean.fs" "$work/planted.fs"; then
         echo "$name: fault not planted (sed matched nothing in $ref:env/inspect.fs)"; return 1
+    fi
+    # exactly one line may change: a range that re-opens would over-plant
+    changed=$(diff "$work/clean.fs" "$work/planted.fs" | grep -c '^>')
+    if [ "$changed" -ne 1 ]; then
+        echo "$name: sed changed $changed lines, expected exactly 1"; return 1
     fi
     uv_run="uv run --no-project --with hypothesis --with jsonschema --with pytest"
     cd "$pbt_dir" || return 1

@@ -4,5 +4,5 @@
 calibrate_001 "001(c) json-data reversed" \
     '/^: json-data /,/;/ s/n# @ 1- i - pick/i pick/' \
     "p2_data" \
-    "$(for p in dotstacks tilde3 tilde2all; do for e in gforth gforth-fast gforth-itc; do printf 'test_p2_data[%s-%s] ' $p $e; done; done)" \
+    "$(for path in dotstacks tilde3 tilde2all; do for engine in gforth gforth-fast gforth-itc; do printf 'test_p2_data[%s-%s] ' "$path" "$engine"; done; done)" \
     "P2 data mismatch"

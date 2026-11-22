@@ -14,8 +14,9 @@ gforth process; one Hypothesis example is one batch.
 The tests are ref-agnostic: which inspect.fs they run against is decided by
 INSPECT_REF / INSPECT_FS (see gforth_run.py), never here.
 
-PBT_SEED=N fixes the Hypothesis seed; otherwise one is drawn and printed in
-the session summary so the run can be replayed.
+Seed: `gmake -C pbt check SEED=N` (pytest --hypothesis-seed=N) is the
+documented way and always wins.  PBT_SEED=N is a fallback, applied only when
+--hypothesis-seed is absent.  The session summary prints the seed in force.
 """
 
 from __future__ import annotations
@@ -23,9 +24,9 @@ from __future__ import annotations
 import json
 import math
 import os
-import random
 import re
 import struct
+import sys
 from collections import Counter, defaultdict
 
 import jsonschema
@@ -41,7 +42,8 @@ MAX_DATA_DEPTH = 20
 MAX_FLOAT_DEPTH = 8
 MAX_BATCH = 12
 
-RUN_SEED = int(os.environ.get("PBT_SEED") or random.randrange(2**32))
+SEED_FROM_CLI = any(arg.startswith("--hypothesis-seed") for arg in sys.argv)
+FALLBACK_SEED = None if SEED_FROM_CLI or not os.environ.get("PBT_SEED") else int(os.environ["PBT_SEED"])
 
 # --- the Forth side -----------------------------------------------------
 
@@ -175,7 +177,10 @@ def classify(expected_bits: int, logged) -> str | None:
         return None if logged is None else "non-finite"
     if logged is None or not isinstance(logged, (int, float)) or isinstance(logged, bool):
         return "non-finite"
-    logged = float(logged)
+    try:
+        logged = float(logged)
+    except OverflowError:  # a JSON integer beyond binary64 range
+        return "non-finite"
     if not math.isfinite(logged):  # a finite value whose literal decodes to inf
         return "non-finite"
     if float_to_bits(logged) == expected_bits:
@@ -225,8 +230,10 @@ PAIRS = [pytest.param(path, engine, id=f"{path}-{engine}") for path in PATHS for
 
 
 def property_test(test):
-    return pytest.mark.parametrize("path,engine", PAIRS)(
-        seed(RUN_SEED)(settings(database=None)(given(batch=batches)(test))))
+    wrapped = settings(database=None)(given(batch=batches)(test))
+    if FALLBACK_SEED is not None:
+        wrapped = seed(FALLBACK_SEED)(wrapped)
+    return pytest.mark.parametrize("path,engine", PAIRS)(wrapped)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -238,13 +245,20 @@ def session_summary(request):
     _, provenance = gforth_run.inspect_source()
     if provenance.startswith("file:"):  # a planted copy in a temp dir: keep paths out of logs
         provenance = "file:<INSPECT_FS> " + provenance.split()[-1]
-    reporter.write_line(f"001: inspect.fs {provenance}  seed {RUN_SEED}")
+    cli_seed = request.config.getoption("--hypothesis-seed", default=None)
+    if cli_seed is not None:
+        seed_text = f"{cli_seed} (--hypothesis-seed)"
+    elif FALLBACK_SEED is not None:
+        seed_text = f"{FALLBACK_SEED} (PBT_SEED)"
+    else:
+        seed_text = "random (pass SEED=N to fix it)"
+    reporter.write_line(f"001: inspect.fs {provenance}  seed {seed_text}")
     reporter.write_line("001: stack cases run per property (generate + shrink phases)")
     for (prop, path, engine), count in sorted(STATS.items()):
         reporter.write_line(f"001: cases {prop:12} {path:9} {engine:11} {count}")
     for path, counter in sorted(WHERE_SRC.items()):
-        shown = {f"where{'=null' if w else ' set'} src{'=null' if s else ' set'}": n
-                 for (w, s), n in sorted(counter.items())}
+        shown = {f"where{'=null' if where_is_null else ' set'} src{'=null' if src_is_null else ' set'}": count
+                 for (where_is_null, src_is_null), count in sorted(counter.items())}
         reporter.write_line(f"001: observed {path:9} {shown}")
     for key, counter in sorted(FLOAT_CLASSES.items()):
         reporter.write_line(f"001: float corpus {key[0]:9} {key[1]:11} {dict(counter)}")
@@ -312,8 +326,13 @@ def test_p2_float_corpus(path, engine):
     outcome = Outcome("p2_corpus", path, engine, corpus)
     failures = []
     for index, (before, record) in enumerate(zip(outcome.before, outcome.snapshots)):
-        kind = classify(before[1][0], record["float"][0])
+        expected_bits = before[1][0]
+        logged = record["float"]
+        if len(logged) != 1:
+            kind, shown = "depth", f"{logged!r} (expected one value)"
+        else:
+            kind, shown = classify(expected_bits, logged[0]), repr(logged[0])
         FLOAT_CLASSES[(path, engine)][kind or "exact"] += 1
         if kind:
-            failures.append(f"{kind}: {before[1][0]:#018x} logged {record['float'][0]!r}")
+            failures.append(f"{kind}: {expected_bits:#018x} logged {shown}")
     assert not failures, f"P2 float corpus in {path} {engine}: " + "; ".join(failures)
