@@ -1,0 +1,91 @@
+(lldb) target create "/opt/homebrew/bin/gforth-itc-0.7.3"
+Current executable set to '/opt/homebrew/bin/gforth-itc-0.7.3' (arm64).
+(lldb) settings set -- target.run-args  "env/brk.fs" "test/demo.fs"
+(lldb) command script import lldb/gforth.py
+(lldb) fbrk
+breakpoint 1 on getpid (Forth `brk`)
+(lldb) run
+Process 40472 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 1.1
+    frame #0: 0x000000019b876330 libsystem_kernel.dylib`__getpid
+libsystem_kernel.dylib`__getpid:
+->  0x19b876330 <+0>:  adrp   x9, 414047
+    0x19b876334 <+4>:  add    x9, x9, #0xe88            ; _current_pid
+    0x19b876338 <+8>:  ldr    w0, [x9]
+    0x19b87633c <+12>: cmp    w0, #0x0
+Target 0: (gforth-itc-0.7.3) stopped.
+Process 40472 launched: '/opt/homebrew/bin/gforth-itc-0.7.3' (arm64)
+(lldb) breakpoint disable 1
+1 breakpoints disabled.
+(lldb) fbreak-prim f*
+breakpoint 2 at 0x10000bc74 (primitive f*)
+(lldb) continue
+Process 40472 resuming
+Process 40472 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 2.1
+    frame #0: 0x000000010000bc74 gforth-itc-0.7.3`gforth_engine + 34892
+gforth-itc-0.7.3`gforth_engine:
+->  0x10000bc74 <+34892>: mov    x23, x20
+    0x10000bc78 <+34896>: mov    x25, x4
+    0x10000bc7c <+34900>: mov    x24, x27
+    0x10000bc80 <+34904>: mov    x26, x13
+Target 0: (gforth-itc-0.7.3) stopped.
+(lldb) fregs
+engine: gforth-itc (indirect threaded, GFORTH_DEBUGGING)  exe=gforth-itc-0.7.3  frame0=gforth_engine
+forthstart=0x14f000050 image=0x422d0 dict=0x800000 prims=334 words=2058
+C stacks: d=[0x14e809200,0x14e80d200) f=[0x14e80d400,0x14e811400) r=[0x14e811600,0x14e815200) l=[0x14e815400,0x14e818e00)
+Forth sp0=0x14e80d200 fp0=0x14e811400 rp0=0x14e815200
+  sp = 0x14e80d1e0        heuristic: highest of x24=0x14e80d1d8,x27=0x14e80d1e0
+  fp = 0x14e8113e8        heuristic: register x26
+  rp = 0x14e8150b8        C global rp (GFORTH_DEBUGGING)
+  ip = 0x14f042560        C global saved_ip (set by NAME() on entry); +1 cell, stopped before NAME() of f*
+register candidates in gforth_engine frame: sp[('x24', 5612032472), ('x27', 5612032480)] fp[('x26', 5612049384), ('x28', 5612049384)] ip[('x10', 5620639072), ('x13', 5620639072), ('x19', 5620379536), ('x20', 5620379536), ('x22', 5620639072), ('x23', 5620379536)]
+(lldb) fstacks
+engine: gforth-itc (indirect threaded, GFORTH_DEBUGGING)  [heuristic: see fregs]
+current: fmix+72 executing [ip-1]=f*, next [ip]=call   (ip=0x14f042560; pc at start of f*)
+data stack (bottom first):
+  <4> 11 22 33 24   (ptr=0x14e80d1e0)
+  other sp candidates: x24=0x14e80d1d8 (depth 5)  -- rerun as fstacks sp=REG
+float stack (bottom first):
+  <3> 3.25 24 1.5   (ptr=0x14e8113e8)
+return stack:
+  <41> top first   (rp=0x14e8150b8 rp0=0x14e815200)
+    [ 0] 0x000000014f042638        outer+168
+    [ 1] 0x000000014f008b10        interpret1+144
+    [ 2] 0x000000014f018708        (noname@0x14f0186b8)+80
+    [ 3] 0x000000014e815118        (-> return stack, 29 cells below top)
+    [ 4] 0x000000014e818e00        (-> locals stack, 0 cells below top)
+    [ 5] 0x000000014e811400        (-> float stack, 0 cells below top)
+    [ 6] 0x000000014e80d1f0        (-> data stack, 2 cells below top)
+    [ 7] 0x000000014f0186d8        (noname@0x14f0186b8)+32
+    [ 8] 0x000000014f008ba0        interpret+80
+    [ 9] 0x000000014e8151c8        (-> return stack, 7 cells below top)
+    [10] 0x000000014f00fa78        read-loop+64
+    [11] 0x000000014f018708        (noname@0x14f0186b8)+80
+    [12] 0x000000014e815178        (-> return stack, 17 cells below top)
+    [13] 0x000000014e818e00        (-> locals stack, 0 cells below top)
+    [14] 0x000000014e811400        (-> float stack, 0 cells below top)
+    [15] 0x000000014e80d1f0        (-> data stack, 2 cells below top)
+    [16] 0x000000014f0186d8        (noname@0x14f0186b8)+32
+    [17] 0x000000014f00fb40        execute-parsing-named-file+112
+    [18] 0x000000014f013e28        included1+152
+    [19] 0x0000000000000000 0      
+    [20] 0x0000000000000000 0      
+    [21] 0x000000014f013f60        required+152
+    [22] 0x000000014f010fe8        args-required1+56
+    [23] 0x000000014f018708        (noname@0x14f0186b8)+80
+(lldb) fip
+: fmix   (xt=0x14f042510, code field (docol))
+   0x14f042520  +16   s>f
+   0x14f042528  +24   branch
+   0x14f042530  +32     -> fmix+48
+   0x14f042538  +40   ?0x3ff8000000000000
+   0x14f042540  +48   lit
+   0x14f042548  +56     5620639032
+   0x14f042550  +64   f@
+=> 0x14f042558  +72   f*
+-> 0x14f042560  +80   call
+   0x14f042568  +88     (brk)
+   0x14f042570  +96   ;s
+(lldb) kill
+Process 40472 exited with status = 9 (0x00000009) killed

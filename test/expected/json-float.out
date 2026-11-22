@@ -1,0 +1,29 @@
+## stdout
+data   <0> 
+float  <3> nan              inf              -inf             
+return <R:39> top first
+  ... interpreter (rs-full on to see it)
+input  test/json-float.fs:5 >in=39
+0e 0e f/  1e 0e f/  -1e 0e f/  .stacks fclearstack
+                                       ^
+data   <0> 
+float  <7> 0.000000000000E0 0.000000000000E0 1.00000000000E-1 1.000000000E-300 1.7976931349E308 -2.50000000000E0 3.33333333333E-1 
+return <R:39> top first
+  ... interpreter (rs-full on to see it)
+input  test/json-float.fs:6 >in=65
+-0e 0e 0.1e 1e-300 1.7976931348623157e308 -2.5e 1e 3e f/ .stacks fclearstack
+                                                                 ^
+data   <0> 
+float  <2> 3.000000000000E0 5.00000000000E-1 
+return <R:39> top first
+  ... interpreter (rs-full on to see it)
+input  test/json-float.fs:7 >in=33
+1 set-precision  3e 0.5e .stacks fclearstack
+                                 ^
+## stderr
+## log state/gforth-inspect/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[null,null,null],"rs":[],"input":{"file":"test/json-float.fs","line":5,"in":39,"text":"0e 0e f/  1e 0e f/  -1e 0e f/  .stacks fclearstack"}}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[-0.0,0.0,1.0000000000000001E-1 ,1.0000000000000000E-300 ,1.7976931348623157E308 ,-2.5000000000000000E0 ,3.3333333333333331E-1 ],"rs":[],"input":{"file":"test/json-float.fs","line":6,"in":65,"text":"-0e 0e 0.1e 1e-300 1.7976931348623157e308 -2.5e 1e 3e f/ .stacks fclearstack"}}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[3.0000000000000000E0 ,5.0000000000000000E-1 ],"rs":[],"input":{"file":"test/json-float.fs","line":7,"in":33,"text":"1 set-precision  3e 0.5e .stacks fclearstack"}}
+## exit 0

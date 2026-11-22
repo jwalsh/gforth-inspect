@@ -1,0 +1,94 @@
+(lldb) process attach --pid 39353
+Process 39353 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = signal SIGSTOP
+    frame #0: 0x000000019b8793c8 libsystem_kernel.dylib`__semwait_signal + 8
+libsystem_kernel.dylib`__semwait_signal:
+->  0x19b8793c8 <+8>:  b.lo   0x19b8793e8               ; <+40>
+    0x19b8793cc <+12>: pacibsp 
+    0x19b8793d0 <+16>: stp    x29, x30, [sp, #-0x10]!
+    0x19b8793d4 <+20>: mov    x29, sp
+Target 0: (gforth-0.7.3) stopped.
+Executable module set to "$GFORTH_PREFIX/bin/gforth-0.7.3".
+Architecture set to: arm64-apple-macosx-.
+(lldb) command script import lldb/gforth.py
+(lldb) bt 4
+* thread #1, queue = 'com.apple.main-thread', stop reason = signal SIGSTOP
+  * frame #0: 0x000000019b8793c8 libsystem_kernel.dylib`__semwait_signal + 8
+    frame #1: 0x000000019b758714 libsystem_c.dylib`nanosleep + 220
+    frame #2: 0x00000001026d1300 gforth-0.7.3`gforth_ms + 76
+    frame #3: 0x00000001026bfe1c gforth-0.7.3`gforth_engine + 31728
+(lldb) fregs
+engine: gforth (direct threaded, GFORTH_DEBUGGING)  exe=gforth-0.7.3  frame0=__semwait_signal
+forthstart=0x15a800050 image=0x422d0 dict=0x800000 prims=334 words=2053
+C stacks: d=[0x15b808200,0x15b80c200) f=[0x15b80c400,0x15b810400) r=[0x15b810600,0x15b814200) l=[0x15b814400,0x15b817e00)
+Forth sp0=0x15b80c200 fp0=0x15b810400 rp0=0x15b814200
+  sp = 0x15b80c1e8        heuristic: highest of x25=0x15b80c1e0,x27=0x15b80c1e0,x28=0x15b80c1e8
+  fp = 0x15b8103f0        heuristic: register x19
+  rp = 0x15b8140a8        C global rp (GFORTH_DEBUGGING)
+  ip = 0x15a8423f0        C global saved_ip (set by NAME() on entry)
+register candidates in gforth_engine frame: sp[('x25', 5830132192), ('x27', 5830132192), ('x28', 5830132200)] fp[('x19', 5830149104), ('x22', 5830149104)] ip[('x20', 5813317520), ('x24', 5813576688)]
+(lldb) fstacks
+engine: gforth (direct threaded, GFORTH_DEBUGGING)  [heuristic: see fregs]
+current: deep+176 executing [ip-1]=ms, next [ip]=;s   (ip=0x15a8423f0; pc inside ms)
+data stack (bottom first):
+  <3> 11 22 33   (ptr=0x15b80c1e8)
+  other sp candidates: x25=0x15b80c1e0 (depth 4), x27=0x15b80c1e0 (depth 4)  -- rerun as fstacks sp=REG
+float stack (bottom first):
+  <2> 1.5 2.5   (ptr=0x15b8103f0)
+return stack:
+  <43> top first   (rp=0x15b8140a8 rp0=0x15b814200)
+    [ 0] 0x000000015a842488        wrap+120
+    [ 1] 0x0000000000000003 3      
+    [ 2] 0x0000000000000005 5      
+    [ 3] 0x000000015a808b10        interpret1+144
+    [ 4] 0x000000015a818708        (noname@0x15a8186b8)+80
+    [ 5] 0x000000015b814118        (-> return stack, 29 cells below top)
+    [ 6] 0x000000015b817e00        (-> locals stack, 0 cells below top)
+    [ 7] 0x000000015b810400        (-> float stack, 0 cells below top)
+    [ 8] 0x000000015b80c1f0        (-> data stack, 2 cells below top)
+    [ 9] 0x000000015a8186d8        (noname@0x15a8186b8)+32
+    [10] 0x000000015a808ba0        interpret+80
+    [11] 0x000000015b8141c8        (-> return stack, 7 cells below top)
+    [12] 0x000000015a80fa78        read-loop+64
+    [13] 0x000000015a818708        (noname@0x15a8186b8)+80
+    [14] 0x000000015b814178        (-> return stack, 17 cells below top)
+    [15] 0x000000015b817e00        (-> locals stack, 0 cells below top)
+    [16] 0x000000015b810400        (-> float stack, 0 cells below top)
+    [17] 0x000000015b80c1f0        (-> data stack, 2 cells below top)
+    [18] 0x000000015a8186d8        (noname@0x15a8186b8)+32
+    [19] 0x000000015a80fb40        execute-parsing-named-file+112
+    [20] 0x000000015a813e28        included1+152
+    [21] 0x0000000000000000 0      
+    [22] 0x0000000000000000 0      
+    [23] 0x000000015a813f60        required+152
+(lldb) fbt
+#0  deep+176  executing ms
+#1  wrap+120  returns to (loop)
+#2  interpret1+144  returns to branch
+#3  (noname@0x15a8186b8)+80  returns to lit
+#4  (noname@0x15a8186b8)+32  returns to (docol)
+#5  interpret+80  returns to r>
+#6  read-loop+64  returns to lit-perform
+#7  (noname@0x15a8186b8)+80  returns to lit
+#8  (noname@0x15a8186b8)+32  returns to (docol)
+#9  execute-parsing-named-file+112  returns to does-exec
+#10 included1+152  returns to 2r>
+#11 required+152  returns to ;s
+#12 args-required1+56  returns to ;s
+#13 (noname@0x15a8186b8)+80  returns to lit
+#14 (noname@0x15a8186b8)+32  returns to (docol)
+#15 execute-parsing-wrapper+232  returns to call
+#16 os-execute-parsing+104  returns to ;s
+#17 args-required+56  returns to ;s
+#18 (process-args)+208  returns to branch
+#19 cold+112  returns to does-exec
+#20 (noname@0x15a8186b8)+80  returns to lit
+#21 (noname@0x15a8186b8)+32  returns to (docol)
+#22 boot+320  returns to dup
+(lldb) finput
+input: file-input+16  file=test/idle.fs line=4  >in=4 #tib=4  (current-input=0x14a008800)
+  wrap
+      ^
+(lldb) process kill
+Process 39353 exited with status = 9 (0x00000009) killed
+lldb/attach.sh: line 14: 39353 Killed: 9               "$bin" test/idle.fs

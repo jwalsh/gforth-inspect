@@ -1,0 +1,53 @@
+## stdout
+data   <0> 
+float  <0> 
+return <R:57> top first
+  ... interpreter (rs-full on to see it)
+input  *evaluated string*:-1 >in=7
+.stacks
+       ^
+data   <0> 
+float  <0> 
+return <R:57> top first
+  ... interpreter (rs-full on to see it)
+input  *evaluated string*:-1 >in=8
+.stacks \ "quoted" back\\slash
+        ^
+data   <0> 
+float  <0> 
+return <R:57> top first
+  ... interpreter (rs-full on to see it)
+input  *evaluated string*:-1 >in=8
+.stacks \ 	 tab    del  cr  bs  ff
+        ^
+data   <0> 
+float  <0> 
+return <R:57> top first
+  ... interpreter (rs-full on to see it)
+input  *evaluated string*:-1 >in=8
+.stacks \ Î» lambda â†’ arrow ğŸ˜€ emoji
+        ^
+data   <0> 
+float  <0> 
+return <R:57> top first
+  ... interpreter (rs-full on to see it)
+input  *evaluated string*:-1 >in=8
+.stacks \ ÿ À¯ í € à€€ ô€€ Î
+        ^
+data   <0> 
+float  <0> 
+return <R:39> top first
+  ... interpreter (rs-full on to see it)
+input  test/json-escape.fs:9 >in=9
+	.stacks	\ a real tab in the file
+	       	^
+## stderr
+## log state/gforth-inspect/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"*evaluated string*","line":-1,"in":7,"text":".stacks"}}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"*evaluated string*","line":-1,"in":8,"text":".stacks \\ \"quoted\" back\\\\slash"}}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"*evaluated string*","line":-1,"in":8,"text":".stacks \\ \t tab \u0001 \u001f  del \r cr \b bs \f ff"}}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"*evaluated string*","line":-1,"in":8,"text":".stacks \\ Î» lambda â†’ arrow ğŸ˜€ emoji"}}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"*evaluated string*","line":-1,"in":8,"text":".stacks \\ \ufffd \ufffd\ufffd \ufffd\ufffd\ufffd \ufffd\ufffd\ufffd \ufffd\ufffd\ufffd\ufffd \ufffd"}}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"test/json-escape.fs","line":9,"in":9,"text":"\t.stacks\t\\ a real tab in the file"}}
+## exit 0

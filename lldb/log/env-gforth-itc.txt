@@ -1,0 +1,163 @@
+
+test/demo-env.fs:3 in inner 
+data   <5> 11 22 33 0 0 
+float  <1> 3.250000000000E0 
+return <R:44> top first
+  $1458447A0 = middle +88
+  $0 = 0 
+  $4 = 4 
+  $145844928 = outer +144
+  $145808B10 = interpret1 +144
+  $145818708 = handler-intro, +616
+  $145015718 (stack pointer)
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7F0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $145808BA0 = interpret +80
+  $1450157C8 (stack pointer)
+  $14580FA78 = read-loop +64
+  $145818708 = handler-intro, +616
+  $145015778 (stack pointer)
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7F0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $14580FB40 = execute-parsing-named-file +112
+  $145813E28 = included1 +152
+  $0 = 0 
+  $0 = 0 
+  $145813F60 = required +152
+  $145810FE8 = args-required1 +56
+  $145818708 = handler-intro, +616
+  $1450157D0 (stack pointer)
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7E0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $14580F780 = execute-parsing-wrapper +232
+  $145810F88 = os-execute-parsing +104
+  $145811048 = args-required +56
+  $145811620 = (process-args) +208
+  $14580A5C8 = cold +112
+  $145818708 = handler-intro, +616
+  $0 = 0 
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7F0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $14580A768 = boot +320
+input  test/demo-env.fs:8 >in=6
+outer . f. . . . cr
+      ^
+
+test/demo-env.fs:3 in inner 
+data   <5> 11 22 33 1 20 
+float  <1> 3.250000000000E0 
+return <R:44> top first
+  $1458447A0 = middle +88
+  $2 = 2 
+  $4 = 4 
+  $145844928 = outer +144
+  $145808B10 = interpret1 +144
+  $145818708 = handler-intro, +616
+  $145015718 (stack pointer)
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7F0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $145808BA0 = interpret +80
+  $1450157C8 (stack pointer)
+  $14580FA78 = read-loop +64
+  $145818708 = handler-intro, +616
+  $145015778 (stack pointer)
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7F0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $14580FB40 = execute-parsing-named-file +112
+  $145813E28 = included1 +152
+  $0 = 0 
+  $0 = 0 
+  $145813F60 = required +152
+  $145810FE8 = args-required1 +56
+  $145818708 = handler-intro, +616
+  $1450157D0 (stack pointer)
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7E0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $14580F780 = execute-parsing-wrapper +232
+  $145810F88 = os-execute-parsing +104
+  $145811048 = args-required +56
+  $145811620 = (process-args) +208
+  $14580A5C8 = cold +112
+  $145818708 = handler-intro, +616
+  $0 = 0 
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7F0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $14580A768 = boot +320
+input  test/demo-env.fs:8 >in=6
+outer . f. . . . cr
+      ^
+
+test/demo-env.fs:5 in fmix 
+data   <4> 11 22 33 24 
+float  <2> 3.250000000000E0 3.600000000000E1 
+return <R:41> top first
+  $145844940 = outer +168
+  $145808B10 = interpret1 +144
+  $145818708 = handler-intro, +616
+  $145015718 (stack pointer)
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7F0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $145808BA0 = interpret +80
+  $1450157C8 (stack pointer)
+  $14580FA78 = read-loop +64
+  $145818708 = handler-intro, +616
+  $145015778 (stack pointer)
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7F0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $14580FB40 = execute-parsing-named-file +112
+  $145813E28 = included1 +152
+  $0 = 0 
+  $0 = 0 
+  $145813F60 = required +152
+  $145810FE8 = args-required1 +56
+  $145818708 = handler-intro, +616
+  $1450157D0 (stack pointer)
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7E0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $14580F780 = execute-parsing-wrapper +232
+  $145810F88 = os-execute-parsing +104
+  $145811048 = args-required +56
+  $145811620 = (process-args) +208
+  $14580A5C8 = cold +112
+  $145818708 = handler-intro, +616
+  $0 = 0 
+  $145019400 (stack pointer)
+  $145011A00 (stack pointer)
+  $14500D7F0 (stack pointer)
+  $1458186D8 = handler-intro, +568
+  $14580A768 = boot +320
+input  test/demo-env.fs:8 >in=6
+outer . f. . . . cr
+      ^
+
+CS: here=$1458449C0 
+  orig (live) $1458449B8  (1 cells back)
+  do-dest $145844990  (6 cells back) | colon-sys
+
+CS: here=$1458449C0 
+  dest $1458449C0  (0 cells back)
+  orig (live) $1458449B8  (1 cells back)
+  do-dest $145844990  (6 cells back) | colon-sys
+24 36. 33 22 11 

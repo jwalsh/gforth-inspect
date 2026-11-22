@@ -1,0 +1,164 @@
+#+TITLE: Tests
+#+STARTUP: showall
+
+* Running
+
+#+begin_src sh
+gmake test                       # everything below, all three engines
+gmake test-one T=test/cs-do.fs   # one test, all engines
+gmake test ENGINES=gforth-fast   # one engine
+gmake goldens                    # regenerate test/expected/, then review the diff
+gmake stress CORPUS="path/to/programs/*.fs"
+gmake test-lldb                  # lldb/check.sh; SKIPs where debugserver cannot attach
+gmake verify                     # the CONTRIBUTING.org baseline
+gmake release-check              # verify, release hygiene, dist/ + SHA256SUMS
+#+end_src
+
+Needs stock gforth 0.7.3 (=gforth=, =gforth-fast=, =gforth-itc=), GNU make,
+bash, perl, python3 (=timeout= or =gtimeout= if present, else perl's
+=alarm= gives the 10 s limit). With =uv= the records are also checked by
+the =jsonschema= package; without it only by the built-in validator.
+
+=gmake test= is three steps, each of which fails the build:
+
+1. =test-contract=: =test/validate.py= accepts every line of
+   =test/contract/good.jsonl= and rejects every line of =bad.jsonl= (NaN,
+   Infinity, =3.E0=, raw tab, invalid UTF-8, duplicate key, wrong =v=,
+   missing or extra keys, a malformed =contract=, ...).  Both validators
+   run and must agree.  Then the consumer rule: =test/consumer.py= must
+   accept =test/contract/streams/ok-*.jsonl= and refuse every =bad-*=
+   (no hello, no contract, other MINOR, other MAJOR, newest hello
+   differs), and =contract-version= in =inspect.fs= must equal the
+   schema's =x-contract=.
+2. =test-selftest=: =test/selftest.sh= checks the runner goes red on a
+   failed assertion, a bad log line, a non-zero exit, a redefinition
+   warning, and a tampered golden.
+3. =test-goldens=: =test/run.sh= runs each =test/*.fs= in each engine with
+   =HOME=, =XDG_STATE_HOME= and =TEST_OUT= in a fresh temp dir (never the
+   real =~/.local/state=), stdin from the test's =\ test: stdin= keys, a
+   10 s timeout.  It masks addresses, xts, timestamps and the temp path
+   (=test/mask.pl=), and compares stdout, stderr, every =*.jsonl= written,
+   every file under =$TEST_OUT= and the exit status with
+   =test/expected/NAME.out= (or =NAME@ENGINE.out= where an engine really
+   differs).  Every =stacks.jsonl= line is validated against the schema.
+   A test fails on any =ASSERT FAIL=, schema error, exit status other
+   than its =\ test: exit= (default 0), or =redefined= warning; =-u= will
+   not bless any of those.
+
+Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
+=exit= (see the top of =test/run.sh=).  =test/lib/assert.fs= gives
+=assert ( f c-addr u -- )=, =assert= ( actual expected c-addr u -- )= and
+=out-path ( c-addr u -- c-addr' u' )=.
+
+* What is covered
+
+| area                | tests                                                       |
+|---------------------+-------------------------------------------------------------|
+| data / float stack  | stacks-data, stacks-float, fclearstack                      |
+| return stack        | rs-nested (nested, do-loop params, recursion), rs-full, stacks-rp |
+| BASE untouched      | base-kept                                                   |
+| input caret         | input-caret (tabs, evaluate)                                |
+| =~~~=               | tilde3-nested, tilde3-recursive (recurse, :noname), demo-env |
+| =~~= / =all-~~=     | tilde, all-tilde, all-tilde-where (where/src, prompt, evaluate, recursion) |
+| =.cs=               | cs-if, cs-begin, cs-do, cs-guard                            |
+| =dbg-fix= / =dbg+=  | dbg-step, dbg-nest-n, dbg-adjacent, dbg-loop-keys, dbg-demo, dbg-loop, dbg-nest |
+| log records         | log-records, version, log-id, all-tilde, base-kept          |
+| two producers (#17) | log-two-producers (a second gforth appends between records) |
+| log location        | log-dir-env, log-dir-xdg, log-dir-home                      |
+| JSON                | json-escape (quotes, backslash, controls, UTF-8, invalid bytes), json-src, json-float |
+| lldb =brk= (no lldb) | demo                                                       |
+
+36 tests x 3 engines = 108 cases, plus =idle.fs= (skipped: it parks for
+=lldb -p=).
+
+* Known limits
+
+- =gforth-fast= fuses some sequences into static superinstructions (=2 +=
+  is one instruction with an inline =2=).  =see= cannot decode them, so
+  =dbg= steps over the whole run in one go (=dbg-nest-n@gforth-fast.out=
+  shows it).  Since 0.1.0 this only skips display; it no longer corrupts
+  the word.
+- After =IF x THEN= with a one-cell =x=, the fall-through path is shown
+  one step later (the two breakpoint sites are adjacent and only the later
+  one can be set).
+- =dbg= of a recursive word can stop in a deeper invocation (stock
+  behaviour).
+- =~~~= in a =:noname= reports its word as =???= (stdout and ="where"=).
+- lldb cannot attach inside a sandbox that denies =task_for_pid=;
+  =gmake test-lldb= then prints SKIP.  =lldb/log/= is the last transcript
+  from outside one, with machine paths masked.
+- =gmake verify= runs =gmake -C pbt check= and =calibrate=, which are owned
+  by =pbt/=.  It sets =INSPECT_FS= to this working tree's =env/inspect.fs=, so
+  the property tests load the working copy (uncommitted edits included);
+  =INSPECT_REF=HEAD= reaches only the calibrate scripts that plant a fault
+  with =git show REF:env/inspect.fs=.
+- Two producers on one log are safe when they take turns
+  (=log-two-producers=).  Each record is built in memory and written as
+  one line, but two producers writing at the same instant can still
+  collide: the seek and the write are separate calls, and 0.7.3's
+  =open-file= has no append mode.  That case is best-effort and is
+  measured by experiment 005, not gated here.
+
+* Log
+
+** 2026-11-21 (canvas removed)
+
+=env/canvas.fs= is not part of this project (decision 8) and was removed
+before the first tag (decision 27); the course keeps its own copy.  Its four
+tests went with it (canvas-line, canvas-plot, canvas-files, canvas-errors,
+and their goldens): 40 tests became 36, 120 cases 108.  The three canvas
+bugs once listed under the first log entry below were fixed in that copy and
+are now tested there, not here.
+
+** 2026-11-21 (#17)
+
+=log-two-producers=: producer A logs, a second gforth of the same engine
+(=test/lib/log-producer-b.fs=, started by =system= so the order is fixed)
+appends a hello and a snapshot, then A logs again.  Without the
+seek-to-end in =(log-append)= A's second record lands on B's hello and
+line 4 does not parse, in all three engines; with it all five records
+survive.  Records are now built in memory (=type= and =emit= redirected)
+and written whole; every golden is byte-identical to before.
+The runner now exports =TEST_ENGINE= for tests like this one.
+
+** 2026-11-21 (contract 1.1)
+
+=hello= carries ="contract":"1.1"=; =log-id ( c-addr u -- )= tags the
+following snapshots with ="id"= (issue #3, test log-id); =all-~~= now hooks
+=.debugline= and fills =where= / =src=, null for a =~~= interpreted at the
+prompt (issue #2, test all-tilde-where).  Schema: =x-contract= 1.1,
+=hello.contract= (pattern =M.N=), =snapshot.id=; =x-version= and =v= stay 1.
+Consumer rule tested by =test/consumer.py= over good and bad streams, and
+applied to every stream the goldens write.
+
+** 2026-11-21
+
+Built the corpus, runner, validator and stress pass; fixed what they
+found.  Each bug has a test that fails on the code before the fix (checked
+by running the suite against the previous =env/=):
+
+| bug                                                                 | test          |
+|---------------------------------------------------------------------+---------------|
+| =dbg-fix=: adjacent breakpoints overlap, crash in all engines       | dbg-adjacent  |
+| =dbg-fix=: gforth-fast breakpoint on a superinstruction operand corrupts the word | dbg-nest-n |
+| =.rs= / =.cs= leave =BASE= at 10                                    | base-kept     |
+| log written in =BASE= (hex numbers in JSON)                         | base-kept     |
+| =1 set-precision= gives =3.E0= in JSON; =-0= loses its sign; 15 digits do not round-trip | json-float |
+| control characters blanked, invalid UTF-8 passed raw                | json-escape   |
+| ="src"= not escaped                                                 | json-src      |
+| =.cs= reads below the stack                                         | cs-guard      |
+| =.input= caret off after tabs                                       | input-caret   |
+
+Also: the log directory became =$GFORTH_INSPECT_LOG_DIR= or
+=${XDG_STATE_HOME:-~/.local/state}/gforth-inspect= (was =.../sicpminus=),
+created without a shell; =inspect-version= and ="inspect"= in =hello=;
+=dbg+= =R:= shows the stepped word's callers instead of debugger frames.
+Regression tests kept for earlier fixes: =stacks-rp= (=.stacks= printing
+its own rp), =dbg-step= / =dbg-nest= (=dbg= crashing in direct-threaded
+engines).
+
+Stress pass: 47 student programs (=.fs= / =.forth=) loaded plain, after
+=inspect.fs=, and after =inspect.fs= with =log-on all-~~=, in each
+engine: no output differences, no redefinitions of inspector words.  Two
+programs fail identically with and without the inspector (their own
+errors).

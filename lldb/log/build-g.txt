@@ -1,0 +1,83 @@
+(lldb) target create "vendor/build-g/gforth"
+Current executable set to 'vendor/build-g/gforth' (arm64).
+(lldb) settings set -- target.run-args  "-p" ".:vendor/build-g:vendor/gforth-0.7.3" "-i" "vendor/build-g/gforth.fi" "env/brk.fs" "test/demo.fs"
+(lldb) command script import lldb/gforth.py
+(lldb) fbrk
+breakpoint 1 on getpid (Forth `brk`)
+(lldb) run
+Process 40719 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 1.1
+    frame #0: 0x000000019b876330 libsystem_kernel.dylib`__getpid
+libsystem_kernel.dylib`__getpid:
+->  0x19b876330 <+0>:  adrp   x9, 414047
+    0x19b876334 <+4>:  add    x9, x9, #0xe88            ; _current_pid
+    0x19b876338 <+8>:  ldr    w0, [x9]
+    0x19b87633c <+12>: cmp    w0, #0x0
+Target 0: (gforth) stopped.
+Process 40719 launched: 'vendor/build-g/gforth' (arm64)
+(lldb) breakpoint disable 1
+1 breakpoints disabled.
+(lldb) fbreak-prim f*
+breakpoint 2 at 0x10000db44 (primitive f*)
+(lldb) continue
+warning: gforth was compiled with optimization - stepping may behave oddly; variables may not be available.
+Process 40719 resuming
+Process 40719 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 2.1
+    frame #0: 0x000000010000db44 gforth`gforth_engine(ip0=<unavailable>, sp0=<unavailable>, rp0=<unavailable>, fp0=<unavailable>, lp0=<unavailable>) at prim.i:0:1 [opt]
+Note: this address is compiler-generated code in function gforth_engine that has no source code associated with it.
+Target 0: (gforth) stopped.
+(lldb) frame variable sp fp ip lp
+(Cell *) sp = <variable not available>
+
+(Float *) fp = <variable not available>
+
+(Xt *) ip = <variable not available>
+
+(Address) lp = <variable not available>
+
+(lldb) fregs
+engine: gforth (direct threaded, GFORTH_DEBUGGING)  exe=gforth  frame0=gforth_engine
+forthstart=0x134800080 image=0x42560 dict=0x800000 prims=334 words=2058
+C stacks: d=[0x135808200,0x13580c200) f=[0x13580c400,0x135810400) r=[0x135810600,0x135814200) l=[0x135814400,0x135817e00)
+Forth sp0=0x13580c200 fp0=0x135810400 rp0=0x135814200
+  sp = 0x13580c1e0        heuristic: register x25
+  fp = 0x1358103e8        heuristic: register x9
+  rp = 0x1358140b8        C global rp (GFORTH_DEBUGGING)
+  ip = 0x134842820        C global saved_ip (set by NAME() on entry); +1 cell, stopped before NAME() of f*
+register candidates in gforth_engine frame: sp[('x25', 5192597984), ('x27', 5192597984)] fp[('x9', 5192614888), ('x19', 5192614888), ('x22', 5192614888)] ip[('x13', 5176043552), ('x20', 5175783360), ('x24', 5176043552), ('x26', 5175783360)]
+(lldb) fstacks
+engine: gforth (direct threaded, GFORTH_DEBUGGING)  [heuristic: see fregs]
+current: fmix+72 executing [ip-1]=f*, next [ip]=call   (ip=0x134842820; pc at start of f*)
+data stack (bottom first):
+  <4> 11 22 33 24   (ptr=0x13580c1e0)
+float stack (bottom first):
+  <3> 3.25 24 1.5   (ptr=0x1358103e8)
+return stack:
+  <41> top first   (rp=0x1358140b8 rp0=0x135814200)
+    [ 0] 0x00000001348428f8        outer+168
+    [ 1] 0x0000000134808b40        interpret1+144
+    [ 2] 0x0000000134818738        (noname@0x1348186e8)+80
+    [ 3] 0x0000000135814118        (-> return stack, 29 cells below top)
+    [ 4] 0x0000000135817e00        (-> locals stack, 0 cells below top)
+    [ 5] 0x0000000135810400        (-> float stack, 0 cells below top)
+    [ 6] 0x000000013580c1f0        (-> data stack, 2 cells below top)
+    [ 7] 0x0000000134818708        (noname@0x1348186e8)+32
+    [ 8] 0x0000000134808bd0        interpret+80
+    [ 9] 0x00000001358141c8        (-> return stack, 7 cells below top)
+    [10] 0x000000013480faa8        read-loop+64
+    [11] 0x0000000134818738        (noname@0x1348186e8)+80
+    [12] 0x0000000135814178        (-> return stack, 17 cells below top)
+    [13] 0x0000000135817e00        (-> locals stack, 0 cells below top)
+    [14] 0x0000000135810400        (-> float stack, 0 cells below top)
+    [15] 0x000000013580c1f0        (-> data stack, 2 cells below top)
+    [16] 0x0000000134818708        (noname@0x1348186e8)+32
+    [17] 0x000000013480fb70        execute-parsing-named-file+112
+    [18] 0x0000000134813e58        included1+152
+    [19] 0x0000000000000000 0      
+    [20] 0x0000000000000000 0      
+    [21] 0x0000000134813f90        required+152
+    [22] 0x0000000134811018        args-required1+56
+    [23] 0x0000000134818738        (noname@0x1348186e8)+80
+(lldb) kill
+Process 40719 exited with status = 9 (0x00000009) killed

@@ -1,0 +1,24 @@
+## stdout
+
+: t  
+Scanning code...
+
+Nesting debugger ready!
+
+D: <0>  F: <0> R: -
+ADDR ADDR 3              -> 
+D: <1> 3  F: <0> R: -
+ADDR ADDR sq             -> 
+D: <1> 9  F: <0> R: -
+ADDR ADDR 2.500000E0     -> 
+D: <1> 9  F: <1> 2.500000000000E0 R: -
+ADDR ADDR 2.000000E0     -> 
+D: <1> 9  F: <2> 2.500000000000E0 2.000000000000E0 R: -
+ADDR ADDR f*             -> 
+D: <1> 9  F: <1> 5.000000000000E0 R: -
+ADDR ADDR drop           -> 
+D: <0>  F: <1> 5.000000000000E0 R: -
+ADDR ADDR ;              -> 
+after dbg: <0> <1> 5.000000000000E0 
+## stderr
+## exit 0

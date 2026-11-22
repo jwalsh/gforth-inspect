@@ -1,0 +1,18 @@
+## stdout
+test/input-caret.fs:2 >in=6
+.input
+      ^
+test/input-caret.fs:3 >in=20
+1 2 + drop    .input
+                    ^
+test/input-caret.fs:4 >in=7
+	.input
+	      ^
+test/input-caret.fs:5 >in=11
+1 2	.input 2drop
+   	       ^
+*evaluated string*:-1 >in=9
+3 .input drop
+         ^
+## stderr
+## exit 0

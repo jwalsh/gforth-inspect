@@ -8,7 +8,9 @@ set -f  # test ids hold [...]; never let the shell glob them
 name="005 no seek per write"
 pbt_dir=$(cd "$(dirname "$0")/.." && pwd)
 # the unfixed harden, pinned: the `harden` name carries the #17 fix since 079de9c
-ref=${INSPECT_REF:-0842eda}
+# its own variable, not INSPECT_REF: gmake verify sets INSPECT_REF=HEAD (the fixed
+# producer), and this calibration is about the unfixed one, so it never follows it
+ref=${CALIBRATE_005_REF:-0842eda}
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 uv_run="uv run --no-project --with hypothesis --with jsonschema --with pytest"

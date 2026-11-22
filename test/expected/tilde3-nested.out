@@ -1,0 +1,14 @@
+## stdout
+## stderr
+
+test/tilde3-nested.fs:3 in inner 
+data   <1> 12 
+float  <1> 2.500000000000E0 
+return <R:42> top first
+  $ADDR = middle +40
+  $ADDR = outer +96
+  ... interpreter (rs-full on to see it)
+input  test/tilde3-nested.fs:6 >in=6
+outer 12 s" result" assert=  fdrop
+      ^
+## exit 0
