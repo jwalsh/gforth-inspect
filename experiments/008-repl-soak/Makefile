@@ -26,7 +26,7 @@ smoke:
 
 soak-start:
 	@if tmux has-session -t $(SESSION) 2>/dev/null; then echo "tmux session $(SESSION) exists"; exit 1; fi
-	tmux new-session -d -s $(SESSION) -c "$(CURDIR)" "./run-soak.sh $(NAME) $(HOURS) --slots $(SLOTS); exec bash"
+	tmux new-session -d -s $(SESSION) -e PATH="$$PATH" -c "$(CURDIR)" "./run-soak.sh $(NAME) $(HOURS) --slots $(SLOTS); exec bash"
 	@echo "started $(NAME) in tmux session $(SESSION); gmake status"
 
 status:
