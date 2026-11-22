@@ -1,43 +1,46 @@
 #+TITLE: gforth-inspect
 #+STARTUP: showall
 
-See every stack in gforth 0.7.3 (data, float, return, control-flow) and the
-input stream, from inside the REPL and without a debugger. Optionally, log
-each snapshot as one line of JSON, for an editor or a dashboard to read.
+[[file:LICENSE][https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg]] [[https://gforth.org/][https://img.shields.io/badge/gforth-0.7.3-informational.svg]] [[https://gforth.org/][https://img.shields.io/badge/engines-gforth%20%7C%20gforth--fast%20%7C%20gforth--itc-informational.svg]] [[https://github.com/jwalsh/gforth-inspect/actions/workflows/verify.yml][https://github.com/jwalsh/gforth-inspect/actions/workflows/verify.yml/badge.svg]]
 
-Works with stock gforth 0.7.3 in all three of its engines: =gforth=,
-=gforth-fast= and =gforth-itc=.
+Every gforth 0.7.3 stack and the input stream, from the REPL. Snapshots can
+also go to a JSON-lines log.
 
 * Install
 
-Download a release, verify its checksums and load it:
+Until v0.5.0, copy =env/inspect.fs= from =main= and load it:
+
+#+begin_src sh
+curl -fsSLO https://raw.githubusercontent.com/jwalsh/gforth-inspect/main/env/inspect.fs
+gforth inspect.fs
+#+end_src
+
+From v0.5.0, download a release and check it against =SHA256SUMS=:
 
 #+begin_src sh
 gh release download vX.Y.Z -R jwalsh/gforth-inspect -D forth-env/
-(cd forth-env && shasum -a 256 -c SHA256SUMS)
-gforth forth-env/inspect.fs
+(cd forth-env && shasum -a 256 -c SHA256SUMS) && gforth forth-env/inspect.fs
 #+end_src
 
-Then check the version from inside gforth:
-
-#+begin_example
-inspect-version type   \ X.Y.Z
-#+end_example
-
-Pin the version you downloaded and upgrade on purpose. Within one MAJOR
-version the words and the log format do not break.
+=inspect-version type= prints the loaded version. Within one MAJOR version
+the words and the log format do not break.
 
 * Usage
 
-** See everything at once
+** Every stack at once
 
 #+begin_example
-1 2 3  1.5e  .stacks
+$ gforth inspect.fs -e '1 2 3 1.5e .stacks bye'
+data   <3> 1 2 3
+float  <1> 1.500000000000E0
+return <R:27> top first
+  ... interpreter (rs-full on to see it)
+input  *OS command line*:-1 >in=19
+1 2 3 1.5e .stacks bye
+                   ^
 #+end_example
 
-=.stacks= prints the data stack (as =.s=), the float stack (as =f.s=), the
-return stack with a name+offset for each return address, and the input
-line with a caret at =>IN=.
+Identical in =gforth-fast= and =gforth-itc=.
 
 | word          | shows                                                                 |
 |---------------+-----------------------------------------------------------------------|
@@ -49,57 +52,67 @@ line with a caret at =>IN=.
 
 ** Inside a definition
 
-#+begin_example
-: avg ( n1 n2 -- n3 )  + ~~~ 2/ ;
-#+end_example
+=~~~= is =~~= that prints every stack, with the return stack taken at the
+=~~~= itself. After =all-~~=, a plain =~~= does the same.
 
-=~~~= is like =~~=, except that it prints every stack at that point, with the
-return stack taken at the =~~~= itself. After =all-~~=, a plain =~~= does
-the same.
+#+begin_example
+$ cat demo.fs
+: avg ( n1 n2 -- n3 )  + ~~~ 2/ ;
+10 20 avg .
+$ gforth inspect.fs demo.fs -e bye
+demo.fs:1 in avg
+data   <1> 30
+float  <0>
+return <R:40> top first
+  ... interpreter (rs-full on to see it)
+input  demo.fs:2 >in=10
+10 20 avg .
+          ^
+15
+#+end_example
 
 ** Stepping
 
 Stock =dbg= in 0.7.3 works only in =gforth-itc=. =dbg-fix= makes it work in
-every engine, including =n= (nest). =dbg+= does the same and also prints
-the data, float and return stacks at each step:
+every engine, including =n= (nest). =dbg+= also prints the stacks at each
+step. Each =->= waits for a key.
 
 #+begin_example
-dbg+  dbg avg
+$ cat avg.fs
+: avg ( n1 n2 -- n3 )  + 2/ ;
+$ gforth inspect.fs avg.fs -e 'dbg+ 10 20 dbg avg . cr bye'
+: avg
+Scanning code...
+
+Nesting debugger ready!
+
+D: <2> 10 20  F: <0> R: -
+13B0492D0 102246604 +              ->
+D: <1> 30  F: <0> R: -
+13B0492D8 102247168 2/             ->
+D: <1> 15  F: <0> R: -
+13B0492E0 102244A64 ;              -> 15
 #+end_example
 
-In =gforth-fast=, =dbg= skips some steps, because that engine fuses words
-into superinstructions.
+Addresses differ per run. In =gforth-fast=, =dbg= skips the steps that
+engine fuses into superinstructions.
 
-** Logging for an editor or dashboard
+** Logging
+
+After =log-on=, every =.stacks=, =~~~= and (after =all-~~=) =~~= appends
+one JSON object per line. =log-where= prints the path; =log-off= stops.
 
 #+begin_example
-log-on      \ start appending JSON records
-.stacks     \ every .stacks, ~~~ and (after all-~~) ~~ now writes a record
-log-where   \ print the log path
-log-off
+$ GFORTH_INSPECT_LOG_DIR=logs gforth inspect.fs -e 'log-on 1 2 -3 1.5e .stacks log-off bye' >/dev/null
+$ cat logs/stacks.jsonl
+{"v":1,"event":"hello","t":1795307565,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"snapshot","t":1795307565,"where":null,"src":null,"data":[1,2,-3],"float":[1.5000000000000000E0 ],"rs":[],"input":{"file":"*OS command line*","line":-1,"in":27,"text":"log-on 1 2 -3 1.5e .stacks log-off bye"}}
 #+end_example
 
-The log is written to =$GFORTH_INSPECT_LOG_DIR/stacks.jsonl=. If that is
-not set, it goes to =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/stacks.jsonl=.
-It is append-only, with one JSON object per line. The fields are defined in
-=stacks-log.schema.json=, which comes with each release.
-
-#+begin_src json
-{"v":1,"event":"snapshot","t":1795300360,"where":null,"src":null,
- "data":[1,2,-3],"float":[1.5],"rs":[],
- "input":{"file":"prog.fs","line":1,"in":25,"text":"1 2 -3 1.5e .stacks"}}
-#+end_src
-
-A float that is not finite is logged as =null=.
-
-* Tested with
-
-gforth 0.7.3, in all three of its engines (=gforth=, =gforth-fast=,
-=gforth-itc=).
-
-* Screenshots
-
-None yet.
+Without =GFORTH_INSPECT_LOG_DIR=, the log is
+=${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/stacks.jsonl=. The fields
+are defined in =stacks-log.schema.json=, shipped with each release. A float
+that is not finite is logged as =null=.
 
 * Licence
 

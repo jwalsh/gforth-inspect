@@ -1,0 +1,49 @@
+#+TITLE: 005 concurrent-producers: two gforths, one log (issue #17)
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+* Hypothesis
+
+When N gforth processes (N from 2 to 4), each with =log-on=, write
+snapshots to one =stacks.jsonl= in any interleaving, every line of the file
+parses as JSON, validates against the schema, and every record each
+producer wrote is present exactly once. Each producer tags its snapshots
+with =log-id=, so a record can be traced to its writer. This is producer
+obligation 1 in CONSUMERS.org: append-only, one complete object per line.
+
+* Prediction (written before the first run)
+
+Refuted on 18ebe2d and on harden's head. =log-on= seeks to the end once,
+and every later write goes to that file descriptor's stale offset, so a
+second producer's records are overwritten and a fragment is left behind
+(#17). It holds on any inspect.fs that seeks to the end before each record
+(=file-size= + =reposition-file= in =log-write=, the downstream deviation).
+Writes of under one page are not split by the OS, so seek-then-write races
+only within a window narrower than one record. The property should hold
+in practice for N up to 4 at the interleavings generated here, and the run
+reports how often a race was even possible.
+
+* Gate
+
+1. *Interleavings.* Hypothesis generates the schedule: which producer
+   writes next and how many snapshots it writes, from 2 to 4 producers.
+   The schedule is driven deterministically, by feeding each gforth its
+   stdin one line at a time and waiting for that record to land, not by
+   sleeping. Run at least 200 schedules on =gforth=, and 50 each on
+   =gforth-fast= and =gforth-itc=.
+2. *Result.* Report per ref: lines that fail to parse, records lost,
+   records duplicated. Refs: =18ebe2d=, harden's head (pinned by hash), and
+   a patched copy of harden with the seek-before-write fix. That copy is a
+   test fixture made by sed in a temp dir, not a change to =env/=.
+3. *Also uncoordinated.* Run 50 schedules where the producers really do
+   run concurrently, with no stdin pacing, and report the result as its
+   own line. It is evidence about the race window, not part of the pass
+   or fail.
+4. *Calibration.* =pbt/calibrate/005-*.sh= runs the test against harden's
+   head, unpatched. It must go red with a parse failure or a lost record,
+   and green on the patched copy.
+5. Until the producer fix lands, the property test is a strict xfail that
+   cites #17. It turns red (XPASS) the moment harden is fixed, and that is
+   the signal to remove the xfail.
+
+* Log
