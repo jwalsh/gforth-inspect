@@ -341,11 +341,19 @@ def xref(run_dir: Path, pool, validator, live_xrids: set, cache: dict | None = N
             match = re.search(rb'"id":"((?:[^"\\]|\\.)*)"', raw)
             if match:
                 seen_ids.setdefault(match.group(1).decode("utf-8", "replace"), set()).add(xrid)
-        last_by_path = {plan["path"]: plan for plan in call["inspect_plan"]}   # an upgrade reinstalls a path
-        for plan in last_by_path.values():
-            path = Path(call["sandbox"]) / plan["path"]
-            if path.exists() and assets.blob_of(path) != plan["blob"]:
-                violations.append(violation("G6", xrid, f"{plan['path']} in the sandbox is not blob {plan['blob'][:12]}"))
+        # each inspect.fs path must still hold the blob the session last
+        # loaded from it (an upgrade reinstalls a path; one still pending has
+        # not), or, before any load, the plan's first blob for that path
+        expected = {}
+        for plan in call["inspect_plan"]:
+            expected.setdefault(plan["path"], plan["blob"])
+        for entry in read_jsonl(session_dir / "transcript.jsonl"):
+            if entry.get("inspect"):
+                expected[entry["inspect"]["path"]] = entry["inspect"]["blob"]
+        for relative, blob in expected.items():
+            path = Path(call["sandbox"]) / relative
+            if path.exists() and assets.blob_of(path) != blob:
+                violations.append(violation("G6", xrid, f"{relative} in the sandbox is not blob {blob[:12]}"))
     for record_id, holders in seen_ids.items():
         if record_id not in calls:
             violations.append(violation("G6", sorted(holders)[0], f"records with id {record_id!r}: no manifest entry"))

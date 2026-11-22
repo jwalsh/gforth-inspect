@@ -320,3 +320,23 @@ rewritten every minute (=gmake status=); the run's files are under
 =.../gforth-inspect-soak/runs/soak-20261122/= (=events.log=,
 =violations.jsonl=, =external.jsonl=, =state.json=, one directory per
 xrid).  To stop early: =touch .../runs/soak-20261122/STOP=.
+
+** 2026-11-22 soak hour 1 (agent)
+
+15:43:53Z, 1.00 h counted of 1.01 h wall, no clock stop.  10 REPLs live at
+every counted tick; 22 sessions started, 12 ended clean, none hung or died.
+Session-hours: gforth 32%, gforth-fast 43%, gforth-itc 25%.  The xref at
+1.0 h covered 22 sessions, 22 logs, 5,536 records.  Leak guard: 6 checks,
+no soak write, no external write.  G1 G2 G3 G4 G5 G7 G8 and the monitor: 0.
+
+G6: 1, a *harness false positive*, not the inspector.  The xref's sandbox
+check compared =s1='s =env/inspect.fs= with the last blob the plan names
+for that path (v0.1.1), but =s1= is the upgrade session and its upgrade is
+not due until 10 h.  Its transcript shows it loaded =af95cdf354af= (plan
+entry 1) at line 1, and the file is still that blob, as it should be.  The
+check now compares with the blob the session last loaded from that path
+(fix on the branch; the running harness keeps the code it started with,
+since restarting it would end =s0=, the session that must live for the
+whole run).  The fixed check, run read-only on the same files, reports 0
+over the same 22 sessions.  The report is deduplicated, so the count stays
+at 1 for the rest of the run, unless another G6 appears.
