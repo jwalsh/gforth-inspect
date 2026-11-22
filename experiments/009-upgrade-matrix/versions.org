@@ -1,0 +1,55 @@
+#+TITLE: 009 versions: the ledger, with rulings
+#+STARTUP: showall
+
+Gate 9 output. Every producer pinned by blob (RD-1); the fixtures are
+built by =harness/ledger.py= from V5 and refused when a substitution does
+not apply. Vc: counts only; its blob is in the local manifest, never here.
+
+* Producers
+
+| key | source          | inspect.fs blob | schema blob  | =hello.inspect= | =hello.contract= | =v= | honours =GFORTH_INSPECT_LOG_DIR= | release assets at source |
+|-----+-----------------+-----------------+--------------+---------------+----------------+-----+--------------------------------+--------------------------|
+| V0  | 18ebe2d         | 76d34db7cd61    | 4c620671e93d | absent        | absent         |   1 | no (legacy default dir)        | 3/6                      |
+| V1  | 6238b09         | 1264ab7e38c0    | aca3d8511c4e | 0.1.0         | absent         |   1 | yes                            | 3/6                      |
+| V2  | 0842eda         | a7e5c141af51    | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 3/6                      |
+| V3  | 7f58633         | 8ee70482686b    | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 3/6                      |
+| V4  | 7dff143         | d1d87b91d38e    | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 3/6                      |
+| V5  | 5aac06a = harden | af95cdf354af   | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 6/6 (at harden's head)   |
+| Vc  | local copy      | local only      | local only   | absent        | 1.1            |   1 | no (legacy default dir)        | n/a                      |
+| F1a | V5 + release bump | 2434a832f8e3  | 0a84bb3b6973 | 0.5.0         | 1.1            |   1 | yes                            | fixture                  |
+| F1  | V5 + release bump | b19eff2eebe0  | 0a84bb3b6973 | 1.0.0         | 1.1            |   1 | yes                            | fixture                  |
+| F2  | F1 + DEL escaped  | b3a0541a6363  | 0a84bb3b6973 | 1.0.1         | 1.1            |   1 | yes                            | fixture                  |
+| F3  | F2 + =depth=      | 94e89171b0cd  | d765ef227629 | 1.1.0         | 1.2            |   1 | yes                            | fixture                  |
+| F4  | F3, =data= → =cells= | 1b5777e57e1b | 3a97df268490 | 2.0.0       | 2.0            |   2 | yes                            | fixture                  |
+| F5  | F3, =stacks= object, =task=, events =caps= =bye= | 7014e1f250f7 | b2355d30833b | 10.0.0 | 10.0 | 10 | yes            | fixture                  |
+
+Release assets: the six of RELEASING.org's table. At 18ebe2d through
+7dff143 only =inspect.fs=, the schema and =stacks-log.org= exist;
+=CONSUMERS.org=, =CONSUMER-AGENTS.md= and =SKILL.md= arrive on harden later.
+V1 to V5 announce the same =hello.inspect= ="0.1.0"= for five blobs (P1).
+A "fix toward the true value" cannot be made from V5 by substitution
+without first planting an untruth, so F2 is the other PATCH class: the bytes
+change, the decoded values do not. The fix-toward-truth class is on the
+real ledger: V0 → V1 (#1 floats, escaping) and V1 → V2 (#2 =where= / =src=).
+
+* Transitions and rulings
+
+Bump from [[file:../../docs/RELEASING.org::*Stable API, and what bumps what][RELEASING.org]] (table and Rulings); "pre-release": below v0.5.0
+a break costs a note, not a MAJOR.
+
+| transition | bump        | what changes, as consumers see it                                           | ruling predicts                                                         | observed (N=0..5)                                      |
+|------------+-------------+-----------------------------------------------------------------------------+-------------------------------------------------------------------------+--------------------------------------------------------|
+| V0 → V1    | pre-release | default dir moved; =hello.inspect=; #1 floats; control bytes escaped         | checker stops (no contract) on both; jq, mock: same or fix; dir: a note | as ruled; V0 never at the contract path                |
+| V1 → V2    | MINOR       | =hello.contract= 1.1, snapshot =id=, #2 =where= / =src=                         | checker: stop → accept; jq: fix (=w=)                                     | as ruled                                               |
+| V2 → V3    | PATCH       | #17: seek before every write                                                | identical output                                                        | identical                                              |
+| V3 → V4    | PATCH       | #17: whole-line buffered write                                              | identical                                                               | identical                                              |
+| V4 → V5    | PATCH       | review of #19 (buffer growth, free on log-off)                              | identical                                                               | identical; no change-log row                           |
+| V5 → F1    | PATCH       | =hello.inspect= 0.1.0 → 1.0.0                                                | identical                                                               | identical                                              |
+| F1 → F2    | PATCH       | DEL as =\u007f=                                                               | identical decoded values                                                | identical decoded; bytes differ (mock body)            |
+| F2 → F3    | MINOR       | contract 1.2, optional =depth=                                               | checker stops (minor); jq same; mock: added key                         | as ruled; after the bump, accept                       |
+| F3 → F4    | MAJOR       | v 2, =data= → =cells=                                                         | checker stops (major); jq =d= null                                       | as ruled; after the bump to 2.0 the checker crashes    |
+| F4 → F5    | MAJOR       | v 10, =stacks= object, =caps= / =bye=                                         | checker stops; jq =d=, =f= null, extra events                              | as ruled                                               |
+| V2 → V5    | PATCH       | #17                                                                         | identical                                                               | identical                                              |
+| Vc → V5    | pre-release | =hello.inspect= added; default dir moved; control bytes escaped; hex BASE fixed | same contract: accept; jq same; checker / mock: fix (=input.text=)     | as ruled; Vc never at the contract path                |
+| V5 → F4    | MAJOR       | as F3 → F4, plus =depth=                                                      | as F3 → F4                                                              | as F3 → F4                                             |
+| V5 → F5    | MAJOR       | as F4 → F5, plus =depth=                                                      | as F4 → F5                                                              | as F4 → F5                                             |
