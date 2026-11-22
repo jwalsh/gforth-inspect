@@ -1,0 +1,10 @@
+
+: t  
+Scanning code...
+
+Nesting debugger ready!
+[ 0 ] 
+146042388 1001FEBA4 3              -> 
+*OS command line*:-1: Address alignment exception
+: sq dup * ; : t 3 sq 2.5e 2e f* drop ; dbg >>>t<<< cr .s f.s bye
+Backtrace:

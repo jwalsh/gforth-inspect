@@ -38,9 +38,8 @@ execution (tests, scripts, CI, experiments).
   sibling in the same directory (=CONSUMERS.org=, not =../CONSUMERS.org=),
   and a link to anything else is an absolute URL pinned to the tag. A
   consumer reads the schema from its downloaded copy, never from a branch.
-  =canvas.fs= is not part of this project and never ships.
-  It stays on =harden= only as a test bed until the end of the week of
-  2026-11-21, and is then removed by a PR, well before the first tag.
+  =canvas.fs= is not part of this project and never ships. It was a test
+  bed on =harden= and was removed before the first tag (decision 27).
 - =inspect.fs= begins with these two lines:
   #+begin_example
   \ gforth-inspect vX.Y.Z
@@ -216,11 +215,12 @@ gmake test && gmake -C pbt check PROFILE=ci && scripts/privacy-scan.sh
 gmake release-check   # builds dist/ as below and checks it
 # by hand, what release-check does:
 mkdir -p dist && cp env/inspect.fs contract/stacks-log.schema.json contract/stacks-log.org contract/CONSUMERS.org contract/CONSUMER-AGENTS.md contract/skill/SKILL.md dist/
-sed -i '' 's|\.\./CONSUMERS\.org|CONSUMERS.org|g' dist/stacks-log.org   # flatten sibling links
+scripts/dist-links.sh dist vX.Y.Z env/inspect.fs contract/stacks-log.schema.json contract/stacks-log.org contract/CONSUMERS.org contract/CONSUMER-AGENTS.md contract/skill/SKILL.md   # flatten siblings, pin the rest to the tag
 (cd dist && shasum -a 256 inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org CONSUMER-AGENTS.md SKILL.md > SHA256SUMS)
 scripts/privacy-scan.sh dist/*
 git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
-gh release create vX.Y.Z dist/* --notes-file dist/NOTES.md
+notes=$(mktemp)   # write the notes here: test summary and the Fixed: line (Gate, 5)
+gh release create vX.Y.Z dist/* --notes-file "$notes"   # notes live outside dist/, so dist/* is exactly the 7 assets
 scripts/readme-release.sh vX.Y.Z    # README's Install names the real tag; refuses if the release isn't there
 git commit -am "docs(readme): install vX.Y.Z [skip ci]" && git push   # direct, as an admin
 # at v0.5.0: run the two lines above BEFORE flipping enforce_admins (Mainline protection);

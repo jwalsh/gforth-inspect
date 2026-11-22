@@ -1,0 +1,16 @@
+## stdout
+<R:42> top first
+  $ADDR = b +32
+  $ADDR = a +32
+  ... interpreter (rs-full on to see it)
+<R:42> top first
+  $2 = 2 
+  $3 = 3 
+  ... interpreter (rs-full on to see it)
+<R:43> top first
+  $ADDR = deep +72
+  $ADDR = deep +72
+  $ADDR = deep +72
+  ... interpreter (rs-full on to see it)
+## stderr
+## exit 0

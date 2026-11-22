@@ -1,0 +1,48 @@
+## stdout
+<R:40> top first
+  ... interpreter (rs-full on to see it)
+<R:40> top first
+  $ADDR = interpret1 +144
+  $ADDR = handler-intro, +616
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR = handler-intro, +568
+  $ADDR = interpret +80
+  $ADDR (stack pointer)
+  $ADDR = read-loop +64
+  $ADDR = handler-intro, +616
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR = handler-intro, +568
+  $ADDR = execute-parsing-named-file +112
+  $ADDR = included1 +152
+  $0 = 0 
+  $0 = 0 
+  $ADDR = required +152
+  $ADDR = args-required1 +56
+  $ADDR = handler-intro, +616
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR = handler-intro, +568
+  $ADDR = execute-parsing-wrapper +232
+  $ADDR = os-execute-parsing +104
+  $ADDR = args-required +56
+  $ADDR = (process-args) +208
+  $ADDR = cold +112
+  $ADDR = handler-intro, +616
+  $0 = 0 
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR (stack pointer)
+  $ADDR = handler-intro, +568
+  $ADDR = boot +320
+<R:40> top first
+  ... interpreter (rs-full on to see it)
+## stderr
+## exit 0

@@ -1,0 +1,48 @@
+## stdout
+data   <0> 
+float  <0> 
+return <R:39> top first
+  ... interpreter (rs-full on to see it)
+input  test/log-records.fs:5 >in=7
+.stacks
+       ^
+data   <2> 1 2 
+float  <0> 
+return <R:39> top first
+  ... interpreter (rs-full on to see it)
+input  test/log-records.fs:7 >in=12
+1 2 .stacks 2drop
+            ^
+data   <1> 4 
+float  <0> 
+return <R:39> top first
+  ... interpreter (rs-full on to see it)
+input  test/log-records.fs:10 >in=10
+4 .stacks drop
+          ^
+data   <1> 5 
+float  <0> 
+return <R:39> top first
+  ... interpreter (rs-full on to see it)
+input  test/log-records.fs:11 >in=17
+log-on 5 .stacks drop log-off
+                 ^
+
+$TMP/state/gforth-inspect/stacks.jsonl
+## stderr
+
+test/log-records.fs:4 in kk 
+data   <1> 3 
+float  <0> 
+return <R:40> top first
+  ... interpreter (rs-full on to see it)
+input  test/log-records.fs:8 >in=5
+3 kk drop
+     ^
+## log state/gforth-inspect/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[1,2],"float":[],"rs":[],"input":{"file":"test/log-records.fs","line":7,"in":12,"text":"1 2 .stacks 2drop"}}
+{"v":1,"event":"snapshot","t":T,"where":"kk","src":"test/log-records.fs:4","data":[3],"float":[],"rs":[],"input":{"file":"test/log-records.fs","line":8,"in":5,"text":"3 kk drop"}}
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[5],"float":[],"rs":[],"input":{"file":"test/log-records.fs","line":11,"in":17,"text":"log-on 5 .stacks drop log-off"}}
+## exit 0

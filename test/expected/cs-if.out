@@ -1,0 +1,13 @@
+## stdout
+
+CS: here=$ADDR  | colon-sys
+
+CS: here=$ADDR 
+  orig (live) $ADDR  (1 cells back) | colon-sys
+
+CS: here=$ADDR 
+  orig (live) $ADDR  (1 cells back) | colon-sys
+
+CS: here=$ADDR  | colon-sys
+## stderr
+## exit 0

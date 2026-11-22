@@ -1,0 +1,17 @@
+## stdout
+
+: lp  
+Scanning code...
+
+Nesting debugger ready!
+[ 0 ] 
+ADDR ADDR 4              -> [ 1 ] 00004 
+ADDR ADDR 0              -> [ 2 ] 00004 00000 
+ADDR ADDR DO             -> [ 0 ] 
+ADDR ADDR i              -> [ 1 ] 00000 
+ADDR ADDR odd.           -> [ 0 ] 
+ADDR ADDR LOOP           -> 
+Done...
+1 3 
+## stderr
+## exit 0
