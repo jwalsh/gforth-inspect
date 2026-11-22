@@ -1,10 +1,8 @@
 #+TITLE: Decisions
 #+STARTUP: showall
 
-In order, from 2026-11-21. Authority: H = Human (owner), O = Operator
-(coordinating session), D = Downstream (the course session; relays H or
-proposes). A later ID overrides its =supersedes=. Empty =enforced-by= =
-unenforced.
+2026-11-21 to 2026-11-22. H = Human (owner), O = Operator (coordinator),
+D = Downstream (course session), H (D) = H via D.
 
 | ID   | rule                                                                                                                                                          | auth  | supersedes                         | enforced-by |
 |------+---------------------------------------------------------------------------------------------------------------------------------------------------------------+-------+------------------------------------+-------------|
