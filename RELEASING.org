@@ -208,6 +208,11 @@ sed -i '' 's|\.\./CONSUMERS\.org|CONSUMERS.org|g' dist/stacks-log.org   # flatte
 scripts/privacy-scan.sh dist/*
 git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
 gh release create vX.Y.Z dist/* --notes-file dist/NOTES.md
+scripts/readme-release.sh vX.Y.Z    # README's Install names the real tag; refuses if the release isn't there
+git commit -am "docs(readme): install vX.Y.Z [skip ci]" && git push   # direct, as an admin
+# at v0.5.0: run the two lines above BEFORE flipping enforce_admins (Mainline protection);
+# after the flip, the README commit goes through a PR without [skip ci], because a
+# skipped required check never reports and the PR would wait forever
 #+end_src
 
 * Changing the contract or the tooling
