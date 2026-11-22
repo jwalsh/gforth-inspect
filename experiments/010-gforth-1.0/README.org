@@ -187,8 +187,9 @@ inspect.fs:73:13: error: Undefined word
     dup ['] >>>interpret1<<< = over ['] interpret = or over ['] handler-intro, = or
 #+end_example
 
-gforth 1.0 also stops processing the command line at that error, so a
-program named after inspect.fs never runs: all 16 public-word probes
+gforth stops processing the command line at that error (0.7.3 does
+too; checked with a one-line =xyzzy= file), so a program named after
+inspect.fs never runs: all 16 public-word probes
 (and json-parts) end with the same error and exit 1, no log is written,
 and the probe's own output never appears.  Only =colon-xt?=, =enclosing=,
 =.where=, =stack-region?= and =inspect-version= get defined, and
@@ -370,7 +371,7 @@ Each reproducer runs on plain gforth 1.0.x, without inspect.fs
 | R5  | =>head-noprim= finds the header before an xt | an nt is the xt: =>head-noprim= returns its argument              | =colon-xt?= → =name>int= on a non-header: SIGSEGV in every return-stack walk | =gforth -e ": t ; ' t >head-noprim ' t = . bye"= → =-1= (0.7.3: =0=) |
 | R6  | a colon word's code field holds =docol:=    | it does not; =>code-address= still gives =docol:=                    | =colon-xt?= is false for real colon words, so =nestXT+= steps over them | =gforth -e ": t ; ' t @ docol: = . bye"= → =0= (0.7.3: =-1=) |
 | R7  | =threaded>name= of a threaded cell         | =0= in =gforth=, =gforth-fast= (direct-threaded); still found in =gforth-itc= | =instruction?= / =bp-site= (not reached: R9 stops first) | =gforth -e ": t 1+ ; ' t >body @ threaded>name 0<> . bye"= → =0= (0.7.3: =-1=) |
-| R8  | stock =dbg= runs (and crashes) everywhere | refuses outside ITC: "Only works on gforth-itc"                  | =dbg2= calls stock words that assume it ran | =gforth -e ": t ; dbg t bye"= → error (=gforth-itc=: runs)             |
+| R8  | stock =dbg= runs (and crashes) everywhere | refuses outside ITC: "Only works on gforth-itc"                  | stock =dbg=, which =dbg-fix= patches but cannot reach | =gforth -e ": t ; dbg t bye"= → error (=gforth-itc=: runs)             |
 | R9  | =dp != back into a body, then =compile,=     | =compile,= runs the peephole optimiser, which faults outside the current definition | =patch-colon=, so =dbg-fix= and =dbg+= (not in =gforth-itc=) | =gforth -e ": t 1 2 + ; ' t >body here >r dp ! ' noop compile, r> dp ! bye"= → Invalid memory address |
 | R10 | control-flow items tagged 0 to 5           | tagged with an address                                           | =.cs= decodes nothing                     | =gforth -e ": t 1 IF [ dup . ] THEN ; bye"= → an address (0.7.3: =1=)        |
 | R11 | =.debugline ( nfile nline -- )=            | gets one cell, a view                                            | =all-~~='s =~~-line= takes one cell too many (not reached: R5 stops first) | =gforth -e ": x 2drop ; ' x is .debugline : t 7 ~~ ; t depth . bye"= → =0= (0.7.3: =1=) |
@@ -398,8 +399,9 @@ Against the gate:
    it held only the build's libcc objects, did not exist before, and was
    removed.  Building gforth 1.0 from source writes there; a later
    builder should set HOME for the build too.
-3. Calibration: met.  16 of 16 probes "works" on 0.7.3, all three
-   engines; goldens 111/111 and pbt 98/3/1 on 0.7.3 by the same routes.
+3. Calibration: met.  18 of 18 probes "works" on 0.7.3, all three
+   engines (16 at first; =json-parts= and =log-plain= were added later and
+   run there too); goldens 111/111 and pbt 98/3/1 on 0.7.3 by the same routes.
 4. Measurements: all taken, for 1.0.0 and 1.0.1 and every engine the
    build gives (four: =gforth-ditc= too).
 5. Hypothesis: *refuted.*  The first clause fails: v0.1.1 does not load
@@ -416,8 +418,8 @@ Against the gate:
 Against the prediction: item 1 (load refuted) held, but the first stop
 was line 73 (=interpret1=), not line 39 (=>head-noprim=, which exists but
 changed meaning, R5).  Item 2 held in its "no load" branch: nothing past
-the stop is defined, and in fact nothing at all runs, because 1.0 drops
-the rest of the command line.  Item 3 held: 0 of 37 goldens pass in every
+the stop is defined, and in fact nothing at all runs, because gforth (either version) drops
+the rest of the command line after an error.  Item 3 held: 0 of 37 goldens pass in every
 1.0 engine.  Item 4: the runner can be pointed at 1.0, but not by =PATH=
 through =uv run=; it fails as predicted.  Item 5: no log, as predicted for
 an unloaded =log-on=; =hello.gforth= is ="1.0.0"= / ="1.0.1"=.  Item 6:
