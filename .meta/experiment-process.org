@@ -1,39 +1,22 @@
 #+TITLE: Experiment process
 #+STARTUP: showall
 
-* Roles
+| role         | owns                                                    | NEVER touches                                  |
+|--------------+---------------------------------------------------------+------------------------------------------------|
+| coordinator  | =main=, =experiments/README.org=, =.meta/=, docs, merges  | experiment code                                |
+| experiment   | =../gforth-inspect-NNN-slug=, =exp/NNN-slug=, its Log    | =main=, other experiments, =env/=, =contract/=     |
+| producer     | =env/=, =contract/=, =test/=, root =Makefile=              | =pbt/=                                          |
 
-| role                | owns                                                        | never touches                          |
-|---------------------+-------------------------------------------------------------+----------------------------------------|
-| coordinators        | =main=, =experiments/README.org=, =.meta/=, docs, merges       | an experiment's code                   |
-| experiment agent    | =../gforth-inspect-NNN-slug=, branch =exp/NNN-slug=, its Log | =main=, other experiments, =env/=, =contract/= |
-| producer work       | =env/=, =contract/=, =test/=, root =Makefile=                   | =pbt/=                                 |
+| ID   | WHEN                        | DO                                                                  | NEVER                               | CHECK                                  |
+|------+-----------------------------+---------------------------------------------------------------------+-------------------------------------+----------------------------------------|
+| E-1  | new experiment              | coordinator commits row + =NNN-slug/README.org= (hypothesis, prediction, gate) to =main= | run before the commit       | gate commit precedes first Log entry   |
+| E-2  | starting work               | worktree from =origin/main=; draft PR                                 | cut from an unmerged branch         | =gh pr list --draft=                    |
+| E-3  | each run                    | =gmake -C pbt check=; Log date, blob, seed, result                    | omit failed runs                    | Log line has blob + seed               |
+| E-4  | after first run             | append to Log                                                       | edit gate or prediction             | =git log -p= on gate section empty      |
+| E-5  | bug in =env/inspect.fs=      | hand owner shrunk case + one-line reproducer; keep test red         | fix the inspector; weaken the test  | test red until fix lands               |
+| E-6  | gate met or refuted         | PR via =docs/REVIEW.md=; coordinator merges; refuted merges as Log    | merge own PR                        | PR body has Review section             |
+| E-7  | choosing what to test       | pin by SHA/blob; =gmake verify= sets =INSPECT_REF=HEAD=                | test a moving name                  | provenance line names blob             |
+| E-8  | calibrating an unfixed bug  | pin its own ref (=CALIBRATE_005_REF=0842eda=)                        | follow =INSPECT_REF=                  | red on pinned ref, green on fix        |
+| E-9  | each gforth run             | own temp dir, =HOME=, =XDG_STATE_HOME=; relative file names            | write the real XDG log              | no record holds an absolute path       |
 
-Experiments test the inspector; they never fix it. Bug in =env/inspect.fs=:
-hand the owner a shrunk case and a one-line reproducer. The finding test
-stays red until the fix lands. Never weaken it.
-
-* Loop
-
-1. Coordinator commits to =main=, before the first run: a row in
-   =experiments/README.org=, and =experiments/NNN-slug/README.org= with
-   hypothesis, prediction and gate.
-2. Agent works in a worktree cut from =main=; draft PR at once.
-3. Every run goes through =gmake -C pbt check=. Log each run: date,
-   inspect.fs provenance (printed by =gforth_run.py=), seed, result.
-   Log failures too.
-4. Commit and push as you go.
-5. Gate met, or finding solid: PR to =main=, through REVIEW.md;
-   coordinator merges. A refuted hypothesis merges too, as a Log.
-
-Gate and prediction: never edited after the first run. Log: append-only.
-
-* Isolation
-
-- Test a pinned blob, never a moving name. =INSPECT_REF= selects it; the
-  root =gmake verify= sets =INSPECT_REF=HEAD=. (Defaults in =pbt/= still name
-  =harden=: follow-up, change to =HEAD=.)
-- A calibration about an unfixed producer pins its own ref
-  (=CALIBRATE_005_REF=, default =0842eda=). Never follow =INSPECT_REF=.
-- Each gforth run: own temp dir, own =HOME= and =XDG_STATE_HOME=, relative
-  file names. No record may hold a real path.
+Open: =pbt/= defaults still name =harden=; change to =HEAD=.

@@ -1,13 +1,17 @@
 #+TITLE: .meta
 #+STARTUP: showall
 
-| file                     | holds                                               |
-|--------------------------+-----------------------------------------------------|
-| [[file:methodology-delta.org][methodology-delta.org]]    | the oracles, their strength, what each can check     |
-| [[file:experiment-process.org][experiment-process.org]]   | roles, the experiment loop, isolation                |
-| [[file:decisions.org][decisions.org]]            | every decision: who, what it replaced, what enforces it |
-| [[file:findings-2026-11-21.org][findings-2026-11-21.org]] | gforth 0.7.3 facts, each checkable                   |
-| [[file:finding-requirements-in-flight.org][finding-requirements-in-flight.org]] | pin, xrid, xref, reflect                          |
+Rules for agents. Format: =ID | WHEN | DO | NEVER | CHECK=. Cite rules by ID.
 
-An entry earns its place only if an agent can act on it or check it. Public:
-CONTRIBUTING.org's privacy rules apply.
+| file                               | IDs    | scope                    |
+|------------------------------------+--------+--------------------------|
+| [[file:experiment-process.org][experiment-process.org]]             | E-*    | roles, loop, isolation   |
+| [[file:methodology-delta.org][methodology-delta.org]]              | O-*    | oracles                  |
+| [[file:findings-2026-11-21.org][findings-2026-11-21.org]]            | F-*    | gforth 0.7.3 facts       |
+| [[file:finding-requirements-in-flight.org][finding-requirements-in-flight.org]] | RD-*   | requirements discovery   |
+| [[file:decisions.org][decisions.org]]                      | D-*    | decisions, authority     |
+
+| ID   | WHEN                 | DO                                    | NEVER                         | CHECK                     |
+|------+----------------------+---------------------------------------+-------------------------------+---------------------------|
+| M-1  | adding to =.meta/=   | write a rule or a checkable fact, with an ID | prose, history, narration | an agent can act on or test it |
+| M-2  | any =.meta/= edit     | run =scripts/privacy-scan.sh=           | paths, names, private repos   | scan clean                |
