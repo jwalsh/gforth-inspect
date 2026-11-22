@@ -5,6 +5,10 @@ people directing them. They come in addition to
 [CONTRIBUTING.org](CONTRIBUTING.org): Forth style, gforth 0.7.3 only, all
 three engines, and no private data.
 
+Agents working for a project that *consumes* the inspector read
+[CONSUMER-AGENTS.md](CONSUMER-AGENTS.md) instead. How producer and
+consumers change things together is in [COLLABORATION.org](COLLABORATION.org).
+
 ## Start every piece of work in the open
 
 Several agents work on this repository at once. They see each other's
