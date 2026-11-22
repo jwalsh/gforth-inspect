@@ -340,3 +340,16 @@ since restarting it would end =s0=, the session that must live for the
 whole run).  The fixed check, run read-only on the same files, reports 0
 over the same 22 sessions.  The report is deduplicated, so the count stays
 at 1 for the rest of the run, unless another G6 appears.
+
+** 2026-11-22 coordinator ruling: the hour-1 G6 count is a harness fault
+
+The single G6 at hour 1 (s1: "env/inspect.fs in the sandbox is not blob
+82860519a7d3") is the harness checking s1 against the last blob its plan
+names, before s1's upgrade (due at 10 h counted). s1's file is correctly
+still v0.1.0 (af95cdf354af). The fixed check, run read-only on the same
+files, reports 0. Ruling: it is counted as a harness violation, not a G6
+violation of the inspector, and it does not restart the clock (gate item 4
+covers violations by the producer). The running harness is not restarted,
+because that would end s0, the session the gate needs alive for the whole
+run. The final report states the status line's G6 1 together with this
+ruling; any further G6 is judged on its own.
