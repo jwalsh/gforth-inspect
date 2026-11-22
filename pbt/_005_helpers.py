@@ -53,8 +53,7 @@ SELECTORS = ("INSPECT_FS", "INSPECT_REF", "SCHEMA_JSON")
 # One line of log-write changes; gforth 0.7.3 has no append fam.
 FIX_FROM = "    base @ >r decimal"
 FIX_TO = "    log-fid @ file-size throw log-fid @ reposition-file throw  base @ >r decimal"
-FIX_SED = (r"/^: log-write /,/ ;$/ s/^    base @ >r decimal$/"
-           r"    log-fid @ file-size throw log-fid @ reposition-file throw  base @ >r decimal/")
+
 
 
 # --- which inspect.fs ---------------------------------------------------
@@ -99,32 +98,57 @@ def current_source(ref: str | None = None) -> tuple[bytes, str]:
         return path.read_bytes(), public_provenance(provenance)
 
 
-def log_write_span(lines: list[bytes]) -> tuple[int, int]:
-    """Line indices [start, end) of the one `: log-write` definition.
+def definition_span(lines: list[bytes], word: str) -> tuple[int, int] | None:
+    """Line indices [start, end) of the one `: <word>` definition, or None.
 
     It ends at the first line whose code (text before a backslash comment)
     ends in `;`.  A plain search for `;` stops early on harden, whose
-    comment line reads "in decimal; BASE is restored after".
+    log-write comment reads "in decimal; BASE is restored after".
     """
-    starts = [index for index, line in enumerate(lines) if line.startswith(b": log-write ")]
-    assert len(starts) == 1, f"expected one `: log-write` definition, found {len(starts)}"
+    head = f": {word} ".encode()
+    starts = [index for index, line in enumerate(lines) if line.startswith(head)]
+    if len(starts) != 1:
+        return None
     for end in range(starts[0], len(lines)):
         if lines[end].split(b"\\ ")[0].rstrip().endswith(b";"):
             return starts[0], end + 1
-    raise AssertionError("`: log-write` has no closing `;`")
+    return None
+
+
+def definition(source: bytes, word: str) -> bytes:
+    """The text of `: <word> ... ;`, or b"" if there is not exactly one."""
+    lines = source.split(b"\n")
+    span = definition_span(lines, word)
+    return b"\n".join(lines[span[0]:span[1]]) if span else b""
 
 
 def log_write_body(source: bytes) -> bytes:
-    lines = source.split(b"\n")
-    start, end = log_write_span(lines)
-    return b"\n".join(lines[start:end])
+    return definition(source, "log-write")
+
+
+def write_path(source: bytes) -> tuple[bytes, bytes]:
+    """log-on and log-write: the two words where a #17 fix can live."""
+    return definition(source, "log-on"), definition(source, "log-write")
+
+
+def known_unfixed(source: bytes, unfixed_sources: list[bytes]) -> bool:
+    """True if log-on and log-write are word for word those of a known-unfixed ref.
+
+    Used to decide the #17 xfail.  Any change to either word, whatever shape
+    the fix takes (a seek in log-write, a helper word, an append-mode open
+    in log-on), makes the test a plain one, which then has to pass; edits
+    elsewhere in inspect.fs leave the xfail in place.
+    """
+    path = write_path(source)
+    return all(path) and any(path == write_path(other) for other in unfixed_sources)
 
 
 def patched(source: bytes) -> bytes:
     """The seek-before-write fix applied to `source`; exactly one line changes."""
     lines = source.split(b"\n")
-    start, end = log_write_span(lines)
-    hits = [index for index in range(start, end) if lines[index] == FIX_FROM.encode()]
+    span = definition_span(lines, "log-write")
+    assert span, "patch: no single `: log-write ... ;` definition"
+    hits = [index for index in range(*span) if lines[index] == FIX_FROM.encode()]
     assert len(hits) == 1, (
         "patch: log-write no longer has exactly one `base @ >r decimal` line; "
         "harden changed, revisit the 005 fixture")
@@ -132,8 +156,18 @@ def patched(source: bytes) -> bytes:
     return b"\n".join(lines)
 
 
+def patchable(source: bytes) -> bool:
+    """True if `patched` applies: harden's log-write shape, not 18ebe2d's one-liner."""
+    lines = source.split(b"\n")
+    span = definition_span(lines, "log-write")
+    return bool(span) and sum(lines[index] == FIX_FROM.encode() for index in range(*span)) == 1
+
+
 def seeks_per_write(source: bytes) -> bool:
-    """True if log-write repositions before each record (the #17 fix)."""
+    """True if log-write repositions before each record (the fix's usual shape).
+
+    Reported only; the xfail is decided by `known_unfixed`.
+    """
     return b"reposition-file" in log_write_body(source)
 
 
@@ -142,7 +176,7 @@ def has_log_id(source: bytes) -> bool:
 
 
 def schema_for(ref: str | None) -> dict:
-    """The schema at `ref` if it has one, else origin/harden's (18ebe2d has none)."""
+    """contract/stacks-log.schema.json at `ref` (18ebe2d has its own, v1)."""
     with source_env(ref=ref):
         return gforth_run.schema()
 
@@ -178,10 +212,12 @@ class Producer:
         self.proc.stdin.flush()
         deadline = time.monotonic() + timeout
         while True:
-            for chunk in self.buffer.split(b"\n")[:-1]:
-                if chunk.rstrip() == ack:
-                    self.buffer = self.buffer[self.buffer.index(chunk) + len(chunk) + 1:]
+            offset = 0
+            while (newline := self.buffer.find(b"\n", offset)) >= 0:
+                if self.buffer[offset:newline].rstrip() == ack:
+                    self.buffer = self.buffer[newline + 1:]
                     return
+                offset = newline + 1
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise TimeoutError(f"producer {self.index}: no {ack!r} within {timeout}s")
@@ -195,12 +231,12 @@ class Producer:
     def finish(self, timeout: float = 10.0) -> int:
         try:
             self.proc.stdin.write(b"log-off bye\n")
-            self.proc.stdin.close()
+            self.proc.stdin.flush()  # communicate() closes stdin; it must still be open
         except BrokenPipeError:
             pass
         try:
-            self.proc.stdout.read()
-            return self.proc.wait(timeout=timeout)
+            self.proc.communicate(timeout=timeout)
+            return self.proc.returncode
         except subprocess.TimeoutExpired:
             self.proc.kill()
             self.proc.wait()
@@ -224,7 +260,7 @@ def marker(producer: int, sequence: int) -> bytes:
 def log_file(log_root: Path) -> Path | None:
     logs = sorted(log_root.glob("*/stacks.jsonl"))
     if len(logs) > 1:
-        raise RuntimeError(f"more than one stacks.jsonl: {[p.parent.name for p in logs]}")
+        raise RuntimeError(f"more than one stacks.jsonl: {[log_path.parent.name for log_path in logs]}")
     return logs[0] if logs else None
 
 
@@ -334,7 +370,8 @@ def run_paced(source: bytes, engine: str, producers: int, steps: list[tuple[int,
     log_root.mkdir()
     team = []
     try:
-        team = [Producer(index, engine, source, root, log_root) for index in range(producers)]
+        for index in range(producers):  # appended one by one, so a failed start still cleans up
+            team.append(Producer(index, engine, source, root, log_root))
         for member in team:
             member.send("")  # ready: inspect.fs is loaded
         sequence = Counter()

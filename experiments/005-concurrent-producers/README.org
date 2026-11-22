@@ -86,3 +86,18 @@ and the test then has to pass".
 
 Calibration runs with =--runxfail= so the red on unpatched harden is
 visible; the patched copy must be detected as fixed and pass.
+
+** 2026-11-21 review fixes
+
+=/code-review high= on #18 found ten issues.  Two change what the setup
+entry says:
+- The xfail is no longer decided by grepping for =reposition-file= in
+  =log-write=: a fix in another shape (a helper word, an append-mode open in
+  =log-on=) would have stayed xfail and gone XPASS.  It is now xfail(strict)
+  only while =log-on= and =log-write= are word for word those of a pinned
+  unfixed ref (18ebe2d or 6af19f0).  Any change to either word makes the
+  test plain, which then has to pass; edits elsewhere in inspect.fs keep
+  the xfail.  Same intent as the coordinator's decision, a sturdier test.
+- The fix has one definition, =patched()= in =pbt/_005_helpers.py=; the
+  separate =FIX_SED= is gone and the calibration calls =patched()=.  The
+  sed form, for the harden PR, is in the PR body.

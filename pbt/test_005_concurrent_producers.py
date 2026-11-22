@@ -11,8 +11,9 @@ exactly once, with one hello per producer.
 
   test_concurrent_producers  the runner's inspect.fs (INSPECT_REF /
                              INSPECT_FS, default harden).  Strict xfail
-                             citing #17 when its log-write does not seek
-                             before each record, a plain test when it does
+                             citing #17 while its log-on and log-write are
+                             those of a pinned unfixed ref (18ebe2d,
+                             6af19f0), a plain test once either changes
   test_patched_copy          the runner's inspect.fs with the proposed fix
                              applied in a temp copy: must pass
   test_paced_tally           report only: totals per pinned ref
@@ -29,7 +30,6 @@ PBT_SEED=N is a fallback when --hypothesis-seed is absent.
 from __future__ import annotations
 
 import os
-import sys
 from collections import defaultdict
 
 import jsonschema
@@ -46,12 +46,13 @@ SCALE = 5 if CI else 1
 GATE_EXAMPLES = {"gforth": 200, "gforth-fast": 50, "gforth-itc": 50}
 UNCOORDINATED_EXAMPLES = 50 * SCALE
 
-SEED_FROM_CLI = any(arg.startswith("--hypothesis-seed") for arg in sys.argv)
-FALLBACK_SEED = None if SEED_FROM_CLI or not os.environ.get("PBT_SEED") else int(os.environ["PBT_SEED"])
-
-# the inspect.fs under test, read once: it decides the xfail at collection
+# the inspect.fs under test, read once: it decides the xfail at collection.
+# xfail(strict) only while its log-on and log-write are word for word those
+# of a pinned unfixed ref; any change there makes it a plain test (005 Log,
+# decision of 2026-11-21)
 SOURCE, PROVENANCE = helpers.current_source()
-SOURCE_IS_FIXED = helpers.seeks_per_write(SOURCE)
+UNFIXED_SOURCES = [helpers.current_source(ref)[0] for ref in (helpers.OLD_REF, helpers.HARDEN_REF)]
+SOURCE_IS_UNFIXED = helpers.known_unfixed(SOURCE, UNFIXED_SOURCES)
 
 TALLIES: dict = defaultdict(helpers.Tally)
 SCHEDULES: dict = defaultdict(int)
@@ -76,8 +77,22 @@ def schedules(draw):
 uncoordinated_counts = st.lists(st.integers(20, 200), min_size=2, max_size=4)
 
 
-def apply_seed(wrapped):
-    return seed(FALLBACK_SEED)(wrapped) if FALLBACK_SEED is not None else wrapped
+def seed_in_force(config) -> tuple[int | None, str]:
+    """(fallback seed to apply, text for the summary).  --hypothesis-seed always wins,
+    however it was passed (command line, PYTEST_ADDOPTS, ini); PBT_SEED applies only
+    without it."""
+    cli_seed = config.getoption("--hypothesis-seed", default=None)
+    if cli_seed is not None:
+        return None, f"{cli_seed} (--hypothesis-seed)"
+    if os.environ.get("PBT_SEED"):
+        return int(os.environ["PBT_SEED"]), f"{os.environ['PBT_SEED']} (PBT_SEED)"
+    return None, "random (pass SEED=N to fix it)"
+
+
+@pytest.fixture
+def apply_seed(request):
+    fallback, _ = seed_in_force(request.config)
+    return (lambda wrapped: seed(fallback)(wrapped)) if fallback is not None else (lambda wrapped: wrapped)
 
 
 def check(source: bytes, provenance: str, engine: str, schedule, validator) -> helpers.Tally:
@@ -109,8 +124,8 @@ def engine_params(xfail: bool):
     return [pytest.param(engine, id=engine, marks=marks) for engine in ENGINES]
 
 
-@pytest.mark.parametrize("engine", engine_params(xfail=not SOURCE_IS_FIXED))
-def test_concurrent_producers(engine):
+@pytest.mark.parametrize("engine", engine_params(xfail=SOURCE_IS_UNFIXED))
+def test_concurrent_producers(engine, apply_seed):
     validator = schema_validator()
 
     # the regression case: the shrunk failure on 18ebe2d and on harden 6af19f0
@@ -124,13 +139,15 @@ def test_concurrent_producers(engine):
 
 
 @pytest.mark.parametrize("engine", ENGINES)
-def test_patched_copy(engine):
-    if SOURCE_IS_FIXED:
-        pytest.skip("the inspect.fs under test already seeks before every write; "
-                    "test_concurrent_producers covers it")
+def test_patched_copy(engine, apply_seed):
+    if not SOURCE_IS_UNFIXED:
+        pytest.skip("the inspect.fs under test changed its write path; "
+                    "test_concurrent_producers runs on it as a plain test")
+    if not helpers.patchable(SOURCE):
+        pytest.skip("the fixture patches harden's log-write shape; this is 18ebe2d's one-liner")
     source = helpers.patched(SOURCE)
     provenance = f"{PROVENANCE} +seek-per-write"
-    PROVENANCES["patched"] = provenance
+    PROVENANCES["patched (under test)"] = provenance
     validator = schema_validator()
 
     @apply_seed
@@ -151,7 +168,7 @@ def pinned_sides():
     harden, harden_prov = helpers.current_source(helpers.HARDEN_REF)
     sides = [("18ebe2d", old, old_prov, helpers.OLD_REF),
              ("harden", harden, harden_prov, helpers.HARDEN_REF)]
-    if not helpers.seeks_per_write(harden):
+    if helpers.patchable(harden):
         sides.append(("patched", helpers.patched(harden), f"{harden_prov} +seek-per-write",
                       helpers.HARDEN_REF))
     return sides
@@ -166,15 +183,15 @@ def side(label):
     for candidate in pinned_sides():
         if candidate[0] == label:
             return candidate
-    pytest.skip(f"no {label} side (pinned harden already carries the fix)")
+    pytest.skip(f"no {label} side (the fix sed does not apply to pinned harden)")
 
 
 @pytest.mark.parametrize("engine", ENGINES)
 @pytest.mark.parametrize("label", SIDES)
-def test_paced_tally(label, engine):
+def test_paced_tally(label, engine, apply_seed):
     """Report only: the paced schedules against each pinned ref, all counted."""
     _, source, provenance, schema_ref = side(label)
-    PROVENANCES[label] = provenance
+    PROVENANCES[f"{label} (pinned)"] = provenance
     validator = schema_validator(schema_ref)
 
     @apply_seed
@@ -189,10 +206,10 @@ def test_paced_tally(label, engine):
 
 
 @pytest.mark.parametrize("label", SIDES)
-def test_uncoordinated_race(label):
+def test_uncoordinated_race(label, apply_seed):
     """Report only: no pacing; evidence about the race window, not pass or fail."""
     _, source, provenance, schema_ref = side(label)
-    PROVENANCES[label] = provenance
+    PROVENANCES[f"{label} (pinned)"] = provenance
     validator = schema_validator(schema_ref)
 
     @apply_seed
@@ -211,18 +228,14 @@ def session_summary(request):
     reporter = request.config.pluginmanager.get_plugin("terminalreporter")
     if reporter is None:
         return
-    cli_seed = request.config.getoption("--hypothesis-seed", default=None)
-    if cli_seed is not None:
-        seed_text = f"{cli_seed} (--hypothesis-seed)"
-    elif FALLBACK_SEED is not None:
-        seed_text = f"{FALLBACK_SEED} (PBT_SEED)"
-    else:
-        seed_text = "random (pass SEED=N to fix it)"
-    fixed = "seeks before every write" if SOURCE_IS_FIXED else "no seek per write: xfail #17"
+    _, seed_text = seed_in_force(request.config)
+    fixed = ("write path of a pinned unfixed ref: xfail #17" if SOURCE_IS_UNFIXED
+             else "write path changed: plain test")
+    fixed += f", seek per write {'yes' if helpers.seeks_per_write(SOURCE) else 'no'}"
     reporter.write_line(f"005: under test {PROVENANCE} ({fixed})  seed {seed_text}  "
                         f"profile {'ci' if CI else 'default'}")
     for label, provenance in sorted(PROVENANCES.items()):
-        reporter.write_line(f"005: side {label:10} {provenance}")
+        reporter.write_line(f"005: side {label:20} {provenance}")
     for (provenance, engine), count in sorted(SCHEDULES.items()):
         reporter.write_line(f"005: property {engine:11} {count:5} schedules  {provenance}  "
                             f"{TALLIES[(provenance, engine)].summary()}")

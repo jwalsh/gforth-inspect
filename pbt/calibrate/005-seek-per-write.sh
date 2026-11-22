@@ -14,11 +14,13 @@ uv_run="uv run --no-project --with hypothesis --with jsonschema --with pytest"
 cd "$pbt_dir" || exit 1
 
 git show "$ref:env/inspect.fs" > "$work/unpatched.fs" || exit 1
-fix_sed=$($uv_run python -c 'import _005_helpers; print(_005_helpers.FIX_SED)') || exit 1
-sed "$fix_sed" "$work/unpatched.fs" > "$work/patched.fs"
+# the same patch the tests use (_005_helpers.patched), so calibration covers it
+$uv_run python -c 'import sys, _005_helpers as helpers
+sys.stdout.buffer.write(helpers.patched(open(sys.argv[1], "rb").read()))' \
+    "$work/unpatched.fs" > "$work/patched.fs" || { echo "$name: the fix does not apply to $ref"; exit 1; }
 changed=$(diff "$work/unpatched.fs" "$work/patched.fs" | grep -c '^>')
 if [ "$changed" -ne 1 ]; then
-    echo "$name: the fix sed changed $changed lines of $ref:env/inspect.fs, expected exactly 1"
+    echo "$name: the fix changed $changed lines of $ref:env/inspect.fs, expected exactly 1"
     echo "  (if $ref already seeks before every write, retire this calibration)"; exit 1
 fi
 
@@ -27,7 +29,7 @@ if ! INSPECT_FS="$work/patched.fs" $uv_run pytest -q -p no:cacheprovider \
     echo "$name: the patched copy is red, so a red unpatched run proves nothing"
     grep -E '^(FAILED|E +AssertionError)' "$work/patched.txt" | cut -c1-240; exit 1
 fi
-if ! grep -q 'seeks before every write' "$work/patched.txt"; then
+if ! grep -q 'write path changed: plain test' "$work/patched.txt"; then
     echo "$name: the patched copy was not detected as fixed (xfail still applied?)"; exit 1
 fi
 
