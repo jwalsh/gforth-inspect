@@ -1,4 +1,4 @@
-\ gforth-inspect v0.1.1
+\ gforth-inspect v0.2.0
 \ stacks-log schema v1
 \ SPDX-License-Identifier: GPL-3.0-or-later
 \
@@ -18,16 +18,24 @@
 \             including n (nest) into colon words
 \   dbg+      dbg-fix, and print .s f.s and return words at every step
 \   log-id    ( c-addr u -- )  tag following snapshots with "id"; s" " log-id clears
-\   inspect-version  ( -- c-addr u )  "0.1.1"
+\   inspect-version  ( -- c-addr u )  "0.2.0"
 \ The hello record announces "contract":"1.1" (contract/stacks-log.org).
 \
-\ Works in gforth, gforth-fast and gforth-itc 0.7.3.  None of these words
+\ Works in gforth, gforth-fast and gforth-itc 0.7.3.  The words, their stack
+\ effects and output formats: contract/WORDS.org.  None of these words
 \ changes BASE or the float PRECISION.  Tests: test/, run with `gmake test'.
 
 \ ~~ (debugs.fs) and dbg (debug.fs) are already in the 0.7.3 image;
 \ REQUIRE-ing them again would redefine half the system.
 
-: inspect-version ( -- c-addr u ) s" 0.1.1" ;
+: inspect-version ( -- c-addr u ) s" 0.2.0" ;
+
+\ Supported: gforth 0.7.3 only (contract/WORDS.org).  Any other gforth gets
+\ a one-line notice on stderr and loads on as far as it can.
+version-string s" 0.7.3" compare [IF]
+    s" gforth-inspect: tested on gforth 0.7.3 only; this is gforth " stderr write-file throw
+    version-string stderr write-line throw
+[THEN]
 
 \ --- naming addresses ------------------------------------------------
 

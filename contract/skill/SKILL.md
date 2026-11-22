@@ -6,8 +6,9 @@ description: Use gforth-inspect to see a gforth 0.7.3 program's stacks and input
 # gforth-inspect
 
 This skill ships with each gforth-inspect release, next to `inspect.fs`,
-`stacks-log.schema.json`, `stacks-log.org`, `CONSUMERS.org` and
-`CONSUMER-AGENTS.md`. To install it, copy it to
+`stacks-log.schema.json`, `stacks-log.org`, `CONSUMERS.org`,
+`CONSUMER-AGENTS.md` and `WORDS.org` (every word, its stack effect and what
+it prints). To install it, copy it to
 `.claude/skills/gforth-inspect/SKILL.md` in the consuming project.
 
 ## Look, don't guess

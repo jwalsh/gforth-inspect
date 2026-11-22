@@ -1,0 +1,4 @@
+## stdout
+## stderr
+gforth-inspect: tested on gforth 0.7.3 only; this is gforth 9.9.9
+## exit 0

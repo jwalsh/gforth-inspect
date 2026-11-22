@@ -153,3 +153,7 @@ follows the same path, in one commit:
 | 2026-11-21 | =all-~~= snapshots fill =where= / =src=  | PATCH (values only) | #2  | 0.1.0      | none needed        |
 | 2026-11-21 | 1.1: snapshot =id= (optional), word =log-id=; =hello.contract=; consumers stop on a MAJOR or MINOR change | MINOR | #3 | 0.1.0 | checker, dashboard |
 | 2026-11-21 | =log-write= builds each record in memory, seeks to the end, and writes it as one whole line. Producers that take turns never lose a record. Concurrent producers are best-effort (rare, not impossible, interleaving); one producer per =GFORTH_INSPECT_LOG_DIR= is supported | PATCH (no schema change) | #17 | 0.1.0 | none needed |
+| 2026-11-21 | default log dir moves to =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/=; =GFORTH_INSPECT_LOG_DIR= overrides it | PATCH (location; no schema change) |  | 0.1.0 | set =GFORTH_INSPECT_LOG_DIR=, or read the new default |
+| 2026-11-21 | records are written in decimal whatever =BASE= is (18ebe2d wrote =t= and the cells in the current BASE) | PATCH (values only) | #38 | 0.1.0 | none needed |
+| 2026-11-22 | =dbg= of a DEFER or DOES> word after =dbg-fix=; the log is unchanged | none (words only) | #39 | 0.1.1 | none needed |
+| 2026-11-22 | =WORDS.org= ships with each release; a notice on stderr when gforth is not 0.7.3; the log is unchanged | none (words only) | #45 | 0.2.0 | none needed |

@@ -19,7 +19,7 @@ is_draft=$(gh release view "$tag" -R "$repo" --json isDraft -q '.isDraft')
 [ "$is_draft" = false ] || { echo "release $tag is a draft" >&2; exit 1; }
 assets=$(gh release view "$tag" -R "$repo" --json assets -q '.assets[].name')
 for required in inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org \
-                CONSUMER-AGENTS.md SKILL.md SHA256SUMS; do
+                CONSUMER-AGENTS.md SKILL.md WORDS.org SHA256SUMS; do
     grep -qxF "$required" <<<"$assets" || { echo "release $tag has no $required" >&2; exit 1; }
 done
 scratch=$(mktemp -d); trap 'rm -r "$scratch"' EXIT
@@ -41,8 +41,9 @@ if not install or not usage or install.start() > usage.start():
 section = f"""* Install
 
 #+begin_src sh
-gh release download {tag} -R {repo} -D forth-env/
-(cd forth-env && shasum -a 256 -c SHA256SUMS) && gforth forth-env/inspect.fs
+new=$(mktemp -d) && gh release download {tag} -R {repo} -D "$new"
+(cd "$new" && shasum -a 256 -c SHA256SUMS) && mkdir -p forth-env && cp "$new"/* forth-env/
+gforth forth-env/inspect.fs
 #+end_src
 
 =inspect-version type= prints {tag[1:]}. Within one MAJOR version the words
