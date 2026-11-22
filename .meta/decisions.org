@@ -45,11 +45,12 @@ D = Downstream (course session), H (D) = H via D.
 | D-37 | the version check is compound: record =v=, =hello.contract=, =hello.inspect=, schema =$schema= / =x-version= / =x-contract=, the =GET /stacks= API spec; consumers check them together | H | D-11's single-field check | exp 009 H5 (PR #30) |
 | D-38 | invariant I-1, never changes: every log line begins ={"v":=<integer>=,=; =v= is never renamed, moved, retyped or dropped; consumers check the prefix first and fail early | H | | exp 009 H6 (PR #30) |
 | D-39 | =.meta/= gets no =.llm.org= sidecars and stays compressed | H | | M-1; ablation (below) |
+| D-40 | while GitHub Actions billing stops every job: no required status check on =main=, the =verify= workflow disabled, no CI badge in the README; local =gmake verify= on the PR head, pasted into the PR body, is the gate | H | D-21's required =verify= check | =.github/branch-protection.json= (=required_status_checks: null=); [[file:../docs/RELEASING.org::*Mainline protection][RELEASING.org::*Mainline protection]] |
 
 | open | blocker                                                                                                 | owner |
 |------+---------------------------------------------------------------------------------------------------------+-------|
 | D-25 | absolute paths in the history of =lldb=, =model=, =harden=, and a private repo name in =main='s history (=experiment-process.org= before f42d211): rewrite history, or leave those refs unpublished | H     |
-| #13  | the =harden= PR: has the Makefile standard (D-22), the issue #17 concurrent-producer fix, its own review (D-16); required =verify= check cannot run (GitHub Actions billing)                                | H     |
+| #13  | the =harden= PR: has the Makefile standard (D-22), the issue #17 concurrent-producer fix, its own review (D-16); needs a local =gmake verify= on its head (D-40)                                | H     |
 
 | re   | kind  | claim                                                                                   |
 |------+-------+-----------------------------------------------------------------------------------------|
