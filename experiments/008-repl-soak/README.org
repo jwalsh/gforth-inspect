@@ -353,3 +353,25 @@ covers violations by the producer). The running harness is not restarted,
 because that would end s0, the session the gate needs alive for the whole
 run. The final report states the status line's G6 1 together with this
 ruling; any further G6 is judged on its own.
+
+** 2026-11-22 coordinator review at 3.81 h counted (19:40Z)
+
+The harness agent has finished; the coordinator watches the run from here.
+
+- *G3 s70 (corpus 12-long-line, depth 1000): harness fault, ruled.* The
+  log was right. A direct reproduction of 1000 cells gives a record holding
+  0..999 bottom first, matching =depth= and =0 pick= / =999 pick=. The G3
+  oracle compared against =.s=, which in gforth 0.7.3 prints only the top
+  =maxdepth-.s= (9) items, so any stack deeper than 9 cannot be judged by
+  =.s=. This counts as a harness violation, not an inspector one. Fix for any
+  rerun: the oracle uses =depth= and =pick=, never =.s=, for G3.
+- *monitor 40: host sleep, not the inspector.* The events fall in four
+  bursts, at 16:30, 16:47, 17:03/04 and 17:16 UTC, each hitting all 10 live
+  sessions at once. powerd logged "Entering Sleep state due to 'Maintenance
+  Sleep'" at 16:48 UTC. The clock stopped on the gaps (2 stops, 3.81 h counted
+  of 4.95 h wall), as gate item 2 requires. These count as environment, not G1–G8.
+- *2 hung sessions (s37, s51, both gforth-fast):* not yet explained. s37's
+  hang overlaps the 17:16 stall; s51 (18:10) does not. To look at after
+  the run, from their per-xrid directories.
+- *External writes 2:* the course's own writes to the real log, as expected
+  (content-based G4, coordinator ruling earlier today).
