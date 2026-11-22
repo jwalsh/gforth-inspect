@@ -15,7 +15,6 @@
 
 : tour ( -- )
     cr ." gforth-inspect " inspect-version type ."   (log contract " contract-version type ." )"
-    cr ." The pane on the right follows the JSON log."
     cr
     cr ." 1  every stack:          1 2 3  1.5e  .stacks"
     cr ." 2  inside a definition:  10 20 avg ."

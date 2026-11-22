@@ -3,8 +3,10 @@
 
 COLS ?= 110
 ROWS ?= 34
+TOUR_SESSION ?= gforth-inspect-tour
+export TOUR_SESSION
 
-.PHONY: help tour stop watch record
+.PHONY: help tour stop watch record tour.cast
 .DELETE_ON_ERROR:
 
 help: ## Show this help
@@ -14,12 +16,12 @@ tour: ## Start the detached tmux tour (gforth | log through jq); attach yourself
 	@./tour-tmux.sh
 
 stop: ## Remove the tmux tour session
-	@tmux kill-session -t =gforth-inspect-tour 2>/dev/null && echo stopped || echo "no tour session"
+	@tmux kill-session -t =$(TOUR_SESSION) 2>/dev/null && echo stopped || echo "no tour session"
 
 watch: ## Run the self-driving demo in this terminal
 	@./record.sh
 
-record: tour.gif ## Record tour.cast (asciicast v2) and render tour.gif with agg
+record: tour.gif ## Re-record tour.cast (always: the inspector it shows is not a prerequisite) and render tour.gif
 
 tour.cast: record.sh tour.fs sandbox.sh cast.py
 	@# cast.py, not asciinema rec: asciinema 2.4 crashes on exit when stdin is a pipe

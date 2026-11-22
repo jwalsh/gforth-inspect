@@ -3,8 +3,8 @@
 #   left:  gforth with inspect.fs and tour.fs loaded (the REPL is the pane's
 #          command, never typed into)
 #   right: the JSON log, followed through jq
-# Attach with:  tmux attach -t gforth-inspect-tour
-# Remove with:  tmux kill-session -t gforth-inspect-tour
+# Attach with:  tmux attach -t gforth-inspect-tour   (or $TOUR_SESSION)
+# Remove with:  gmake -C demo stop
 # It never attaches or switches your client, and never touches another session.
 set -euo pipefail
 
@@ -15,13 +15,13 @@ if tmux has-session -t "=$session" 2>/dev/null; then
 fi
 
 box=$("$(dirname "$0")/sandbox.sh")
-env_vars="HOME=$box/home GFORTH_INSPECT_LOG_DIR=$box/log"
 filter='{e:.event, w:.where, d:.data, f:.float, id:.id}'
 
-tmux new-session -d -s "$session" -x 200 -y 50 -c "$box" \
-    "env $env_vars gforth inspect.fs tour.fs; echo; echo 'gforth exited; any key closes'; read -r -n 1"
-tmux split-window -h -t "$session" -c "$box" -l 70 \
-    "tail -n +1 -F log/stacks.jsonl | jq -c --unbuffered '$filter'"
-tmux select-pane -t "$session:0.0"
+# pane commands run under bash explicitly: tmux would use the user's shell
+repl_pane=$(tmux new-session -d -P -F '#{pane_id}' -s "$session" -x 200 -y 50 -c "$box" \
+    "bash -c 'HOME=\"$box/home\" GFORTH_INSPECT_LOG_DIR=\"$box/log\" gforth inspect.fs tour.fs; echo; read -r -n 1 -p \"gforth exited; any key closes \"'")
+tmux split-window -h -t "$repl_pane" -c "$box" -l 70 \
+    "bash -c 'tail -n +1 -F log/stacks.jsonl | jq -c --unbuffered \"$filter\"'"
+tmux select-pane -t "$repl_pane"
 echo "started: tmux attach -t $session"
 echo "sandbox: $box"
