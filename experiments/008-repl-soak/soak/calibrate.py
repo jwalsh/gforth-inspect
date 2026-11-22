@@ -144,17 +144,19 @@ class Calibration:
     def g2_unfixed_shared(self):
         def one(variant: str):
             run = self.run(f"g2-{variant}")
-            first = self.session(run, log_mode="shared", variant=variant)
-            second = self.session(run, log_mode="shared", variant=variant, engine="gforth-fast")
+            source = self.base.unfixed_source if variant == "unfixed" else None
+            kind = "custom" if source else variant
+            first = self.session(run, log_mode="shared", variant=kind, custom_inspect=source)
+            second = self.session(run, log_mode="shared", variant=kind, custom_inspect=source, engine="gforth-fast")
             for _ in range(6):
                 self.probe(first)
                 self.probe(second)
             first.retire("calibration")
             second.retire("calibration")
             return count(run, "G2"), examples(run, "G2")
-        red, red_examples = one("older")
+        red, red_examples = one("unfixed")
         green, _ = one("installed")
-        return red, green, {"plant": f"older ref {self.base.older_commit[:7]} (pre-#17 fix), two sessions on one dir; "
+        return red, green, {"plant": f"unfixed {self.base.unfixed_commit[:7]} (pre-#17 fix), two sessions on one dir; "
                                      "control: the candidate, same two sessions", "red_examples": red_examples}
 
     def g7_absolute(self):
@@ -299,6 +301,8 @@ def main(only: str | None = None) -> int:
     print(f"{'PASS' if not real else 'FAIL'}  real guarded files unchanged during calibration: {len(real)} changes")
     out = config.state_root() / f"calibration-{calibration.stamp}.json"
     out.write_text(json.dumps({"utc": utc(), "candidate_blob": calibration.base.candidate_blob,
+                               "candidate_release": calibration.base.candidate_release,
+                               "unfixed_commit": calibration.base.unfixed_commit,
                                "candidate_commit": calibration.base.candidate_commit,
                                "older_commit": calibration.base.older_commit, "older_blob": calibration.base.older_blob,
                                "results": results}, indent=1))

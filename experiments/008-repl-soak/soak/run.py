@@ -145,23 +145,50 @@ class Run:
         self.dist = self.run_dir / "assets" / "dist"
         saved = json.loads((self.run_dir / "run.json").read_text()) if (self.run_dir / "run.json").exists() else None
         if saved and self.dist.exists():
-            # a resumed run keeps the assets it started with: the candidate's
-            # worktree may have moved since (its prose assets pin the commit)
+            # a resumed run keeps the assets it started with: a worktree may
+            # have moved since (its prose assets pin the commit)
             provenance = saved["assets"]
             now = {path.name: assets.blob_of(path) for path in self.dist.iterdir()}
             if now != provenance["assets"]:
                 raise SystemExit("resume: the run's dist/ is not the one it started with")
+        elif "release" in candidate.options:
+            provenance = assets.download(candidate.options["release"], repo.path, self.candidate_blob, self.dist)
         else:
             provenance = assets.build(candidate.path, self.candidate_blob, self.dist)
         self.candidate_commit = provenance["commit"]
+        self.candidate_release = provenance.get("release")
         self.candidate_source = (self.dist / "inspect.fs").read_bytes()   # the same blob as the commit's
-        older_ref = repo.options["older"]
-        self.older_commit = assets.git(repo.path, "rev-parse", older_ref).strip()
-        self.older_source = subprocess.run(["git", "-C", str(repo.path), "show", f"{older_ref}:env/inspect.fs"],
-                                           check=True, capture_output=True).stdout
+        # the older ref: a published release when the manifest names one, so
+        # the mid-run upgrade is release to release; else a commit
+        older = next((entry for entry in entries if entry.kind == "older"), None)
+        self.older_dist = None
+        if older and "release" in older.options:
+            self.older_dist = self.run_dir / "assets" / "older"
+            older_saved = saved.get("older_assets") if saved else None
+            if older_saved and self.older_dist.exists():
+                older_provenance = older_saved
+            else:
+                older_provenance = assets.download(older.options["release"], repo.path, older.options["blob"],
+                                                   self.older_dist)
+            self.older_provenance = older_provenance
+            self.older_commit = older_provenance["commit"]
+            self.older_source = (self.older_dist / "inspect.fs").read_bytes()
+        else:
+            older_ref = repo.options["older"]
+            self.older_provenance = {"ref": older_ref}
+            self.older_commit = assets.git(repo.path, "rev-parse", older_ref).strip()
+            self.older_source = subprocess.run(["git", "-C", str(repo.path), "show", f"{older_ref}:env/inspect.fs"],
+                                               check=True, capture_output=True).stdout
         self.older_blob = assets.blob_of_bytes(self.older_source)
+        # the unfixed producer the G2 calibration plants (gate 1 names it)
+        unfixed_ref = repo.options.get("unfixed", repo.options.get("older"))
+        self.unfixed_commit = assets.git(repo.path, "rev-parse", unfixed_ref).strip()
+        self.unfixed_source = subprocess.run(["git", "-C", str(repo.path), "show", f"{unfixed_ref}:env/inspect.fs"],
+                                             check=True, capture_output=True).stdout
+        self.unfixed_blob = assets.blob_of_bytes(self.unfixed_source)
         self.inspect_versions = {self.candidate_blob: assets.version_of(self.candidate_source),
-                                 self.older_blob: assets.version_of(self.older_source)}
+                                 self.older_blob: assets.version_of(self.older_source),
+                                 self.unfixed_blob: assets.version_of(self.unfixed_source)}
         self.validator = checks.validator_for(self.dist / "stacks-log.schema.json")
         schema = json.loads((self.dist / "stacks-log.schema.json").read_text())
         if schema.get("x-contract") != config.CONTRACT_EXPECTED:
@@ -176,7 +203,10 @@ class Run:
         self.units = usable
         self.prepared = {
             "candidate_commit": self.candidate_commit, "candidate_blob": self.candidate_blob,
+            "candidate_release": self.candidate_release,
             "older_commit": self.older_commit, "older_blob": self.older_blob,
+            "older_assets": self.older_provenance if self.older_dist else None,
+            "unfixed_commit": self.unfixed_commit, "unfixed_blob": self.unfixed_blob,
             "versions": self.inspect_versions, "assets": provenance,
             "units": len(usable), "units_by_target": _count(unit.target for unit in usable),
             "trees": len({unit.tree for unit in usable}),
@@ -196,7 +226,7 @@ class Run:
             self.event(f"G8 differential: {self.g8['summary']}")
 
     PREPARED = ("dist", "candidate_blob", "candidate_commit", "candidate_source", "older_commit", "older_source",
-                "older_blob", "inspect_versions", "validator", "pool", "units", "prepared")
+                "older_blob", "older_dist", "candidate_release", "unfixed_commit", "unfixed_source", "unfixed_blob", "inspect_versions", "validator", "pool", "units", "prepared")
 
     def adopt(self, other: "Run") -> None:
         """Share another run's prepared assets, pool and units (calibration)."""
@@ -246,7 +276,9 @@ class Run:
         project = Path(tempfile.mkdtemp(dir=scratch))
         installed = assets.install(self.dist, project)
         installed_bytes = (project / "env" / "inspect.fs").read_bytes()
-        worktree_bytes = (candidate.path / "env" / "inspect.fs").read_bytes()
+        # the file at the commit the assets were built from (the tag's, for a release)
+        worktree_bytes = subprocess.run(["git", "-C", str(repo.path), "show", f"{self.candidate_commit}:env/inspect.fs"],
+                                        check=True, capture_output=True).stdout
         for rel, program in sorted(programs.items()):
             for engine in config.ENGINES:
                 runs += 1

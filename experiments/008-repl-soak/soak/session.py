@@ -173,9 +173,12 @@ class Session:
         sandbox = self.sandbox
         (sandbox / "tmp").mkdir(exist_ok=True)
         plan = []
-        install = assets.install(self.run.dist, sandbox)
+        release_upgrade = self.variant == "older" and self.run.older_dist is not None
+        first = self.run.older_dist if release_upgrade else self.run.dist
+        want = self.run.older_blob if release_upgrade else self.run.candidate_blob
+        install = assets.install(first, sandbox)
         self.install = install
-        if not (install["sha256sums_ok"] and install["skill_ok"] and install["inspect_blob"] == self.run.candidate_blob):
+        if not (install["sha256sums_ok"] and install["skill_ok"] and install["inspect_blob"] == want):
             self.run.report(checks.violation("G8", self.xrid, f"install check failed: {json.dumps(install)[:300]}"))
         if self.variant == "installed":
             plan.append({"path": "env/inspect.fs", "blob": self.run.candidate_blob, "ref": self.run.candidate_commit})
@@ -187,6 +190,11 @@ class Session:
             (sandbox / "custom" / "inspect.fs").write_bytes(self.custom_inspect)
             plan.append({"path": "custom/inspect.fs", "blob": assets.blob_of_bytes(self.custom_inspect),
                          "ref": "planted"})
+        elif release_upgrade:
+            # release to release: the older release installed in env/, and at
+            # the upgrade the candidate's installed over it, as a consumer does
+            plan.append({"path": "env/inspect.fs", "blob": self.run.older_blob, "ref": self.run.older_commit})
+            plan.append({"path": "env/inspect.fs", "blob": self.run.candidate_blob, "ref": self.run.candidate_commit})
         elif self.variant == "older":
             (sandbox / "env-old").mkdir()
             (sandbox / "env-old" / "inspect.fs").write_bytes(self.run.older_source)
@@ -376,6 +384,11 @@ class Session:
         """The mid-run upgrade (gate 3): log-off, include the candidate, log-on."""
         before = len(self._read_log())
         self.type("log-off", "log-off")
+        if self.run.older_dist is not None:
+            install = assets.install(self.run.dist, self.sandbox)   # CONSUMER-AGENTS.md "A new version", step 1
+            self.upgrade_install = install
+            if not (install["sha256sums_ok"] and install["skill_ok"] and install["inspect_blob"] == self.run.candidate_blob):
+                self.run.report(checks.violation("G8", self.xrid, f"upgrade install failed: {json.dumps(install)[:300]}"))
         self.load_inspect(self.plan[1])
         self.type(f's" {self.xrid}" log-id', "log-id")
         self.type("log-on", "log-on")
@@ -396,6 +409,7 @@ class Session:
             "jq_last": jq_last[0].decode() if jq_last else None,
             "checker": checker,
             "hellos_in_log": sum(1 for line in lines if b'"event":"hello"' in line),
+            "install": getattr(self, "upgrade_install", None),
         }
         return evidence
 

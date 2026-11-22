@@ -100,3 +100,33 @@ def version_of(source: bytes) -> tuple[str | None, str | None]:
     contract = re.search(rb': contract-version \( -- c-addr u \) s" ([^"]*)" ;', source)
     return (inspect.group(1).decode() if inspect else None,
             contract.group(1).decode() if contract else None)
+
+
+def download(tag: str, repo: Path, pinned_blob: str, dest: Path, github: str = "jwalsh/gforth-inspect") -> dict:
+    """A published release, fetched as CONSUMER-AGENTS.md says: `gh release
+    download` into a directory, then `shasum -a 256 -c SHA256SUMS` there."""
+    if dest.exists():
+        shutil.rmtree(dest)
+    dest.mkdir(parents=True)
+    subprocess.run(["gh", "release", "download", tag, "-R", github, "-D", str(dest)], check=True,
+                   capture_output=True, text=True)
+    check = subprocess.run(["shasum", "-a", "256", "-c", "SHA256SUMS"], cwd=dest, capture_output=True, text=True)
+    names = sorted(path.name for path in dest.iterdir())
+    if names != sorted(config.ASSET_NAMES + ("SHA256SUMS",)):
+        raise RuntimeError(f"release {tag} is not exactly the seven assets: {names}")
+    if check.returncode != 0:
+        raise RuntimeError(f"release {tag}: SHA256SUMS does not check: {check.stdout} {check.stderr}")
+    blob = blob_of(dest / "inspect.fs")
+    if blob != pinned_blob:
+        raise RuntimeError(f"release {tag}: inspect.fs is blob {blob[:12]}, pinned {pinned_blob[:12]}")
+    commit = git(repo, "rev-parse", f"{tag}^{{commit}}").strip()
+    tag_blob = git(repo, "rev-parse", f"{tag}:env/inspect.fs").strip()
+    tag_schema = git(repo, "rev-parse", f"{tag}:contract/stacks-log.schema.json").strip()
+    return {
+        "release": tag, "commit": commit, "inspect_blob": blob,
+        "inspect_is_tag_file": tag_blob == blob,
+        "schema_is_tag_file": tag_schema == blob_of(dest / "stacks-log.schema.json"),
+        "sha256sums_check": check.stdout.strip().splitlines(),
+        "assets": {name: blob_of(dest / name) for name in names},
+        "sha256sums": sha256(dest / "SHA256SUMS"),
+    }

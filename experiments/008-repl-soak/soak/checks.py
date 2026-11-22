@@ -341,7 +341,8 @@ def xref(run_dir: Path, pool, validator, live_xrids: set, cache: dict | None = N
             match = re.search(rb'"id":"((?:[^"\\]|\\.)*)"', raw)
             if match:
                 seen_ids.setdefault(match.group(1).decode("utf-8", "replace"), set()).add(xrid)
-        for plan in call["inspect_plan"]:
+        last_by_path = {plan["path"]: plan for plan in call["inspect_plan"]}   # an upgrade reinstalls a path
+        for plan in last_by_path.values():
             path = Path(call["sandbox"]) / plan["path"]
             if path.exists() and assets.blob_of(path) != plan["blob"]:
                 violations.append(violation("G6", xrid, f"{plan['path']} in the sandbox is not blob {plan['blob'][:12]}"))

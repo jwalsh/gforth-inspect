@@ -218,3 +218,47 @@ Seen while calibrating: the G6 blob plant and its control wrote the same
 =hello= but for =t= (both blobs announce =inspect= 0.1.0, =contract= 1.1).
 The log alone cannot say which blob wrote it; G6's blob trace rests on the
 manifest and the hash taken as the =include= is typed.
+
+** 2026-11-22 smoke, 1 hour (agent)
+
+=smoke-1=, 12:58:31Z to 13:58:40Z, harness at =0e0c4d4=, on the candidate
+as it then stood: blob =af95cdf354af= built at =476066c=, older ref
+=0842eda= for the upgrade session.  10 slots.
+
+| what                                  | result                                                           |
+|---------------------------------------+------------------------------------------------------------------|
+| counted                               | 1.00 h of 1.01 h wall; no clock stop                             |
+| REPLs live                            | 10 at every counted tick; 24 sessions, 24 ended clean, none hung |
+| engines, session-hours                | gforth 29%, gforth-fast 39%, gforth-itc 32%                      |
+| variants                              | installed 17, source 6, older-then-upgraded 1; XDG 12, env 12    |
+| lines typed                           | 16,118, of them 2,947 =include=s of 1,001 units, 195 errors      |
+| records                               | 5,596: 25 =hello=, 5,571 snapshots, each paired with its answer  |
+| upgrade                               | at 0.50 h, between blocks; mock served the new =hello=, jq's last object was a =hello=, the checker answered ={"event":"hello"}= |
+| leak guard                            | 7 checks (start, every 10 min, end), no change                   |
+| xref                                  | at 1.0 h and at the end: 24 sessions, 24 logs, 0 violations      |
+| G1 G2 G3 G4 G5 G6 G7 G8, monitor      | 0 each                                                           |
+| =.stacks= cost, loaded REPL, µs off/on | gforth 9.8 / 31.1, gforth-fast 15.3 / 50.5, gforth-itc 11.6 / 43.8 |
+
+The smoke checks the harness, not the release: the candidate it ran on is
+replaced below.
+
+Seen in a 6-minute dev run before the smoke, and fixed in the harness
+(=0e0c4d4=): the upgrade session included the candidate inside a block's
+=marker=, and the block's forget took it away again.  The older copy's
+words came back with its logging off: =.stacks= went on printing and
+nothing reached the log, with no record to say so.  G2 caught it (records
+missing).  Not a contract break, but a user who reloads =inspect.fs=
+after a =marker= and then forgets it has the same silent gap.
+
+** 2026-11-22 candidate changed to v0.1.1 (agent, owner's instruction)
+
+Before the gate freezes: the owner bumps the release to fix #39 (=dbg= of
+=DEFER= / =DOES>= after =dbg-fix=, PR #43).  The candidate becomes the v0.1.1
+release, =inspect.fs= blob =34ee47da9d09=, with no change to the log format.
+The older ref and the mid-run upgrade's start point become the v0.1.0
+prerelease (blob =af95cdf354af=, tag commit =7a58bd8=), so the upgrade is
+release to release: v0.1.0's seven assets installed in the session's
+=env/=, then v0.1.1's installed over them, each by =gh release download=
+and =shasum -a 256 -c SHA256SUMS=.  The G2 calibration keeps =0842eda=,
+the unfixed producer gate 1 names.  The counted 20 hours start only once
+v0.1.1 is published; calibration is run again on it first.
