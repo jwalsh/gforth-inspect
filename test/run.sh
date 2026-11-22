@@ -44,6 +44,13 @@ trap 'rm -rf "$WORK"' EXIT
 
 directive() { sed -n "s/^\\\\ test: $2 *//p" "$1"; }
 
+# A 10 s limit per run: GNU timeout, Homebrew's gtimeout, or perl's alarm
+# (stock macOS has no timeout(1); perl is needed for test/mask.pl anyway).
+# A run killed by the limit exits 124 (timeout) or 142 (perl's SIGALRM).
+if command -v timeout >/dev/null; then LIMIT=(timeout 10)
+elif command -v gtimeout >/dev/null; then LIMIT=(gtimeout 10)
+else LIMIT=(perl -e 'alarm shift; exec @ARGV or die "exec $ARGV[0]: $!\n"' 10); fi
+
 pass=0 fail=0 skip=0
 bump() { local v=$1_${2//-/_}; eval "$v=\$(( \${$v:-0} + 1 ))"; }
 count() { local v=$1_${2//-/_}; eval "echo \${$v:-0}"; }
@@ -72,7 +79,7 @@ run_one() { # engine test -> writes $tmp/actual, returns 0 if output usable
   keys=$(directive "$t" stdin)
   # shellcheck disable=SC2059
   printf -- "$keys" > "$tmp/stdin"
-  env "${unsets[@]}" "${clean[@]}" timeout 10 "${cmd[@]}" \
+  env "${unsets[@]}" "${clean[@]}" "${LIMIT[@]}" "${cmd[@]}" \
       < "$tmp/stdin" > "$tmp/stdout" 2> "$tmp/stderr"
   local rc=$?
   {

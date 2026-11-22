@@ -38,7 +38,7 @@ help: ## Show this help
 DEP_PROBES := "gforth --version" "gforth-fast --version" "gforth-itc --version" \
               "gforth -e 's\" fpick\" find-name 0= throw bye'" \
               "uv --version" "jq --version" "git --version" \
-              "python3 --version" "perl -v" "shasum -a 256 /dev/null" "timeout 5 true"
+              "python3 --version" "perl -v" "shasum -a 256 /dev/null"
 deps: ## Run every tool and print what it answered; a missing one fails
 	@for probe in $(DEP_PROBES); do \
 	  if output=$$(eval "$$probe" 2>&1 </dev/null); then \

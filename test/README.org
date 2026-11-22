@@ -15,7 +15,8 @@ gmake release-check              # verify, release hygiene, dist/ + SHA256SUMS
 #+end_src
 
 Needs stock gforth 0.7.3 (=gforth=, =gforth-fast=, =gforth-itc=), GNU make,
-bash, perl, python3, =timeout=. With =uv= the records are also checked by
+bash, perl, python3 (=timeout= or =gtimeout= if present, else perl's
+=alarm= gives the 10 s limit). With =uv= the records are also checked by
 the =jsonschema= package; without it only by the built-in validator.
 
 =gmake test= is three steps, each of which fails the build:
