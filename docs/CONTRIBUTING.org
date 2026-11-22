@@ -33,14 +33,15 @@ every commit and every PR. It runs, in order:
 2. =scripts/check-guides.sh --calibrate= and then =scripts/check-guides.sh=:
    the guides exist, their links resolve, and README.org stays end-user only
 3. =gmake test=: the goldens in =gforth=, =gforth-fast= and =gforth-itc=,
-   with every record validated against the schema
+   with every record validated against the schema; coverage, known limits
+   and the dated log are in [[file:../test/README.org][test/README.org]]
 4. =gmake -C pbt check=, then =gmake -C pbt calibrate=
 
 CI runs this baseline on every pull request and every push to =main=, from
 =.github/workflows/verify.yml= on a macOS runner with gforth 0.7.3 from
-Homebrew. Until the root Makefile lands, CI runs only the parts that exist:
-the privacy scan, =scripts/check-guides.sh= and the =pbt/= checks, without
-=gmake test=. Its check, =verify=, is required before a PR can merge
+Homebrew. When the root Makefile is present, CI runs =gmake verify=;
+without it, only the privacy scan, =scripts/check-guides.sh= and the
+=pbt/= checks. Its check, =verify=, is required before a PR can merge
 (RELEASING.org, "Mainline protection"). A green run there does not replace
 running =gmake verify= yourself: the PR body records your summary line.
 

@@ -4,26 +4,40 @@
 # placeholder: before the first release it shows only what works (main), and
 # after each release this script writes the real tag, read back from GitHub.
 #
-# Refuses unless the tag exists as a published release with the expected
-# assets, so the README cannot point at something that is not there.
+# Refuses unless the tag exists as a published (not draft) release with every
+# asset of RELEASING.org's table, and every name SHA256SUMS lists, so the
+# README cannot point at something that is not there.
 # Commit the result as:  docs(readme): install vX.Y.Z [skip ci]
 set -euo pipefail
 
 tag=${1:?usage: readme-release.sh vX.Y.Z}
-case $tag in v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "not a version tag: $tag" >&2; exit 2 ;; esac
+[[ $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "not a version tag: $tag" >&2; exit 2; }
 repo=jwalsh/gforth-inspect
 top=$(git rev-parse --show-toplevel)
 
+is_draft=$(gh release view "$tag" -R "$repo" --json isDraft -q '.isDraft')
+[ "$is_draft" = false ] || { echo "release $tag is a draft" >&2; exit 1; }
 assets=$(gh release view "$tag" -R "$repo" --json assets -q '.assets[].name')
-for required in inspect.fs stacks-log.schema.json SHA256SUMS; do
-    grep -qx "$required" <<<"$assets" || { echo "release $tag has no $required" >&2; exit 1; }
+for required in inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org \
+                CONSUMER-AGENTS.md SKILL.md SHA256SUMS; do
+    grep -qxF "$required" <<<"$assets" || { echo "release $tag has no $required" >&2; exit 1; }
 done
+scratch=$(mktemp -d); trap 'rm -r "$scratch"' EXIT
+gh release download "$tag" -R "$repo" -D "$scratch" -p SHA256SUMS -p inspect.fs
+while read -r _ listed_name; do
+    grep -qxF "$listed_name" <<<"$assets" || { echo "release $tag: SHA256SUMS lists $listed_name, not an asset" >&2; exit 1; }
+done < "$scratch/SHA256SUMS"
+header_version=$(sed -n 's/^\\ gforth-inspect v//p' "$scratch/inspect.fs")
+[ "v$header_version" = "$tag" ] || { echo "release $tag: inspect.fs says v$header_version" >&2; exit 1; }
 
 python3 -I - "$top/README.org" "$tag" "$repo" <<'PY'
-import pathlib, sys
+import pathlib, re, sys
 path, tag, repo = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3]
 text = path.read_text()
-start, end = text.index("* Install\n"), text.index("* Usage\n")
+install = re.search(r"^\* Install\n", text, re.M)
+usage = re.search(r"^\* Usage\n", text, re.M)
+if not install or not usage or install.start() > usage.start():
+    sys.exit("readme-release: README.org needs a top-level * Install heading before * Usage")
 section = f"""* Install
 
 #+begin_src sh
@@ -35,6 +49,6 @@ gh release download {tag} -R {repo} -D forth-env/
 and the log format do not break.
 
 """
-path.write_text(text[:start] + section + text[end:])
+path.write_text(text[:install.start()] + section + text[usage.start():])
 PY
 echo "README.org: Install now names $tag"
