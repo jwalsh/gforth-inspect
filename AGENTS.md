@@ -6,7 +6,7 @@ people directing them. They come in addition to
 three engines, and no private data.
 
 Agents working for a project that *consumes* the inspector read
-[CONSUMER-AGENTS.md](CONSUMER-AGENTS.md) instead. How producer and
+[contract/CONSUMER-AGENTS.md](contract/CONSUMER-AGENTS.md) instead. How producer and
 consumers change things together is in [COLLABORATION.org](COLLABORATION.org).
 
 ## Start every piece of work in the open
