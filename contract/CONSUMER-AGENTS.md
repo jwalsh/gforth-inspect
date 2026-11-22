@@ -7,6 +7,12 @@ COLLABORATION.org's "Registry" section. A
 "consumer" is any project that loads `inspect.fs` or reads `stacks.jsonl`.
 The reasoning behind each rule is in [COLLABORATION.org](../COLLABORATION.org).
 
+## Install the skill
+
+Each release ships `SKILL.md`. Copy it to
+`.claude/skills/gforth-inspect/SKILL.md` in your project; it covers using the
+inspector and reading the log. This file covers working with the producer.
+
 ## Reach the producer
 
 1. **If the producer coordinator is running**, message it directly. Its
