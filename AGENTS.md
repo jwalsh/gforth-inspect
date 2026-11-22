@@ -68,7 +68,9 @@ their own PRs.
 
 ### What `/code-review` checks here
 
-`/code-review` reads this file, not REVIEW.md. On top of correctness, flag:
+`/code-review` counts rules only from CLAUDE.md files; `.claude/CLAUDE.md` imports
+this file (`@../AGENTS.md`), so these rules reach it. REVIEW.md does not. On top
+of correctness, flag:
 
 | fault | rule |
 |---|---|

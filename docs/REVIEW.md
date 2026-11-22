@@ -81,8 +81,8 @@ change must not break.
 ## What a review here checks for
 
 The checklist lives in [AGENTS.md](../AGENTS.md), "What `/code-review` checks
-here": `/code-review` loads AGENTS.md (there is no CLAUDE.md) and never reads
-this file.
+here": `/code-review` counts only CLAUDE.md rules; `.claude/CLAUDE.md` imports
+AGENTS.md, and this file is never read.
 
 ## Anti-goals
 
