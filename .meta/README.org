@@ -14,6 +14,8 @@ directory holds only what is different here.
 | [[file:methodology-delta.org][methodology-delta.org]]    | what oracles this project has, how strong each is, and which properties each can check                  |
 | [[file:experiment-process.org][experiment-process.org]]   | how experiments fan out here: roles, worktrees, gates, promotion through PR                            |
 | [[file:findings-2026-11-21.org][findings-2026-11-21.org]] | what the first day showed about gforth 0.7.3, lldb and the in-image inspector, before this repo had tests |
+| [[file:decisions.org][decisions.org]]            | every decision, in order: who made it, what it replaced, and what enforces it                          |
+| [[file:finding-requirements-in-flight.org][finding-requirements-in-flight.org]] | the rules moved faster than the experiments; what kept the results meaningful             |
 
 * What this directory is not
 
