@@ -17,7 +17,7 @@ which is a separate question from whether a test went green.
 | 004 | reference-consumers | the three frozen reference consumers give the same output on records from 18ebe2d and harden head, except for the #1 float fix: harden is not a MAJOR change | done    | main | no breaking diff in 4912 programs; MAJOR only by the moved default log path — PR #11 |
 | 005 | concurrent-producers | N gforths logging to one stacks.jsonl lose no record and leave every line parseable (#17) | done    | main | refuted on 18ebe2d and 0842eda; paced fix holds; uncoordinated kept 38% → 86% (079de9c), never 100% without append — PR #18 |
 | 008 | repl-soak | gforth 0.7.3 REPLs driven through a pty for ≥20 h, isolated logs, followed live, meet G1–G8; the release waits on it | running | main | harness being built — PR #29 |
-| 009 | upgrade-matrix | rulings predict every consumer's behaviour across past, current and future producers (to contract 10.0), 0–5 live sessions; the upgrade steps run as written; envelope and compound version check | running | main | PR #30 |
+| 009 | upgrade-matrix | rulings predict every consumer's behaviour across past, current and future producers (to contract 10.0), 0–5 live sessions; the upgrade steps run as written; envelope and compound version check | review | main | H1, H2 refuted (checker crashes on a MAJOR rename, #32; steps fail as written, #34); I-1 held V0–F5 × 3 engines; 437/27240 cells mismatched, all filed (#31–#38) — PR #30 |
 
 Not yet proposed, from the handoff list: engine equivalence,
 control-flow stack nesting, =rs-full= prefix, =dbg+= step counts,
