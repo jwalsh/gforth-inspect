@@ -8,7 +8,7 @@
 set -u
 set -f   # link targets are data: never glob-expand them
 
-REQUIRED="README.org CONTRIBUTING.org RELEASING.org CONSUMERS.org REVIEW.md AGENTS.md COLLABORATION.org CONSUMER-AGENTS.md LICENSE"
+REQUIRED="README.org docs/CONTRIBUTING.org docs/RELEASING.org contract/CONSUMERS.org docs/REVIEW.md AGENTS.md docs/COLLABORATION.org contract/CONSUMER-AGENTS.md contract/skill/SKILL.md LICENSE"
 # words that mark developer or release-engineering content
 README_DEV='gmake|pbt/|experiments/|\.meta/|hypothesis|calibrat|worktree|code-review'
 
@@ -69,11 +69,11 @@ if [ "${1:-}" = "--calibrate" ]; then
         elif printf '%s\n' "$out" | grep -q -F -- "$3"; then echo "red as expected: $1"
         else printf 'red for the wrong reason: %s\n%s\n' "$1" "$out"; fail=1; fi
     }
-    plant missing-guide 'mv REVIEW.md REVIEW.md.away' 'missing guide: REVIEW.md'
-    plant broken-org-link 'printf "\n[[file:no-such-file.org][x]]\n" >> CONTRIBUTING.org' \
-        'broken link in CONTRIBUTING.org: no-such-file.org'
-    plant broken-md-anchor-link 'printf "\n[x](CONTRIBUTING.md#style)\n" >> REVIEW.md' \
-        'broken link in REVIEW.md: CONTRIBUTING.md'
+    plant missing-guide 'mv docs/REVIEW.md docs/REVIEW.md.away' 'missing guide: docs/REVIEW.md'
+    plant broken-org-link 'printf "\n[[file:no-such-file.org][x]]\n" >> docs/CONTRIBUTING.org' \
+        'broken link in docs/CONTRIBUTING.org: no-such-file.org'
+    plant broken-md-anchor-link 'printf "\n[x](CONTRIBUTING.md#style)\n" >> docs/REVIEW.md' \
+        'broken link in docs/REVIEW.md: CONTRIBUTING.md'
     plant broken-link-with-space 'printf "\n[[file:design notes.org][x]]\n" >> AGENTS.md' \
         'broken link in AGENTS.md: design notes.org'
     plant broken-link-in-experiment-log \

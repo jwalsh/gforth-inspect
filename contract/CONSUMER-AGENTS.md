@@ -5,7 +5,13 @@ one it needs for day-to-day work. Upgrading also needs the change log that
 ships in each release (`stacks-log.org`), and registering needs
 COLLABORATION.org's "Registry" section. A
 "consumer" is any project that loads `inspect.fs` or reads `stacks.jsonl`.
-The reasoning behind each rule is in [COLLABORATION.org](COLLABORATION.org).
+The reasoning behind each rule is in [COLLABORATION.org](../docs/COLLABORATION.org).
+
+## Install the skill
+
+Each release ships `SKILL.md`. Copy it to
+`.claude/skills/gforth-inspect/SKILL.md` in your project; it covers using the
+inspector and reading the log. This file covers working with the producer.
 
 ## Reach the producer
 
