@@ -6,7 +6,7 @@ standalone tool, a book companion. This file covers how their maintainers,
 and the agents working for them, change the tool together without breaking
 each other.
 
-The contract it depends on is in [[file:CONSUMERS.org][CONSUMERS.org]], the release rules are in
+The contract it depends on is in [[file:contract/CONSUMERS.org][contract/CONSUMERS.org]], the release rules are in
 [[file:RELEASING.org][RELEASING.org]], and the per-agent rules are in [[file:AGENTS.md][AGENTS.md]] and [[file:REVIEW.md][REVIEW.md]].
 Everything here was either lived through on 2026-11-21 (see
 [[file:.meta/decisions.org][.meta/decisions.org]]) or is the smallest extension of that to N consumers.
