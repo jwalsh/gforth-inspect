@@ -1,0 +1,41 @@
+# sourced by calibrate/004-*.sh (not itself a calibration: gmake globs *.sh)
+#
+# A plant edits a temp copy of inspect.fs (and the schema) at NEW_REF, runs
+# test_004_reference_consumers.py against it, and exits 0 only if the test
+# went red AND the output carries the expected classification.
+set -u
+NEW_REF=fc283da
+calibrate_dir=$(cd "$(dirname "$0")" && pwd)
+pbt_dir=$(dirname "$calibrate_dir")
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+git -C "$pbt_dir" show "$NEW_REF:env/inspect.fs" > "$tmp/orig.fs" || exit 2
+git -C "$pbt_dir" show "$NEW_REF:contract/stacks-log.schema.json" > "$tmp/orig.json" || exit 2
+cp "$tmp/orig.json" "$tmp/schema.json"
+
+# plant_fs SED-SCRIPT: the planted inspect.fs; refuse a plant that changed nothing
+plant_fs() {
+    sed "$1" "$tmp/orig.fs" > "$tmp/inspect.fs"
+    if cmp -s "$tmp/orig.fs" "$tmp/inspect.fs"; then echo "plant did not apply: $1"; exit 1; fi
+}
+
+plant_schema() {
+    sed "$1" "$tmp/orig.json" > "$tmp/schema.json"
+    if cmp -s "$tmp/orig.json" "$tmp/schema.json"; then echo "schema plant did not apply: $1"; exit 1; fi
+}
+
+# expect_red REGEX: run the test on the plant; red with REGEX in its output
+expect_red() {
+    out=$(cd "$pbt_dir" && INSPECT_FS="$tmp/inspect.fs" SCHEMA_JSON="$tmp/schema.json" \
+        PBT_004_NO_SHRINK=1 \
+        uv run --no-project --with hypothesis --with jsonschema --with pytest \
+        pytest -q -p no:cacheprovider test_004_reference_consumers.py 2>&1)
+    status=$?
+    if [ $status -eq 0 ]; then
+        echo "GREEN on a planted fault: not caught"; printf '%s\n' "$out" | tail -5; exit 1
+    fi
+    hit=$(printf '%s\n' "$out" | grep -E -o -m1 "$1")
+    if [ -n "$hit" ]; then echo "red as expected: $hit"; exit 0; fi
+    echo "red, but not with /$1/:"; printf '%s\n' "$out" | grep -E 'breaking|unknown-key|FAILED|Error' | head -12
+    exit 1
+}

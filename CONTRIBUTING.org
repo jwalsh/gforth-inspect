@@ -10,7 +10,7 @@ so developer notes do not go there.
 
 | path                              | what                                                               |
 |-----------------------------------+--------------------------------------------------------------------|
-| =env/inspect.fs=, =env/canvas.fs= | the released Forth                                                 |
+| =env/inspect.fs=                  | the released Forth (=env/canvas.fs= is a temporary test bed, not released) |
 | =contract/=                       | =stacks-log.schema.json= (the source of truth) and its prose          |
 | =test/=                           | golden-file tests, run by =gmake test= in all three engines          |
 | =pbt/=                            | property tests (Python + Hypothesis), run by =gmake -C pbt check=   |
@@ -151,3 +151,15 @@ leak in a commit stays in the history after a later fix, so stop at the scan.
 - Use conventional commits (=feat(pbt): ...=, =fix(inspect): ...=), with
   co-authors credited by =git commit --trailer "Co-Authored-By: ..."=.
 - Use =gmake=, not BSD =make=.
+
+* Reporting bugs
+
+Report inspector bugs as issues on this repository. Include a reproducer of
+one line, =gforth inspect.fs -e '...'=, with the engine and the release
+version. A bug that needs input bytes =-e= can't carry should come as a
+=printf ... > case.fs= instead.
+
+An agent working for the maintainer writes on GitHub only in the
+maintainer's own organisations: issues, PRs, comments and reviews. A bug in
+gforth itself, or in another project, is drafted as text and handed to a
+human to file. Agents never post it themselves.

@@ -2,32 +2,101 @@
 #+STARTUP: showall
 
 Downstream projects use only tagged releases, never branches. That makes a
-release a promise, and this file says what it promises.
+release a promise, and this file says what it promises. Who produces the
+stream, who consumes it, and what each owes the other is set out in
+[[file:CONSUMERS.org][CONSUMERS.org]].
 
 * What a release is
 
 - A tag =vMAJOR.MINOR.PATCH= on =main=, published as a GitHub Release.
-- Assets: =inspect.fs=, =canvas.fs=, =stacks-log.schema.json= and
-  =SHA256SUMS= (covering the other three).
+- Each release carries its own spec and contract. The assets are
+  self-contained and flat (no directories):
+
+  | asset                    | from                              |
+  |--------------------------+-----------------------------------|
+  | =inspect.fs=             | =env/inspect.fs=                  |
+  | =stacks-log.schema.json= | =contract/stacks-log.schema.json= |
+  | =stacks-log.org=         | =contract/stacks-log.org=         |
+  | =CONSUMERS.org=          | =CONSUMERS.org=                   |
+  | =SHA256SUMS=             | covering the four above           |
+
+  Downstream projects depend on these file names, so renaming, removing or
+  moving an asset is a MAJOR change. The prose files have to render on
+  their own: in the =dist/= copies, every link between them names its
+  sibling in the same directory (=CONSUMERS.org=, not =../CONSUMERS.org=),
+  and a link to anything else is an absolute URL pinned to the tag. A
+  consumer reads the schema from its downloaded copy, never from a branch.
+  =canvas.fs= is not part of this project and never ships.
+  It stays on =harden= only as a test bed until the end of the week of
+  2026-11-21, and is removed by a PR before v0.1.0.
 - =inspect.fs= begins with these two lines:
   #+begin_example
   \ gforth-inspect vX.Y.Z
   \ stacks-log schema v1
   #+end_example
 - =inspect-version ( -- c-addr u )= returns ="X.Y.Z"=, and the =hello= record
-  carries ="inspect":"X.Y.Z"=.
+  carries ="inspect":"X.Y.Z"= and ="contract":"MAJOR.MINOR"=, the latter equal
+  to the schema's =x-contract=. v0.1.0 announces contract 1.1. A consumer
+  that follows CONSUMERS.org refuses a stream that has no =contract=.
 
 * Stable API, and what bumps what
 
-| change                                                                   | bump                           |
-|--------------------------------------------------------------------------+--------------------------------|
-| rename or retype a record key, remove a word, change a stack effect       | MAJOR, and a new schema =x-version= |
-| a new key in a record, a new word                                         | MINOR                          |
-| a fix that keeps every word's stack effect and every key's type          | PATCH                          |
+*The rule: anything that would break one of the three reference consumers
+below, as they are today, is a new record =v= and a MAJOR release. That
+holds even where the schema would technically allow the change.*
+
+| change                                                                                                                                                                                    | bump                                      |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------|
+| remove or rename a key or an event; change a type; change what =null= means; split a record across lines; change the default file location; print numbers that decode to different values | MAJOR, plus new record =v= and =x-version= |
+| remove a word, or change a stack effect                                                                                                                                                   | MAJOR                                     |
+| a new optional key; a new event type the consumers can ignore; a new word                                                                                                                 | MINOR                                     |
+| a fix that keeps every word's stack effect, and every record as the consumers read it                                                                                                     | PATCH                                     |
+
+** The reference consumers
+
+Each is a release-gate test (=pbt/consumers/=) and is frozen as written.
+Changing a frozen consumer to make it pass is itself a breaking change.
+
+1. *Simple CLI tooling.*
+   =tail -f stacks.jsonl | jq -c '{e:.event,w:.where,d:.data,f:.float}'=.
+   It relies on one complete object per line, append-only writes, stable
+   key names, and numbers that decode to the same values.
+2. *An editor dashboard and checker.* It reads the last line, validates
+   it against the schema with a subset validator, and renders
+   =data= / =float= / =rs= / =input=. The course's =course-forth-dashboard=
+   and =course-forth-check= are the instances. Their wording is in the
+   course's =stacks-log.org= under "Compatibility".
+3. *A mock API server.* =GET /stacks= serves the last record as-is.
+
+A consumer must ignore keys it does not know, and the gate checks that
+too: every produced record has an unknown key injected, and all three
+consumers still give the same output.
+
+** Rulings
+
+Two cases that the table alone did not settle. Both were found by
+experiment 004:
+
+- *A fix toward the truth is not a break.* Suppose a number or a string
+  decodes differently, and the new value matches the true state more
+  closely than the old one: =fp@= bits for a float, the source bytes for
+  =input.text=. That is a PATCH. Examples are #1 (17 digits, =-0.0=) and the
+  0.1.0 escaping. A consumer that relied on the wrong value was relying on
+  a bug. The change log still records the fix.
+- *v0.1.0 is the first release.* 18ebe2d and the other earlier commits were
+  imports, not releases, so moving the default log directory to
+  =.../gforth-inspect/= breaks no released promise. From v0.1.0 on, the
+  default location is under the table's MAJOR row.
 
 The stable words: =.stacks .rs .input ~~~ .cs all-~~ dbg-fix dbg+ rs-full
-fclearstack log-on log-off log-where inspect-version=. From =canvas.fs=:
-=canvas clear plot line .canvas save-pbm save-ppm save-xbm=.
+fclearstack log-on log-off log-where log-id inspect-version
+contract-version=. =contract-version ( -- c-addr u )= returns the announced
+contract, ="1.1"= for v0.1.0.
+
+=log-id ( c-addr u -- )= (issue #3) copies up to 63 characters. Each later
+snapshot carries ="id":"<tag>"=, and =s" " log-id= clears it, after which
+the key is omitted. In the schema, =id= is an optional snapshot property
+of type string, and =x-version= stays 1.
 
 Log location: =$GFORTH_INSPECT_LOG_DIR=, falling back to
 =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/=. A released file never
@@ -42,8 +111,10 @@ names a particular downstream project.
 3. =scripts/privacy-scan.sh= is clean, over the tree and over the release
    assets themselves.
 4. =grep -c sicpminus= on the assets prints 0.
-5. The release notes include the test summary: engines, case counts, and
-   the Hypothesis seed.
+5. The release notes include the test summary (engines, case counts, and
+   the Hypothesis seed) and a =Closes= line naming every issue the release
+   fixes, for example =Closes #1, #4=. Downstream projects use those
+   numbers to retire their local patches (see below).
 
 CI on a macOS runner with =brew install gforth= runs 1 to 4. Until that CI
 exists, whoever cuts the release runs them by hand and pastes the output
@@ -55,12 +126,65 @@ into the notes.
 git switch main && git pull --ff-only
 # bump the version line in env/inspect.fs and inspect-version, then commit: chore(release): vX.Y.Z
 gmake test && gmake -C pbt check PROFILE=ci && scripts/privacy-scan.sh
-mkdir -p dist && cp env/inspect.fs env/canvas.fs contract/stacks-log.schema.json dist/
-(cd dist && shasum -a 256 inspect.fs canvas.fs stacks-log.schema.json > SHA256SUMS)
+gmake release-check   # builds dist/ as below and checks it
+# by hand, what release-check does:
+mkdir -p dist && cp env/inspect.fs contract/stacks-log.schema.json contract/stacks-log.org CONSUMERS.org dist/
+sed -i '' 's|\.\./CONSUMERS\.org|CONSUMERS.org|g' dist/stacks-log.org   # flatten sibling links
+(cd dist && shasum -a 256 inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org > SHA256SUMS)
 scripts/privacy-scan.sh dist/*
 git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
 gh release create vX.Y.Z dist/* --notes-file dist/NOTES.md
 #+end_src
+
+* Changing the contract or the tooling
+
+Plan every change to the record format, the stable words or the tooling
+in this order. Each step is done before the next one starts:
+
+1. *Issue.* Open one on this repository: what changes, why, the bump it
+   needs (see the table above), and a reproducer or example record.
+2. *Schema.* Edit =contract/stacks-log.schema.json=. Bump =x-version= only
+   when a change renames or retypes something.
+3. *Prose.* Edit =contract/stacks-log.org=, and add a row to its change log.
+4. *Producer.* Edit =env/inspect.fs=.
+5. *Consumers.* The checks in this repo (=test/= goldens, =pbt/=), and the
+   known downstream readers, which are told in step 7.
+6. *Checks.* =gmake verify= is green, and a new test covers the change.
+   Its planted fault (old producer against new schema, or the reverse)
+   goes red.
+7. *Notify.* Comment on the issue with the commit, and close it once the
+   release ships, as described under downstream deviations.
+
+* Change log
+
+| version     | date       | change                                                                      | issue  |
+|-------------+------------+-----------------------------------------------------------------------------+--------|
+| (unreleased) | 2026-11-21 | json-f: 17 significant digits, -0.0 kept, non-finite logged as null          | #1     |
+| (unreleased) | 2026-11-21 | snapshot gains optional =id= (=log-id=)                                       | #3     |
+| (unreleased) | 2026-11-21 | log dir is =$GFORTH_INSPECT_LOG_DIR=; =hello= gains =inspect=                  |        |
+| (unreleased) | 2026-11-21 | =canvas.fs= removed from the release contract                                |        |
+
+* Downstream deviations
+
+A downstream project may carry a local patch to its copy of a release when
+a fix it needs has not shipped yet. The issue comes first: every deviation
+is an open issue on this repository that carries a reproducer, and the
+downstream records it as a row (issue, file, change, why now) in its own
+=DEVIATIONS.org=.
+
+When a release ships, the downstream project takes these steps:
+
+1. Download the release and verify =SHA256SUMS=.
+2. Run each deviation's reproducer against the released files.
+3. Drop the rows that the release's =Closes= line fixes and that the
+   reproducer confirms.
+4. File a new issue here for any deviation the release claims to fix but
+   does not, and keep that row.
+
+On this side, then: a fix is not closed until its reproducer passes against
+the release assets, and not merely against =main=. An issue that still has
+a downstream deviation open on it gets the label =downstream-patch=, so the
+next release can see what is waiting on it.
 
 Making the repository public is the owner's decision. Before anyone makes
 it, the history of every branch that will be pushed has to pass the privacy

@@ -1,0 +1,108 @@
+#+TITLE: Producers and consumers of the stacks-log event stream
+#+STARTUP: showall
+
+This repository owns the contract. The inspector (=env/inspect.fs=) is the
+producer, and anything that reads =stacks.jsonl= is a consumer. Downstream
+consumers are also the beta testers. They find problems first, may carry a
+local patch, and report what they find back here.
+
+* Parties
+
+| role                | who                                                                                                        | owns                                         |
+|---------------------+------------------------------------------------------------------------------------------------------------+----------------------------------------------|
+| producer            | =env/inspect.fs= (=log-on=)                                                                                | writing records that match the schema        |
+| contract owner      | this repository: =contract/stacks-log.schema.json=, =contract/stacks-log.org=, this file                    | versions, the change log, the release gate   |
+| reference consumers | (1) =tail -f stacks.jsonl \vert jq -c ...=, (2) an editor dashboard and checker, (3) a mock API serving the last record as =GET /stacks= | what counts as "breaking" ([[file:RELEASING.org][RELEASING.org]]) |
+| beta consumers      | downstream projects that pin a release, such as a course whose Emacs dashboard and checker run on it       | running pre-release code; =downstream-patch= issues |
+
+* The version is in the stream
+
+The stream carries three version numbers:
+
+| where                           | value         | changes on                                    |
+|---------------------------------+---------------+-----------------------------------------------|
+| every record's ="v"=             | MAJOR         | a breaking change                             |
+| =hello='s ="contract"=           | "MAJOR.MINOR" | any change to what a record may contain       |
+| =hello='s ="inspect"=            | "X.Y.Z"       | every release of the producer                 |
+
+The schema carries =x-version= (equal to =v=) and =x-contract= (equal to
+=hello.contract=). A producer writes exactly one contract version. It never
+writes an old and a new version side by side.
+
+Contract versions are not release versions. Release v0.1.0 announces
+contract 1.1. A PATCH release changes neither number, and a release may
+change no contract at all.
+
+* Producer obligations
+
+1. Write only what =contract/stacks-log.schema.json= allows at the
+   announced =MAJOR.MINOR=: one complete JSON object per line, append-only.
+2. Announce the contract in =hello=.
+3. Numbers decode to the values on the stacks: 17 significant digits,
+   =-0.0= kept, and =null= for a non-finite value.
+4. Anything that would break a reference consumer as it is today is a MAJOR
+   change. That includes removing or renaming a key or an event, changing a
+   type or what =null= means, splitting a record across lines, changing the
+   default file location, and numbers that decode differently. New optional
+   keys and new event types that consumers can ignore are MINOR. Value-only
+   fixes are PATCH, with no contract change. The one exception is the
+   version stop under consumer obligation 2: it is the designed response to
+   an announced change, not a break.
+5. Every MAJOR or MINOR change follows the checklist in RELEASING.org: issue,
+   schema (=x-contract=, plus =v= and =x-version= for a MAJOR), the prose
+   change log, and the release notes. None is made silently.
+
+* Consumer obligations
+
+1. Know which =MAJOR.MINOR= you were written against.
+2. Read the newest =hello=. If its =contract= differs from yours in MAJOR
+   or MINOR, or is missing, stop and say so:
+   #+begin_example
+   contract X from the producer, this consumer expects Y (major|minor update): check the schema and change log
+   #+end_example
+   Do not guess. A MINOR change is usually safe, but the consumer's author
+   decides that after reading the change log, and then bumps the expected
+   version.
+3. Validate records against the schema at the expected version. Ignore
+   unknown keys only after that check passes.
+4. Never write to the stream.
+
+Simple consumers, like the jq one-liner, do not read =hello= and so cannot
+stop. The rules in RELEASING.org exist to protect them.
+
+* Beta testing
+
+1. A problem found downstream becomes an issue here first, with a
+   reproducer (a gforth one-liner), the engine, and what was expected
+   against what happened.
+2. If the problem blocks the consumer, the consumer may carry a local
+   patch. It labels the issue =downstream-patch=, describes its patch in a
+   comment, and records the patch on its own side (for example in a
+   =DEVIATIONS.org=).
+3. A local patch that changes records follows the same MAJOR/MINOR rules
+   and announces its own =contract= in =hello=, so the stream always says
+   what is in it.
+4. This repository adopts the patch or redoes it, and the release notes
+   say =Closes #N=.
+5. On each release, the consumer runs every patched issue's reproducer
+   against the release assets. It drops the patches the release covers and
+   files any it does not cover as new issues.
+
+* Release gate
+
+These are part of the gate in RELEASING.org:
+
+- =gmake test= is green in =gforth=, =gforth-fast= and =gforth-itc=.
+- The three reference consumers run against the release's own output: the
+  jq one-liner parses every line, a checker that follows the consumer rules
+  above accepts the stream, and a mock =GET /stacks= returns the last record
+  unchanged.
+- =hello.contract= equals =x-contract=, and =inspect-version= equals the tag.
+
+* Change log
+
+| contract | date       | change                                                   | kind    | issues |
+|----------+------------+----------------------------------------------------------+---------+--------|
+| 1.0      | 2026-11-21 | =hello=, =snapshot=                                      | initial |        |
+| 1.1      | 2026-11-21 | snapshot =id= (optional, =log-id=); =hello.contract=       | MINOR   | #3     |
+| 1.1      | 2026-11-21 | float values round-trip; =all-~~= fills =where= / =src=     | PATCH   | #1, #2 |
