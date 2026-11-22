@@ -262,3 +262,8 @@ release to release: v0.1.0's seven assets installed in the session's
 and =shasum -a 256 -c SHA256SUMS=.  The G2 calibration keeps =0842eda=,
 the unfixed producer gate 1 names.  The counted 20 hours start only once
 v0.1.1 is published; calibration is run again on it first.
+
+Correction (coordinator): review fixes moved the v0.1.1 candidate to blob
+=2eec91a4742c= (PR #43 at =d1a0826=), not =34ee47da9d09=.  The soak pins
+whatever blob the published v0.1.1 carries, and records it here when it
+starts.
