@@ -49,11 +49,6 @@ SCHEDULE_LINE = re.compile(r"^\\ p(\d+): (.*)$")
 TIME_FIELD = re.compile(rb'(?<!\\)"t":-?[0-9]+')
 
 
-def git(repo: Path, *args: str) -> str:
-    return subprocess.run(["git", "-C", str(repo), *args], check=True,
-                          capture_output=True, text=True).stdout
-
-
 # --- which producer -----------------------------------------------------
 
 def producer_source(repo: Path) -> tuple[bytes, bytes, str, str]:
@@ -61,23 +56,23 @@ def producer_source(repo: Path) -> tuple[bytes, bytes, str, str]:
     sys.path.insert(0, str(repo / "pbt"))
     import gforth_run  # the shared runner's selection; read, never edited
 
-    inspect_path, _ = gforth_run.inspect_source()
+    inspect_path, provenance = gforth_run.inspect_source()
     inspect_bytes = inspect_path.read_bytes()
+    # the schema comes from the same place as inspect.fs, with no fallback:
+    # PROVENANCE pairs the two blobs, so they must belong together
     explicit_schema = os.environ.get("SCHEMA_JSON")
     if explicit_schema:
         schema_bytes = Path(explicit_schema).read_bytes()
+    elif provenance.startswith("ref:"):
+        commit = provenance[len("ref:"):].split()[0].rpartition("@")[2]
+        proc = subprocess.run(
+            ["git", "-C", str(repo), "show", f"{commit}:contract/stacks-log.schema.json"],
+            capture_output=True)
+        if proc.returncode != 0:
+            raise RuntimeError(f"no contract/stacks-log.schema.json at {commit}; set SCHEMA_JSON")
+        schema_bytes = proc.stdout
     else:
-        schema_bytes = b""
-        for ref in [os.environ.get("INSPECT_REF", "harden"), "origin/harden"]:
-            try:
-                schema_bytes = subprocess.run(
-                    ["git", "-C", str(repo), "show", f"{ref}:contract/stacks-log.schema.json"],
-                    check=True, capture_output=True).stdout
-                break
-            except subprocess.CalledProcessError:
-                continue
-        if not schema_bytes:
-            raise RuntimeError("no contract/stacks-log.schema.json; set SCHEMA_JSON")
+        raise RuntimeError("INSPECT_FS is set: set SCHEMA_JSON to the schema that goes with it")
     return inspect_bytes, schema_bytes, blob_id(repo, inspect_bytes), blob_id(repo, schema_bytes)
 
 
@@ -150,14 +145,14 @@ class Producer:
 
     def finish(self, line: str, timeout: float = 10.0) -> int:
         self.proc.stdin.write(f"{line}\n".encode())
-        self.proc.stdin.close()
-        self.proc.stdout.read()
-        return self.proc.wait(timeout=timeout)
+        self.proc.stdin.flush()
+        self.proc.communicate(timeout=timeout)  # closes stdin, drains stdout, bounded
+        return self.proc.returncode
 
 
 def run_schedule(schedule: list[tuple[int, str]], inspect_bytes: bytes, engine: str,
                  root: Path) -> tuple[bytes, int]:
-    """Drive the producers line by line; (raw shared log, worst exit status).
+    """Drive the producers line by line; (raw shared log, first non-zero exit status).
 
     A producer's last line is sent without an ack and must end it (bye).
     """
@@ -174,7 +169,8 @@ def run_schedule(schedule: list[tuple[int, str]], inspect_bytes: bytes, engine: 
             producer.send("")  # inspect.fs has loaded
         for position, (index, line) in enumerate(schedule):
             if last_step[index] == position:
-                status = max(status, producers[index].finish(line))
+                exit_status = producers[index].finish(line)
+                status = status or exit_status  # the first non-zero; a signal is negative
             else:
                 producers[index].send(line)
     finally:

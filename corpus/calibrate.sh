@@ -24,7 +24,7 @@ fresh_copy() {  # a copy of the corpus without its scratch directories
 }
 
 run_make() {  # target -> output in $scratch/out, status returned
-    gmake --no-print-directory -C "$scratch/corpus" "$1" REPO="$repo" > "$scratch/out" 2>&1
+    ${MAKE:-gmake} --no-print-directory -C "$scratch/corpus" "$1" REPO="$repo" > "$scratch/out" 2>&1
 }
 
 fingerprint() {

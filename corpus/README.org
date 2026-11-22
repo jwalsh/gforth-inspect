@@ -30,7 +30,7 @@ replace the schema.
 | =04-floats=                    | =-0.0=; =+inf=, =-inf=, NaN as =null=; ±DBL_MAX, smallest normal, a subnormal, the smallest subnormal; 17 significant digits             |
 | =05-full-range-cells=          | 0, ±1, the largest and smallest 64-bit cell, logged while =BASE= is hex (=data= is decimal anyway)                                     |
 | =06-tilde3-in-definition=      | =~~~= inside a word: =where= is the word, =src= is =file:line=                                                                         |
-| =07-tilde2-after-all-tilde2=   | plain =~~= after =all-~~=, inside a word (=where= filled) and at the prompt (null)                                                    |
+| =07-tilde2-after-all-tilde2=   | plain =~~= after =all-~~=, inside a word (=where= filled) and at the prompt (null); for =~~= the =rs= starts at the word holding it, so =rs[0]= is =halve= itself (=~~~= in =06= starts at its caller)                                                    |
 | =08-nested-rs-full=            | =~~~= two calls deep with =rs-full on= (the whole return stack, down to =boot=) and off (the caller only)                               |
 | =09-log-id=                    | =id= set, set to a string with quotes, then cleared (the key disappears)                                                                |
 | =10-input-escapes=             | =input.text= with =\"=, =\\=, a tab, =\u0001=, =\u001b=, and a raw DEL (0x7f, which JSON does not require escaping)                    |
@@ -125,20 +125,21 @@ To see a pane update as a producer writes, replay a recording into a
 scratch log with a delay, and point the pane at the scratch log:
 
 #+begin_src sh
-replay=$(mktemp -d)
-: > "$replay/stacks.jsonl"
+# a scratch log in a directory both shells can name
+mkdir -p "$HOME/.cache/gforth-inspect-replay"
+: > "$HOME/.cache/gforth-inspect-replay/stacks.jsonl"
 # in the watching pane:
-tail -n +1 -F "$replay/stacks.jsonl" | jq --unbuffered -c -f pbt/consumers/stacks.jq
+tail -n +1 -F "$HOME/.cache/gforth-inspect-replay/stacks.jsonl" | jq --unbuffered -c -f pbt/consumers/stacks.jq
 # in another shell (not in the watching pane):
 while IFS= read -r line; do
-  printf '%s\n' "$line" >> "$replay/stacks.jsonl"; sleep 0.5
+  printf '%s\n' "$line" >> "$HOME/.cache/gforth-inspect-replay/stacks.jsonl"; sleep 0.5
 done < corpus/14-snapshots-in-a-row.jsonl
 #+end_src
 
 Then the pane prints exactly the =jq.lines= in
 =14-snapshots-in-a-row.expect.json=.  A reader that picks its file from
 =GFORTH_INSPECT_LOG_DIR= can be pointed at the same scratch directory:
-=GFORTH_INSPECT_LOG_DIR="$replay"=.
+=GFORTH_INSPECT_LOG_DIR="$HOME/.cache/gforth-inspect-replay"=.
 
 ** From an MCP or HTTP reader
 

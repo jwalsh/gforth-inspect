@@ -29,25 +29,25 @@ deps: ## Run every tool and print what it answered; a missing one fails
 	  else printf '  MISSING  %-24s %s\n' "$$probe" "$$(printf '%s\n' "$$output" | head -1)"; missing=1; fi; done; \
 	exit $${missing:-0}
 
-# scan DIR: fail, naming the files, if any recording holds a private path
+# scan DIR TARGET: fail, naming the files, if any recording holds a private path
 define scan_private
 	@leaks=$$( { for fixed in $(PRIVATE_FIXED); do grep -rlF "$$fixed" $(1); done; \
 	             grep -rlE '$(PRIVATE_PATTERN)' $(1); } 2>/dev/null | sort -u ); \
 	if [ -n "$$leaks" ]; then \
-	  echo "record: REFUSED, a recording holds the home directory or a temp path:"; \
+	  echo "$(2): REFUSED, a recording holds the home directory or a temp path:"; \
 	  printf '  %s\n' $$leaks; rm -rf $(1); exit 1; fi
 endef
 
 record: ## Re-record every .jsonl, .expect.json and PROVENANCE; read the diff before committing
 	@rm -rf .record
 	@$(RECORD) --engine $(ENGINE) .record
-	$(call scan_private,.record)
-	@cp .record/* . && rm -rf .record && echo "record: written; review with git diff"
+	$(call scan_private,.record,record)
+	@rm -f ./*.jsonl ./*.expect.json && cp .record/* . && rm -rf .record && echo "record: written; review with git diff"
 
 check: ## A fresh recording equals the committed one, file for file
 	@rm -rf .check
 	@$(RECORD) --engine $(ENGINE) .check
-	$(call scan_private,.check)
+	$(call scan_private,.check,check)
 	@status=0; \
 	for fresh in .check/*; do name=$${fresh#.check/}; \
 	  if [ ! -f "$$name" ]; then echo "check: DIFFERS: $$name is not committed"; status=1; \
@@ -61,14 +61,16 @@ engines: ## gforth-fast and gforth-itc record the same logs as gforth
 	@status=0; for engine in gforth-fast gforth-itc; do \
 	  rm -rf .engine-$$engine; \
 	  $(RECORD) --engine $$engine .engine-$$engine >/dev/null || exit 1; \
+	  engine_status=0; \
 	  for fresh in .engine-$$engine/*.jsonl .engine-$$engine/*.expect.json; do \
 	    name=$${fresh#.engine-$$engine/}; \
-	    diff -u "$$name" "$$fresh" || { echo "engines: $$engine DIFFERS: $$name"; status=1; }; done; \
-	  [ $$status -eq 0 ] && { echo "engines: $$engine records the same logs"; rm -rf .engine-$$engine; }; \
+	    diff -u "$$name" "$$fresh" || { echo "engines: $$engine DIFFERS: $$name"; engine_status=1; }; done; \
+	  if [ $$engine_status -eq 0 ]; then echo "engines: $$engine records the same logs"; rm -rf .engine-$$engine; \
+	  else echo "engines: $$engine run left in corpus/.engine-$$engine/"; status=1; fi; \
 	done; exit $$status
 
 calibrate: ## Planted faults: check must go red on a changed field, record on a private path
-	@sh calibrate.sh
+	@MAKE="$(MAKE)" sh calibrate.sh
 
 GATES := check engines calibrate
 gate: ## Every gate, in order
