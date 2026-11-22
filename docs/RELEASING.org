@@ -149,7 +149,7 @@ notes.
 | rule                                       | why                                                                       |
 |--------------------------------------------+---------------------------------------------------------------------------|
 | a pull request before merging, 0 approvals | one owner and several agents: the PR is the record, not a sign-off         |
-| status check =verify=, strict from v0.5.0  | a PR merges only when CI is green; from v0.5.0 also on a head up to date with =main= |
+| status check =verify=, strict from v0.5.0  | a PR merges only when CI is green; from v0.5.0 also on a head up to date with =main=. *Removed 2026-11-22* (D-40): GitHub Actions billing stopped every job; the workflow is disabled and a local =gmake verify= on the PR's head, pasted into the PR body (REVIEW.md), is the gate until billing works. To restore: =gh workflow enable verify.yml=, put the =required_status_checks= block back in the JSON, PUT it |
 | linear history                             | the repository squash-merges; =main= stays one commit per change          |
 | no force pushes, no deletion               | tags and downstream =DEVIATIONS.org= rows point at =main='s commits       |
 | conversation resolution                    | a review thread on the PR is resolved before merge, not left hanging      |
