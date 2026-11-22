@@ -1,0 +1,130 @@
+#+TITLE: 008 repl-soak: driven REPLs, isolated logs, 20 hours, before the release
+#+DATE: 2026-11-22
+#+STARTUP: showall
+
+* Why
+
+Experiments 001 to 005 exercised the inspector one property at a time,
+through batch runs (=gforth -e ... bye=) and short scripted stdin. Nobody
+has used it the way the course will: a person at a gforth 0.7.3 prompt
+for hours, loading real code, with a consumer following the log. This
+experiment does that with a harness before any tag is cut, and the release
+waits for its verdict.
+
+Scope is gforth 0.7.3 code only: code that loads on 0.7.3 without 1.0
+words.
+
+* Hypothesis
+
+When gforth 0.7.3 REPLs on all three engines are driven line by line
+through a pty, as a person would type, loading large 0.7.3 codebases
+from several worktrees of several repos at once, with =log-on= in each
+and a consumer following every log:
+
+- G1 every line of every log parses and validates against the schema;
+- G2 each session's log holds every record it wrote, once, in order;
+- G3 each snapshot's data stack equals what the REPL itself reports at
+  that moment (=depth= and =.s= for cells, =fdepth= for floats);
+- G4 nothing is written outside the session's sandbox: the real
+  =${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/= log and the real
+  =~/.gforth-history= are byte-identical before and after;
+- G5 a consumer following a log sees the newest =hello= and stops on a
+  contract it was not written for;
+- G6 every record can be traced (xref) to exactly one session, one
+  worktree and one =inspect.fs= blob, and to nothing else;
+- G7 records from an isolated run hold no absolute path, home directory or
+  user name;
+- G8 the release candidate's seven assets, installed as a consumer
+  installs them (=SHA256SUMS= checked, skill copied), load and log the
+  same as the worktree they were built from.
+
+* Prediction (written before the first run)
+
+G1, G2, G3, G5, G6 and G8 hold on the release candidate for 20 hours.
+G4 holds when each session sets =HOME= and =XDG_STATE_HOME= inside its
+sandbox, for both the =GFORTH_INSPECT_LOG_DIR= path and the XDG fallback.
+G7 is refuted for any session that loads a file by absolute path:
+=input.file= is the string given to =include=, so isolation depends on
+loading by relative path, which the skill says but nothing enforces.
+G3 shows no drift over a long session. Overhead of =log-on= on a loaded
+REPL is reported, with no prediction.
+
+* Harness
+
+Built in this worktree by its own agent, under =experiments/008-repl-soak/=
+(Python standard library, like =demo/cast.py=; ported to bb with the rest).
+
+1. *Driver.* One gforth per pty, on =gforth=, =gforth-fast= or
+   =gforth-itc=. It types one line, waits for the prompt (=ok= or a
+   compile-state prompt) and types the next, with a human-like pause. No
+   =-e=, no piped stdin: the REPL sees a terminal.
+2. *Sandbox.* Each session gets =mktemp -d= as its working directory,
+   =HOME= and =XDG_STATE_HOME=. Half the sessions set
+   =GFORTH_INSPECT_LOG_DIR= inside it; the other half leave it unset, so
+   the XDG fallback is what is exercised. Every session is tagged with
+   =log-id= =s<n>=.
+3. *Feeder.* Lines come from the targets: it =include=s files, defines
+   words, calls them, and puts =.stacks=, =~~~= and =all-~~= =~~= at
+   points it picks. After each logged point it asks the REPL for =depth=,
+   =.s= and =fdepth= (the G3 oracle).
+4. *Followers.* Each log is followed live by the three frozen reference
+   consumers (the jq one-liner, the checker, the mock =GET /stacks=), as
+   the course would follow it.
+5. *Leak guard.* Hashes the real XDG log and =~/.gforth-history= at
+   start, every 10 minutes and at the end.
+6. *Xref.* At the end and every hour: every =id= in exactly one session's
+   manifest and one log dir; every =hello.inspect= equal to the version in
+   the =inspect.fs= that session loaded, whose blob is in its manifest;
+   every =input.file= relative to that session's sandbox or worktree,
+   never another's; for each record with a file and line, =input.text=
+   equal to that line of that file at that worktree's commit.
+7. *Status.* A one-screen status file (sessions, records, violations per
+   goal, hours counted), committed to the Log every hour.
+
+Targets are named in a local manifest outside the repo
+(=$XDG_CONFIG_HOME/gforth-inspect-soak/targets=), never in this file:
+- gforth 0.7.3's own library (about 190 =.fs= files);
+- the course's 0.7.3 exercises, from its own worktree only. Other
+  worktrees of that repo hold student code and are out of scope unless the
+  owner says so, and then only counts are reported;
+- one large private 0.7.3 codebase with about 30 worktrees (about 150k
+  lines), which is the worktree xref load;
+- this repo's =corpus/= and =test/= inputs, from main, the release
+  candidate and one older ref.
+
+Nothing from a target, and no target path or name, goes into this
+repository: the Log reports counts and blob hashes only.
+
+* Gate
+
+1. *Calibration first.* Each check is seen red on a planted fault, then
+   green: a session writing to the real XDG dir (G4), two sessions sharing
+   a log dir (G6), a session loading a different =inspect.fs= blob than its
+   manifest says (G6), a truncated record (G1), the unfixed =0842eda=
+   producer with two sessions on one dir (G2), an absolute =include= path
+   (G7), an =inspect.fs= that drops the top of the data stack from records
+   (G3), a follower pinned to contract 2.0 (G5), a log that stops growing
+   while its REPL is alive (the monitor). No soak hour counts before this.
+2. *Soak.* At least 20 hours of wall clock, counted only while the driver,
+   the followers and the leak guard are all alive. At least 8 REPLs live at
+   every moment; each engine at least 20% of session-hours; at least one
+   session alive for the whole run; the rest restart every 5 to 60 minutes,
+   so =hello= and reload are exercised. A harness crash stops the clock; it
+   does not reset it.
+3. *Release candidate.* Most sessions load the seven assets as built for
+   the candidate and installed per CONSUMER-AGENTS.md. Midway, one long
+   session upgrades from main's =inspect.fs= to the candidate, and its
+   followers must report the new =hello=.
+4. *Pass.* Zero violations of G1 to G6 and G8 over the counted hours, with
+   every calibration seen red. G7 and overhead are reported. Any violation
+   is a finding: an issue, a fix through a PR, and the clock restarts on
+   the fixed candidate.
+5. *Release.* The tag is cut only from the candidate the soak passed on.
+
+* Log
+
+** 2026-11-22 registered
+
+Plan written by the coordinator. The harness is built next; the gate
+freezes when the first soak hour starts, and until then the owner may
+amend it.
