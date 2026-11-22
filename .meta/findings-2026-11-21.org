@@ -1,51 +1,43 @@
-#+TITLE: Findings, 2026-11-21: before there were tests
-#+DATE: 2026-11-21
+#+TITLE: Findings 2026-11-21: gforth 0.7.3 by hand, before the tests
 #+STARTUP: showall
 
-These were found by hand while the inspector was being written, before
-=pbt/= existed. Each is stated so that it can be checked again.
+* lldb: exact only at a Forth-side breakpoint
 
-* lldb gives exact stacks only at a Forth-side breakpoint
+=brk= enters C via =call-c=, which flushes the VM registers to
+=gforth_SP= / =FP= / =RP= / =LP=. Elsewhere lldb guesses: no arm64 port in
+0.7.3, registers move at =-O2=, gforth-fast keeps TOS in a register. A
+=-g -O0= build is exact. lldb can't attach from a sandboxed agent session.
+*Rule: no lldb in any live pipeline.*
 
-=brk= reaches C through =call-c=, which flushes the VM registers to
-=gforth_SP= / =FP= / =RP= / =LP=. Anywhere else lldb has to guess. 0.7.3
-has no arm64 port, the registers move about at =-O2=, and =gforth-fast=
-keeps the top of stack in a register. A =-g -O0= build is exact. lldb also
-cannot attach from inside a sandboxed agent session. *Decision: no lldb in
-any live pipeline.*
+* Threaded code differs from what the stock tools assume
 
-* The threaded code is not what the stock tools assume
-
-- An xt is a code-field address. =dodoes:= pushes =>body=. A =does>= word is
-  laid out as =[dodoes:][does-code][body]=.
-- In the direct-threaded engines, a colon call is two cells: =call <body>=.
-  Stock 0.7.3 =dbg= is ITC-only (=debug.fs=: "!!! dependency: ITC"), and it
-  crashes in =gforth= and =gforth-fast= on the first step. =dbg-fix= puts the
-  two-cell breakpoint in. =nestXT+= does the same for =n=.
-- Each control-flow stack item is three cells (orig / dest / do-dest).
-- =pause= saves sp/fp/rp/lp into the task area. That is what lets a server
-  task read the REPL task's stacks.
+- xt = code-field address. =dodoes:= pushes =>body=. A =does>= word is
+  =[dodoes:][does-code][body]=.
+- Direct-threaded engines: a colon call is two cells, =call <body>=. Stock
+  =dbg= is ITC-only (=debug.fs=: "!!! dependency: ITC") and crashes on the
+  first step in gforth and gforth-fast. =dbg-fix= and =nestXT+= insert the
+  two-cell breakpoint.
+- A control-flow stack item is three cells (orig / dest / do-dest).
+- =pause= saves sp/fp/rp/lp in the task area; a server task can read the
+  REPL task's stacks from there.
 
 * An inspector that reads the return stack moves it
 
-=.stacks= once printed its own frame's copy of the return stack instead of
-its caller's. The report looked plausible and was wrong. This is why
-non-interference and faithfulness are separate properties (experiment 001),
-and why =.stacks=, =~~~= and =all-~~= =~~= are tested as three paths: each
-one stores =snap-rp= differently.
+=.stacks= once printed its own frame's return stack, not its caller's:
+plausible and wrong. Hence non-interference and faithfulness are separate
+properties (001), and =.stacks=, =~~~=, =all-~~= =~~= are tested as three
+paths: each stores =snap-rp= differently.
 
-* Sockets in 0.7.3
+* Sockets
 
-=unix/socket.fs= works once =C_INCLUDE_PATH= points at the gforth bottle's
-=include/= (the Homebrew bottle gets the libcc header path wrong).
-=create-server= binds 0.0.0.0, so a server has to bind 127.0.0.1 itself.
-=tasker.fs= sets =key= to =task-key=, so the REPL pauses while idle. In a
-30-line prototype server task, the server's socket fd turned up in the
-REPL's data stack: the two tasks were sharing one stack.
+- =unix/socket.fs= needs =C_INCLUDE_PATH= set to the gforth bottle's
+  =include/= (Homebrew's libcc header path is wrong).
+- =create-server= binds 0.0.0.0: bind 127.0.0.1 yourself.
+- =tasker.fs= sets =key= to =task-key=: the REPL pauses while idle.
+- A 30-line server-task prototype found its socket fd on the REPL's data
+  stack: the two tasks shared one stack.
 
-* A first look at the logged floats (to be confirmed by 001)
+* Floats (confirmed by 001, fixed in #1)
 
-In a first manual run, =-0e= was logged as =0.00000000000000E0=, without
-its sign, and =json-f= prints through =fs.=, which keeps 15 significant
-digits. So a float in a record may not round-trip. This is the first thing
-experiment 001's faithfulness property checks.
+=-0e= logged as =0.00000000000000E0=, sign lost; =json-f= printed through
+=fs.= with 15 significant digits. Records did not round-trip.

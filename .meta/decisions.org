@@ -1,54 +1,49 @@
 #+TITLE: Decisions
-#+DATE: 2026-11-21
 #+STARTUP: showall
 
-Every decision that shapes how this repository works, in the order it was
-made. *Human* is the owner. *Operator* is the coordinating agent session.
-*Downstream* is the course session that consumes releases, relaying the
-Human's decisions or proposing its own. An entry that replaces an earlier
-one says so. The last column names what now enforces the decision: a file,
-a script or a setting. A decision with nothing enforcing it is a wish.
+In order. *Human*: owner. *Operator*: coordinating session. *Downstream*:
+the course session. Last column: what enforces it; empty means a wish.
 
-* 2026-11-21
-
-|  # | decision                                                                                                                                              | by                 | replaces | enforced by                                                    |
-|----+-------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------+----------+----------------------------------------------------------------|
-|  1 | Coordination is committed to =main=. Experiments run as agents in sibling worktrees. Code reaches =main= by PR.                                            | Human              |          | [[file:experiment-process.org][experiment-process.org]], [[file:../AGENTS.md][AGENTS.md]]                          |
-|  2 | The repository becomes public, with contributor, test and release guidance for any agent working with Forth.                                          | Human              |          | [[file:../docs/CONTRIBUTING.org][CONTRIBUTING.org]], [[file:../docs/RELEASING.org][RELEASING.org]]                          |
-|  3 | No personal or private data in the repository or the evals.                                                                                           | Human              |          | =scripts/privacy-scan.sh=, run relative to the repo in =pbt/gforth_run.py=  |
-|  4 | The same licence as gforth: GPL-3.0-or-later.                                                                                                         | Human              |          | =LICENSE= (gforth's =COPYING=)                                  |
-|  5 | README.org is for end users: usage and real output only. Build, test, contributing and release material goes elsewhere.                               | Human              |          | =scripts/check-guides.sh= (developer words in the README fail)  |
-|  6 | Downstream consumes only versioned, tagged releases, never branches.                                                                                  | Human (Downstream) |          | RELEASING.org, "What a release is"                              |
-|  7 | Downstream may patch locally when a fix blocks it. The issue comes first, then the =downstream-patch= label; release notes say =Closes #N=.            | Human (Downstream) |          | RELEASING.org, "Downstream deviations"                          |
-|  8 | =canvas.fs= is not part of this project. It stays on =harden= as a test bed to the end of the week, then is removed by PR.                             | Human (Downstream) |          | RELEASING.org asset table                                       |
-|  9 | Contract and tooling changes go in order: issue, schema, prose, producer, consumers, checks, notify.                                                  | Human (Downstream) |          | RELEASING.org, "Changing the contract or the tooling"           |
-| 10 | Breaking means breaking one of three reference consumers as they are today (jq one-liner, editor checker, mock =GET /stacks=), whatever the schema allows. | Human (Downstream) |          | RELEASING.org table; =pbt/consumers/=; experiment 004            |
-| 11 | The stream announces its contract (=hello.contract=). A consumer stops on a MAJOR or MINOR mismatch.                                                   | Human (Downstream) |          | [[file:../contract/CONSUMERS.org][contract/CONSUMERS.org]]; =pbt/consumers/checker.py=                    |
-| 12 | That version stop is the designed answer to an announced change, not a break. Otherwise every MINOR would be MAJOR under #10.                          | Operator           |          | CONSUMERS.org, producer obligation 4                            |
-| 13 | The Operator manages merges.                                                                                                                          | Human              |          | (practice; every PR goes through REVIEW.md first)               |
-| 14 | A fix toward the true value (17-digit floats, kept =-0.0=, correct escaping) is a PATCH, not a break.                                                  | Operator           |          | RELEASING.org, "Rulings"                                        |
-| 15 | Every release ships its spec and contract: =inspect.fs=, the schema, =stacks-log.org= and =CONSUMERS.org=, flat, with =SHA256SUMS=.                       | Human (Downstream) |          | RELEASING.org asset table; =gmake release-check= (=harden=)      |
-| 16 | A PR leaves draft only after =gmake verify= is green and a =/code-review= of its own branch has every finding answered.                                  | Human              |          | [[file:../docs/REVIEW.md][REVIEW.md]]                                                      |
-| 17 | Every piece of work starts in a worktree on a branch from =origin/main=, with a draft PR opened at once, even when speculative.                         | Human              |          | AGENTS.md                                                       |
-| 18 | Commit directly to =main= until about v0.5.0, while the repository is under review.                                                                    | Human              |          | branch protection with admin bypass (#21)                       |
-| 19 | v0.5.0 is the first tag: "good enough to start publishing and using tags". 0.1.0 to 0.4.x are untagged development versions.                          | Human              | an Operator ruling that v0.1.0 was the first release | RELEASING.org, "What a release is" and "Rulings"            |
-| 20 | Repository topics come from the shared vocabulary: =forth property-based-testing research education automation= (Human, revised).                                          | Human (skill), Operator |     | =repo:repo-topics= lint                                         |
-| 21 | Protect =main=: no force push, no deletion, PR and the =verify= check for everyone else. Admins bypass until v0.5.0.                                    | Human; phase by Operator |   | GitHub branch protection (applied 2026-11-21; =.github/branch-protection.json=) |
-| 22 | The root Makefile follows the house standard (=help deps gate check record clean=). It is reviewed on =harden=, not duplicated on =main=.               | Human (skill), Operator |     | the =harden= PR                                                 |
-| 23 | The literate-project tooling is not adopted: nothing here tangles.                                                                                    | Operator           |          |                                                                |
-| 24 | GitHub writes (issues, PRs, comments) only in the owner's organisations. Bugs in gforth itself are drafted for a human to file.                         | Human (global)     |          | CONTRIBUTING.org, "Reporting bugs"; AGENTS.md                   |
-| 25 | No history rewrite or force push without the Human. Paths already pushed on =lldb=, =model= and =harden= stay in history until the Human decides.        | Operator, Downstream |        | (practice)                                                      |
-| 26 | README carries no version placeholder: Install shows only what works; after a release =scripts/readme-release.sh= writes the real tag, committed =[skip ci]=. | Human | | =scripts/readme-release.sh=; RELEASING.org "Cutting one" |
-| 27 | Ship v0.5.0 by 2026-11-22 for course use: =harden= is final, =canvas.fs= removed now (brings #8 forward). | Human | #8's end-of-week timing | issue #23 |
-| 28 | Port the tooling from Python to Babashka after v0.5.0, as a gated experiment; shell scripts are suspect. Frozen reference consumers stay as they are. | Human | | experiment 006 (proposal) |
-| 29 | A release is a contract: the inspector, the guidelines (=contract/CONSUMERS.org=, =contract/CONSUMER-AGENTS.md=) and the skill (=contract/skill/SKILL.md=), never this repository's execution. Consumer docs live in =contract/=, not the root. | Human | | RELEASING.org asset table; =scripts/check-guides.sh= |
-| 30 | The plugin is published from this repo's own marketplace (=.claude-plugin/marketplace.json=, source =./contract=), after v0.5.0, not listed in defrecord until a second consumer exists. One tag per release (=vX.Y.Z=); no separate =gforth--vX.Y.Z= plugin tag. The plugin version equals the release version. | Operator (skills-c2 advising) | | issue #23 |
+|  # | decision                                                                                        | by                  | replaces              | enforced by                                    |
+|----+-------------------------------------------------------------------------------------------------+---------------------+-----------------------+------------------------------------------------|
+|  1 | Coordination on =main=; experiments in sibling worktrees; code by PR.                            | Human               |                       | [[file:experiment-process.org][experiment-process.org]], [[file:../AGENTS.md][AGENTS.md]]        |
+|  2 | Public repo, with contributor, test and release guides.                                         | Human               |                       | [[file:../docs/CONTRIBUTING.org][CONTRIBUTING.org]], [[file:../docs/RELEASING.org][RELEASING.org]]        |
+|  3 | No personal or private data in repo or evals.                                                   | Human               |                       | =scripts/privacy-scan.sh=; relative paths in =pbt/gforth_run.py= |
+|  4 | Licence: GPL-3.0-or-later, as gforth.                                                           | Human               |                       | =LICENSE=                                       |
+|  5 | README.org: end-user usage and real output only.                                                | Human               |                       | =scripts/check-guides.sh=                       |
+|  6 | Downstream consumes tagged releases only.                                                       | Human (Downstream)  |                       | RELEASING.org "What a release is"              |
+|  7 | Downstream may patch locally: issue first, =downstream-patch= label, notes say =Closes #N=.       | Human (Downstream)  |                       | RELEASING.org "Downstream deviations"          |
+|  8 | =canvas.fs= is out of scope; removed by PR.                                                     | Human (Downstream)  |                       | RELEASING.org asset table                      |
+|  9 | Contract changes in order: issue, schema, prose, producer, consumers, checks, notify.           | Human (Downstream)  |                       | RELEASING.org "Changing the contract"          |
+| 10 | Breaking = breaking a frozen reference consumer (jq one-liner, checker, mock =GET /stacks=).     | Human (Downstream)  |                       | =pbt/consumers/=; experiment 004                |
+| 11 | =hello.contract= announces the contract; consumers stop on MAJOR or MINOR mismatch.              | Human (Downstream)  |                       | [[file:../contract/CONSUMERS.org][CONSUMERS.org]]; =pbt/consumers/checker.py=     |
+| 12 | The version stop is by design, not a break.                                                     | Operator            |                       | CONSUMERS.org producer obligation 4            |
+| 13 | Operator manages merges.                                                                        | Human               |                       | REVIEW.md before every merge                   |
+| 14 | A fix toward the true value is a PATCH.                                                         | Operator            |                       | RELEASING.org "Rulings"                        |
+| 15 | Each release ships its spec and contract, flat, with =SHA256SUMS=.                                | Human (Downstream)  |                       | RELEASING.org asset table; =gmake release-check= |
+| 16 | Leave draft only after green =gmake verify= and an answered =/code-review=.                       | Human               |                       | [[file:../docs/REVIEW.md][REVIEW.md]]                                      |
+| 17 | All work: worktree, branch from =origin/main=, draft PR at once.                                 | Human               |                       | AGENTS.md                                      |
+| 18 | Direct commits to =main= until v0.5.0.                                                          | Human               |                       | admin bypass on branch protection              |
+| 19 | v0.5.0 is the first tag; 0.1–0.4 are untagged.                                                  | Human               | "v0.1.0 is first"     | RELEASING.org "Rulings"                        |
+| 20 | Topics: =forth property-based-testing research education automation=.                           | Human               |                       | =repo:repo-topics= lint                         |
+| 21 | Protect =main=: no force push or delete; PR + =verify= for non-admins.                           | Human; Operator     |                       | =.github/branch-protection.json=                |
+| 22 | Root Makefile follows the house standard; reviewed on =harden=.                                  | Human; Operator     |                       | PR #13                                         |
+| 23 | No literate tooling: nothing tangles.                                                           | Operator            |                       |                                                |
+| 24 | GitHub writes only in the owner's orgs; gforth bugs drafted for a human.                         | Human               |                       | CONTRIBUTING.org; AGENTS.md                    |
+| 25 | No history rewrite or force push without the Human.                                             | Operator; Downstream |                      |                                                |
+| 26 | README has no version placeholder; =readme-release.sh= writes the tag after release, =[skip ci]=. | Human               |                       | =scripts/readme-release.sh=                     |
+| 27 | Ship for course use 2026-11-22; =canvas.fs= removed now.                                         | Human               | 8's timing            | issue #23                                      |
+| 28 | Port tooling to Babashka after the first tag, as a gated experiment.                            | Human               |                       | experiment 006                                 |
+| 29 | A release is a contract: inspector, guidelines, skill; never the repo's execution.              | Human               | 15's four assets      | RELEASING.org; =check-guides.sh=; =gmake release-check= |
+| 30 | Plugin from this repo's own marketplace after the first tag; one tag per release.               | Operator            |                       | issue #23                                      |
+| 31 | =strict= off on =main= until the first tag.                                                      | Human               |                       | =.github/branch-protection.json=; issue #26     |
+| 32 | The first release may be v1.0.0, not v0.5.0.                                                   | Human               |                       | issue #23                                      |
+| 33 | Keep jq. Keep the Python reference consumers until the runner is ported, then delete.           | Human               |                       | experiment 007                                 |
+| 34 | No tag until a 20 h driven-REPL soak passes; envelope changes go through the consumer upgrade.  | Human               | 27's date             | experiment 008                                 |
+| 35 | =.meta/= holds only what an agent can act on or check.                                          | Human               |                       | [[file:README.org][README.org]]                                     |
 
 * Open
 
-- *Before going public:* the history of =lldb=, =model= and =harden= holds
-  absolute paths. The choice is to rewrite history, or to leave those
-  branches unpublished. The Human decides (#25).
-- *=canvas.fs= removal:* at the end of the week of 2026-11-21 (#8).
-- *The =harden= PR:* it needs the Makefile standard (#22), the #17
-  concurrent-producer fix, and its own review (#16).
+- History of =lldb=, =model=, =harden= holds absolute paths: rewrite, or
+  keep those branches unpublished. Human decides (#25).
+- PR #13 (=harden=): blocked on CI billing.
