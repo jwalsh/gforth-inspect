@@ -1,0 +1,117 @@
+#+TITLE: 007 bb-consumers: the reference checker and mock server as Babashka twins
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+Status: running. The owner asked for the migration. Experiment 006 (PR
+#24) assessed the port of the tooling and listed what babashka does not
+hand over; this experiment does the one part 006 left frozen: reference
+consumers 2 and 3 (RELEASING.org, "The reference consumers"). =stacks.jq=
+is not touched: jq stays.
+
+The swap is only a swap if nobody downstream can tell. So the claim is
+value equality with the Python originals on every input in the gate,
+quirks included, and the Python originals are the oracle until the gate
+passes. They are not edited.
+
+* Hypothesis
+
+The bb twins =pbt/consumers/bb/checker.clj= and
+=pbt/consumers/bb/mock_server.clj= produce output equal by value to
+=pbt/consumers/checker.py= and =pbt/consumers/mock_server.py= on every
+input in the gate below: the same exit status, the same stdout object
+(floats compared by bit pattern, numbers by JSON type, so =1= is not
+=1.0= and =true= is not =1=), the same crash where the Python crashes
+(exception class and message, e.g. =KeyError: 'data'= on a record that
+validates but lacks =data=, which 004 records as an output), and for the
+server the same status, content type and body bytes.
+
+* Prediction (written before any twin code)
+
+Holds, once four things the twins cannot borrow from bb are built by hand:
+
+- a strict JSON reader that matches Python's =json.loads=, not
+  cheshire's: raw control characters rejected, exactly one value per line
+  (cheshire returns the first object of ={..}{..}=), =NaN=/=Infinity=
+  accepted by the version stop's bare =json.loads= but rejected by the
+  last-line parse (=parse_constant=), duplicate keys last-wins at the
+  first key's position, integers over 4300 digits rejected (Python's
+  =int_max_str_digits=);
+- a subset validator with checker.py's eight keywords and its order of
+  checks, so the /first/ error and its message are the same, including
+  Python's =repr= of lists, strings and floats in the message, and
+  Python's equality for =const=/=enum= (=1 == 1.0=, =[True] == [1]=, but a
+  bare =True= is not =1=);
+- a printer that writes what =json.dumps(..., ensure_ascii=False)= writes,
+  =Infinity= for an overflowed number included, and that fails as Python's
+  =print= fails on a lone surrogate (=UnicodeEncodeError=, exit 1, empty
+  stdout);
+- for the server, nothing beyond http-kit: 006 already served a =0xFF=
+  line byte for byte.
+
+The likeliest divergences: float printing (Java's =Double.toString= gives
+=4.9E-324= where Python gives =5e-324=, the same double), sort order of
+extra keys (UTF-16 order is not code point order past the BMP), and
+Python's crash messages on odd shapes (=TypeError= for a non-object
+=input=). The first is equal by value and is not a divergence; the other
+two are, and must be matched.
+
+* Gate (fixed before any twin code; the log appends, never edits this)
+
+Both sides run on the same bytes. The comparison is the twin's output
+against the Python's output, live, never against a copy of it; the corpus
+is compared both ways.
+
+1. *Corpus.* For every =corpus/NN-slug.jsonl= of PR #22 (taken from the
+   tree if =corpus/= is there, else from =origin/feat/corpus=), with the
+   schema blob named in its =PROVENANCE=: the bb checker's exit and output
+   equal the Python checker's and =NN-slug.expect.json='s =checker=, and
+   the bb server's status and body equal the Python server's and the
+   file's =mock_get_stacks=. Every scenario, none skipped.
+2. *Planted breaks.* The six plants of 004 (=004-rename-data=,
+   =004-split-record=, =004-hex-integer=, =004-nan-zero=,
+   =004-default-path-empty=, =004-contract-minor=) are applied to harden's
+   =inspect.fs= by their own =sed=, a fixed program is run on each, and
+   both checkers and both servers see the resulting log: equal outputs.
+   Plus the contract-1.2 version stop: a log whose hello announces =1.2=,
+   read with the default =--expect= (stop, minor), with =--expect 1.2=
+   (accepted), with =--expect 2.0= (stop, major) and with
+   =--no-version-stop=: equal outputs on all four.
+3. *Unknown keys.* Every record of item 4 is also read with an unknown key
+   injected at the top level and inside =input= (004's =_inject=): the
+   two sides agree on the injected logs, and each side's output is the
+   same as on the plain log.
+4. *Generated differential.* At least 500 snapshot records produced by
+   =gforth_run= (004's program strategy: data and float stacks, the three
+   snapshot paths, input lines of any bytes but LF and CR, so non-UTF-8
+   lines are in it), on harden's =inspect.fs=. For each log the checker is
+   run on every prefix, with and without the version stop, and also on
+   mutated records (each schema keyword the checker implements gets
+   records that violate it), and the server is asked for every prefix.
+   Lines split across reads: the log is also cut at arbitrary byte
+   offsets (mid-record and mid-UTF-8-sequence) and both sides read after
+   each cut. Zero disagreements. The default profile stays under about
+   three minutes for =gmake -C pbt check=.
+5. *Calibration.* Three faults planted in the twins, never in the Python,
+   each must make the differential (item 4, or 2 for the version stop) go
+   red, by =pbt/calibrate/007-*.sh=:
+   (a) a lenient reader: the twin's strict reader replaced with cheshire's
+       default =parse-string=;
+   (b) a missing schema keyword: the twin's =enum= check removed;
+   (c) a version stop that ignores MINOR: the twin compares MAJOR only.
+6. *Server bytes.* For a log whose last line holds a =0xFF= byte (and one
+   ending without a newline, and an empty one, and a missing file): the
+   bb server's status, =Content-Type= and body bytes are identical to the
+   Python server's, and the body is the last line byte for byte.
+
+Declared in advance, and only these, as outside the gate: nesting deeper
+than 100 levels (Python's =RecursionError= threshold depends on the
+interpreter's stack); =-h=/=--help= text; methods other than GET and
+request targets other than origin-form paths. And one deliberate
+difference: a schema keyword that checker.py neither implements nor is
+known to ignore makes the twin refuse to run (exit 2), where checker.py
+would silently ignore it. The keywords checker.py ignores that the
+contract schema uses (=$schema=, =$id=, =title=, =description=,
+=pattern=, =x-*=) are listed in the twin and ignored as checker.py
+ignores them, =pattern= included.
+
+* Log
