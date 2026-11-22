@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
 # test/run.sh -- run test/*.fs in each engine, diff against test/expected/,
 # validate every stacks.jsonl line against contract/stacks-log.schema.json.
 #
@@ -14,6 +15,8 @@
 #   \ test: env NAME=VALUE      set a variable; $TMP is the test's temp dir
 #   \ test: unset NAME          remove a variable (HOME is always $TMP/home)
 #   \ test: exit N              expected exit status (default 0)
+# Every test also sees TEST_ENGINE (the engine running it, for a test that
+# starts a second gforth) and TEST_OUT (a dir for files it writes).
 #
 # Golden: test/expected/<name>.out, or <name>@<engine>.out when an engine
 # really differs.  It holds masked stdout, stderr, every *.jsonl and every
@@ -41,6 +44,13 @@ trap 'rm -rf "$WORK"' EXIT
 
 directive() { sed -n "s/^\\\\ test: $2 *//p" "$1"; }
 
+# A 10 s limit per run: GNU timeout, Homebrew's gtimeout, or perl's alarm
+# (stock macOS has no timeout(1); perl is needed for test/mask.pl anyway).
+# A run killed by the limit exits 124 (timeout) or 142 (perl's SIGALRM).
+if command -v timeout >/dev/null; then LIMIT=(timeout 10)
+elif command -v gtimeout >/dev/null; then LIMIT=(gtimeout 10)
+else LIMIT=(perl -e 'alarm shift; exec @ARGV or die "exec $ARGV[0]: $!\n"' 10); fi
+
 pass=0 fail=0 skip=0
 bump() { local v=$1_${2//-/_}; eval "$v=\$(( \${$v:-0} + 1 ))"; }
 count() { local v=$1_${2//-/_}; eval "echo \${$v:-0}"; }
@@ -56,7 +66,7 @@ run_one() { # engine test -> writes $tmp/actual, returns 0 if output usable
   cmd+=(test/lib/assert.fs)
   while read -r f; do [ -n "$f" ] && cmd+=("$f"); done < <(directive "$t" load)
   cmd+=("$t" -e bye)
-  local -a envs=(HOME="$tmp/home" XDG_STATE_HOME="$tmp/state" TEST_OUT="$tmp/out")
+  local -a envs=(HOME="$tmp/home" XDG_STATE_HOME="$tmp/state" TEST_OUT="$tmp/out" TEST_ENGINE="$e")
   local -a unsets=(-u GFORTH_INSPECT_LOG_DIR)
   while read -r kv; do
     [ -n "$kv" ] && envs+=("${kv//\$TMP/$tmp}")
@@ -69,7 +79,7 @@ run_one() { # engine test -> writes $tmp/actual, returns 0 if output usable
   keys=$(directive "$t" stdin)
   # shellcheck disable=SC2059
   printf -- "$keys" > "$tmp/stdin"
-  env "${unsets[@]}" "${clean[@]}" timeout 10 "${cmd[@]}" \
+  env "${unsets[@]}" "${clean[@]}" "${LIMIT[@]}" "${cmd[@]}" \
       < "$tmp/stdin" > "$tmp/stdout" 2> "$tmp/stderr"
   local rc=$?
   {

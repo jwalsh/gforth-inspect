@@ -1,5 +1,6 @@
 \ gforth-inspect v0.1.0
 \ stacks-log schema v1
+\ SPDX-License-Identifier: GPL-3.0-or-later
 \
 \ inspect.fs -- see all of gforth 0.7.3's stacks from inside gforth
 \
@@ -240,12 +241,46 @@ create snap-id 64 allot  0 snap-id c!
     jc s" inspect" jkey inspect-version json-str
     jc s" contract" jkey contract-version json-str  [char] } emit cr ;
 
-: log-write ( xt -- )
-    \ run xt with output to the log, in decimal; BASE is restored after
-    base @ >r decimal
-    log-fid @ ['] outfile-execute catch
-    r> base !  throw
+\ A record is built in memory, then handed to the log with one write-file
+\ (#17).  0.7.3 has no append fam, so the seek to the end and the write are
+\ separate calls, and write-file is a buffered fwrite: a record longer
+\ than the stdio buffer can reach the file in more than one write.
+\ Producers that take turns are safe; producers writing at the same
+\ instant rarely, but possibly, interleave.
+variable log-buf  0 log-buf !  variable log-buf#  0 log-buf# !
+variable log-buf-max  0 log-buf-max !  create log-char 1 allot
+
+: (log-room) ( u -- )
+    \ grow log-buf to hold u more bytes; the new size is stored only
+    \ once the block exists, so a failed resize leaves both unchanged
+    log-buf# @ + dup log-buf-max @ <= IF drop EXIT THEN
+    2* 256 max >r
+    log-buf @ ?dup IF r@ resize ELSE r@ allocate THEN throw
+    log-buf !  r> log-buf-max ! ;
+: (log-free) ( -- )
+    log-buf @ ?dup IF free throw THEN  0 log-buf !  0 log-buf-max ! ;
+: (log-type) ( c-addr u -- )
+    dup (log-room)  tuck log-buf @ log-buf# @ + swap move  log-buf# +! ;
+: (log-emit) ( c -- ) log-char c!  log-char 1 (log-type) ;
+
+: (log-capture) ( xt -- )
+    \ run xt with type and emit appending to log-buf; both are restored
+    action-of type >r  action-of emit >r
+    ['] (log-type) is type  ['] (log-emit) is emit
+    catch  r> is emit  r> is type  throw ;
+: (log-append) ( -- )
+    \ log-buf as one write at the current end: another producer may
+    \ have appended since the last record
+    log-fid @ file-size throw log-fid @ reposition-file throw
+    log-buf @ log-buf# @ log-fid @ write-file throw
     log-fid @ flush-file throw ;
+
+: log-write ( xt -- )
+    \ build xt's record in memory, in decimal (BASE is restored after),
+    \ then append it to the log
+    0 log-buf# !  base @ >r decimal
+    ['] (log-capture) catch
+    r> base !  throw  (log-append) ;
 : log-snapshot ( -- ) logging @ IF ['] (snapshot) log-write THEN ;
 
 : log-on ( -- )
@@ -258,7 +293,7 @@ create snap-id 64 allot  0 snap-id c!
     logging on  ['] (hello) log-write ;
 : log-off ( -- )
     logging @ 0= IF EXIT THEN  logging off  log-fid @ close-file throw
-    0 log-fid ! ;
+    0 log-fid !  (log-free) ;
 : log-where ( -- ) log-paths cr log-path log-path# @ type cr ;
 
 \ --- everything ------------------------------------------------------

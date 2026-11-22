@@ -15,7 +15,8 @@ gmake release-check              # verify, release hygiene, dist/ + SHA256SUMS
 #+end_src
 
 Needs stock gforth 0.7.3 (=gforth=, =gforth-fast=, =gforth-itc=), GNU make,
-bash, perl, python3, =timeout=. With =uv= the records are also checked by
+bash, perl, python3 (=timeout= or =gtimeout= if present, else perl's
+=alarm= gives the 10 s limit). With =uv= the records are also checked by
 the =jsonschema= package; without it only by the built-in validator.
 
 =gmake test= is three steps, each of which fails the build:
@@ -62,12 +63,13 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 | =.cs=               | cs-if, cs-begin, cs-do, cs-guard                            |
 | =dbg-fix= / =dbg+=  | dbg-step, dbg-nest-n, dbg-adjacent, dbg-loop-keys, dbg-demo, dbg-loop, dbg-nest |
 | log records         | log-records, version, log-id, all-tilde, base-kept          |
+| two producers (#17) | log-two-producers (a second gforth appends between records) |
 | log location        | log-dir-env, log-dir-xdg, log-dir-home                      |
 | JSON                | json-escape (quotes, backslash, controls, UTF-8, invalid bytes), json-src, json-float |
 | canvas              | canvas-line, canvas-plot, canvas-files (P1/P3/XBM), canvas-errors |
 | lldb =brk= (no lldb) | demo                                                       |
 
-39 tests x 3 engines = 117 cases, plus =idle.fs= (skipped: it parks for
+40 tests x 3 engines = 120 cases, plus =idle.fs= (skipped: it parks for
 =lldb -p=).
 
 * Known limits
@@ -87,8 +89,27 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
   =gmake test-lldb= then prints SKIP.  =lldb/log/= is the last transcript
   from outside one, with machine paths masked.
 - =gmake verify= runs =gmake -C pbt calibrate=, which is owned by =pbt/=.
+  It passes =INSPECT_REF=HEAD=, so the property tests load this
+  checkout's committed =env/inspect.fs=, not the =harden= branch.
+- Two producers on one log are safe when they take turns
+  (=log-two-producers=).  Each record is built in memory and written as
+  one line, but two producers writing at the same instant can still
+  collide: the seek and the write are separate calls, and 0.7.3's
+  =open-file= has no append mode.  That case is best-effort and is
+  measured by experiment 005, not gated here.
 
 * Log
+
+** 2026-11-21 (#17)
+
+=log-two-producers=: producer A logs, a second gforth of the same engine
+(=test/lib/log-producer-b.fs=, started by =system= so the order is fixed)
+appends a hello and a snapshot, then A logs again.  Without the
+seek-to-end in =(log-append)= A's second record lands on B's hello and
+line 4 does not parse, in all three engines; with it all five records
+survive.  Records are now built in memory (=type= and =emit= redirected)
+and written whole; every golden is byte-identical to before.
+The runner now exports =TEST_ENGINE= for tests like this one.
 
 ** 2026-11-21 (contract 1.1)
 
