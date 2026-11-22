@@ -66,8 +66,8 @@ Mutation table (=pbt/calibrate/012-*.sh=, 25 examples each, no shrinking):
 
 32-bit truncation also broke P3 on that run: the component shows the top
 48 of 64 bits, of which only 16 then carry hash, so collisions can come
-within a batch.  It is not reliable at 25 examples (P4 only on the rerun
-below).
+within a batch.  Not reliable at 25 examples: P4 only on the rerun below,
+P4 P3 again under =gmake release-check= at 1447510.
 
 ** 2026-11-22 owner = every segment before the repo (coordinator's spec fix)
 
