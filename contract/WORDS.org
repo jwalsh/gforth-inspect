@@ -11,7 +11,7 @@ may change in any release.
 | gforth | engines                          | status                                                                 |
 |--------+----------------------------------+------------------------------------------------------------------------|
 | 0.7.3  | =gforth=, =gforth-fast=, =gforth-itc= | supported and tested: every word below, every release                  |
-| 1.0.x  | —                                | not supported; measured in experiment 010. =inspect.fs= prints a notice on stderr when loaded by any gforth whose =version-string= is not =0.7.3= |
+| 1.0.x  | —                                | not supported. =inspect.fs= prints one line on stderr when loaded by any gforth whose =version-string= is not =0.7.3=, then loads on as far as it can |
 
 =inspect.fs= uses only words present in 0.7.3. It uses no gforth 1.0
 words (={: :}=, =[: ;]=, =[{:=).
@@ -21,8 +21,10 @@ words (={: :}=, =[: ;]=, =[{:=).
 - No word below changes =BASE= or the float =PRECISION=.
 - A word that reads a stack leaves every stack bit-identical: data, float,
   return, control-flow.
-- Numbers print in decimal, whatever =BASE= is, except addresses, which
-  print as =$= hex.
+- The log is always decimal, whatever =BASE= is. In the text, depths
+  (=<n>=), offsets (=+n=) and =>in== are decimal and addresses print as =$= hex;
+  stack values and plain return-stack cells follow =BASE=, as =.s= does
+  (=hex 1F .stacks= prints =data   <1> 1F=).
 - Loading =inspect.fs= twice redefines its words. Load it once
   (=require inspect.fs=, with =fpath+ dir= to find it).
 
@@ -86,9 +88,15 @@ values.
   ... interpreter (rs-full on to see it)
 #+end_example
 
-A frame inside a colon definition prints =$ADDR = word +offset= (offset in
-decimal bytes). Other cells print =$ADDR (stack pointer)= or the bare
-value. With =rs-full on= the interpreter's frames follow in the same form.
+Every cell prints as =$HEX= followed by one of:
+
+| form                | when                                                    |
+|---------------------+---------------------------------------------------------|
+| = = word +offset=   | the cell is a return address inside a colon definition (offset in decimal bytes) |
+| = (stack pointer)=  | the cell points into a stack                            |
+| = = value=          | anything else; the value follows =BASE= (=5 >r .rs= prints =$5 = 5=) |
+
+With =rs-full on= the interpreter's frames follow in the same forms.
 
 ** =.input=
 
@@ -113,8 +121,9 @@ input  *OS command line*:-1 >in=10
           ^
 #+end_example
 
-The first line is =file:line in word=, the place of the =~~~= in the source.
-Code typed with =-e= gives =*somewhere*:-1:=.
+The first line names the place in the source. =~~~= prints =file:line in word=.
+=~~= after =all-~~= prints =file:line: in word= (a colon after the line, as
+stock =~~= does), and code typed with =-e= gives =*somewhere*:-1: in word=.
 
 ** =.cs=
 
@@ -137,18 +146,30 @@ D: <2> 3 3  F: <0> R: -
 
 =D:= is the data stack, =F:= the float stack, and =R:= the colon words on the
 return stack (callers of the word being stepped), or =-= when there are
-none. Each =->= waits for a key: Enter steps, =n= nests, =c= continues.
+none. Each =->= waits for a key (stock 0.7.3 =debug.fs=):
+
+| key       | does                                        |
+|-----------+---------------------------------------------|
+| Enter, or any key not below | one step                  |
+| =n=       | nest into the word about to run             |
+| =u=       | unnest: run to the end of the current word  |
+| =d=       | done: run to the end without stopping       |
+| =s=, =a=  | stop: leave the debugger (=-128 throw=)      |
+| =?=       | list the keys                               |
+
 A word =dbg= cannot step into is run and reported as =stepped over=; a
 defer chain longer than 16 hops is reported and not run.
 
 ** =log-where=
 
-Prints the log's absolute path on its own line.
+Prints an empty line, then the log's path as configured: relative when
+=GFORTH_INSPECT_LOG_DIR= is relative.
 
 * Versioning of this interface
 
-The words above, their stack effects and the text formats are covered by
-RELEASING.org's rules, like the log: removing or renaming a word, or
-changing a stack effect, is MAJOR. Adding a word is MINOR. The text
-formats are for people: a change in spacing or wording is PATCH, and
-consumers must read the log, never the text, for data.
+The release version (=inspect-version=) moves like this for the words:
+removing or renaming a word, or changing its stack effect, is MAJOR;
+adding a word is MINOR. The text formats are for people: a change in
+spacing or wording is PATCH, and consumers read the log, never the text,
+for data. The log has its own contract version (=contract-version=), with
+its rules in [[file:stacks-log.org][stacks-log.org]].

@@ -41,8 +41,9 @@ if not install or not usage or install.start() > usage.start():
 section = f"""* Install
 
 #+begin_src sh
-gh release download {tag} -R {repo} -D forth-env/
-(cd forth-env && shasum -a 256 -c SHA256SUMS) && gforth forth-env/inspect.fs
+new=$(mktemp -d) && gh release download {tag} -R {repo} -D "$new"
+(cd "$new" && shasum -a 256 -c SHA256SUMS) && mkdir -p forth-env && cp "$new"/* forth-env/
+gforth forth-env/inspect.fs
 #+end_src
 
 =inspect-version type= prints {tag[1:]}. Within one MAJOR version the words

@@ -119,6 +119,9 @@ LEAK := /Users/|/home/|/opt/homebrew|/private/|/var/folders|sicpminus|course\.el
 release-check: verify ## verify + release hygiene + the 8 assets in dist/
 	@echo "== release hygiene: env/ contract/ ($(RELEASE_FILES))"
 	@last=$$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true); \
+	  if [ -z "$$last" ] && [ -n "$$(git tag -l 'v[0-9]*')" ]; then \
+	    echo "release-check: version tags exist but none is reachable from HEAD (shallow clone?): fetch tags first (#44)"; exit 1; \
+	  fi; \
 	  if [ -n "$$last" ]; then \
 	    v=$$(sed -n 's/^\\ gforth-inspect v//p' env/inspect.fs); \
 	    lastv=$$(git show "$$last:env/inspect.fs" | sed -n 's/^\\ gforth-inspect v//p'); \
@@ -126,6 +129,9 @@ release-check: verify ## verify + release hygiene + the 8 assets in dist/
 	    new=$$(git hash-object env/inspect.fs); \
 	    if [ "$$old" != "$$new" ] && [ "$$v" = "$$lastv" ]; then \
 	      echo "release-check: env/inspect.fs changed since $$last but is still v$$v: bump the version (#44)"; exit 1; \
+	    fi; \
+	    if [ "$$v" != "$$lastv" ] && [ "$$(printf '%s\n%s\n' "$$lastv" "$$v" | sort -V | tail -1)" != "$$v" ]; then \
+	      echo "release-check: v$$v is older than $$last (#44)"; exit 1; \
 	    fi; \
 	  fi
 	@test $(words $(sort $(ASSET_NAMES))) = $(words $(RELEASE_FILES)) || \
