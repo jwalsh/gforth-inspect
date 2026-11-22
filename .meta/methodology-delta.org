@@ -1,32 +1,25 @@
 #+TITLE: Oracles
 #+STARTUP: showall
 
-The thing under test is a reporter: =inspect.fs= describes state gforth
-already holds. Check the report against that state, read by a path that
-bypasses the reporter. Two properties, never one oracle:
+| oracle                                                   | exact?                 | live?        | good for                                       |
+|----------------------------------------------------------+------------------------+--------------+------------------------------------------------|
+| lldb at a Forth-side =brk=                                | yes (why: F-1a)        | no (offline) | ground truth for a handful of cases            |
+| in-image =depth= =pick= =fdepth= =fpick= =rp@=              | yes for data and float | yes          | O-1, O-2                                       |
+| engine differential: gforth / gforth-fast / gforth-itc   | relative               | yes          | any output that should not depend on threading |
+| the JSON schema                                          | shape only             | yes          | every record from every run                    |
+| model =words.json= (declared stack effects)               | declared, not measured | n/a          | declared vs measured depth deltas (exp 003)    |
+| =.s= and =f.s= text                                        | rounded, truncated     | yes          | nothing: a second reporter                     |
 
-- *Non-interference.* Inspector words leave every stack bit-identical.
-  Oracle: the same program with and without the inspector.
-- *Faithfulness.* The report equals the state. Oracle: =depth= + =pick=,
-  =fdepth= + =fpick=; floats compared as bits, never as printed text.
+| ID  | WHEN                                   | DO                                                                   | NEVER                                 | CHECK                       |
+|-----+----------------------------------------+----------------------------------------------------------------------+---------------------------------------+-----------------------------|
+| O-1 | testing non-interference                | run the same program with and without the inspector                  | infer it from the report              | stacks bit-identical (exp 001) |
+| O-2 | testing faithfulness                    | independent read: =depth= + =pick=, =fdepth= + =fpick=; floats as their bits | let a printer's rounding stand in for agreement | exact match (exp 001) |
+| O-3 | a fault could be shared by =depth= and the inspector | check from outside the image: engine differential or offline lldb | trust in-image oracles alone | outside check run        |
+| O-4 | =words.json= and a measured delta disagree | report both sides                                                   | decide which side from the property   | finding names both sides    |
+| O-5 | gforth-fast step counts differ          | mask (TOS in a register, fused superinstructions: documented)         | count it as a finding                 | mask in the test            |
+| O-6 | need a stack value as data              | read the log                                                         | parse =.s= or =f.s=                     |                             |
 
-* Oracles, strongest first
-
-| oracle                                              | exact?             | live? | use for                                 |
-|-----------------------------------------------------+--------------------+-------+-----------------------------------------|
-| lldb at a Forth-side =brk= (=call-c= flushes sp/fp/rp/lp) | yes                | no    | ground truth, a few cases               |
-| in-image =depth= =pick= =fdepth= =fpick= =rp@=         | yes (data, float)  | yes   | non-interference, faithfulness          |
-| engine differential: gforth / -fast / -itc          | relative           | yes   | anything that must not depend on threading |
-| JSON schema                                         | shape only         | yes   | every record                            |
-| model =words.json= declared effects                  | declared           | n/a   | declared vs measured depth deltas       |
-| =.s= / =f.s= text                                     | rounded, truncated | yes   | nothing: a second reporter              |
-
-* Weak spots
-
-- In-image oracles share the image with the inspector. A fault shared by
-  =depth= and the inspector is invisible from inside. Only the engine
-  differential and offline lldb see from outside.
-- A declared effect is documentation. A disagreement with a measured delta
-  means gforth or the model is wrong; the property can't say which.
-- gforth-fast keeps TOS in a register and fuses superinstructions. Step-count
-  differences there are documented behaviour: mask them, don't count them.
+| re  | kind | claim                                                                 |
+|-----+------+-----------------------------------------------------------------------|
+| O-4 | why  | a disagreement means gforth or the model is wrong                     |
+| O-4 | limit | the property finds the disagreement; it cannot say which side is wrong |

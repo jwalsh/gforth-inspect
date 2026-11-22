@@ -39,7 +39,9 @@ every commit and every PR. It runs, in order:
    and the dated log are in [[file:../test/README.org][test/README.org]]
 4. =gmake -C pbt check=, then =gmake -C pbt calibrate=
 
-CI runs this baseline on every pull request and every push to =main=, from
+CI is disabled while GitHub Actions billing stops its jobs (D-40): run the
+baseline locally and paste its summary into the PR. When enabled, CI runs
+this baseline on every pull request and every push to =main=, from
 =.github/workflows/verify.yml= on a macOS runner with gforth 0.7.3 from
 Homebrew. When the root Makefile is present, CI runs =gmake verify=;
 without it, only the privacy scan, =scripts/check-guides.sh= and the

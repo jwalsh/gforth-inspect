@@ -1,39 +1,29 @@
 #+TITLE: Experiment process
 #+STARTUP: showall
 
-* Roles
+| role                                     | owns                                                           | NEVER touches                                               |
+|------------------------------------------+----------------------------------------------------------------+-------------------------------------------------------------|
+| coordinators (the owner and one session) | =main=, =experiments/README.org=, =.meta/=, the docs, promotion, merges ([[file:decisions.org][D-13]]) | an experiment's code                       |
+| an experiment's agent                    | worktree =../gforth-inspect-NNN-slug=, branch =exp/NNN-slug=, its Log | =main=, other experiments, =env/= and =contract/= on =harden= |
+| the =harden= work                          | =env/*.fs=, =contract/=, =test/=, the top-level =Makefile=           | =pbt/=                                                       |
 
-| role                | owns                                                        | never touches                          |
-|---------------------+-------------------------------------------------------------+----------------------------------------|
-| coordinators        | =main=, =experiments/README.org=, =.meta/=, docs, merges       | an experiment's code                   |
-| experiment agent    | =../gforth-inspect-NNN-slug=, branch =exp/NNN-slug=, its Log | =main=, other experiments, =env/=, =contract/= |
-| producer work       | =env/=, =contract/=, =test/=, root =Makefile=                   | =pbt/=                                 |
+| ID  | WHEN                         | DO                                                                                             | NEVER                                   | CHECK                                       |
+|-----+------------------------------+------------------------------------------------------------------------------------------------+-----------------------------------------+---------------------------------------------|
+| E-1 | new experiment               | coordinator adds a row to =experiments/README.org= and writes hypothesis + gate in =experiments/NNN-slug/README.org=; commits both to =main= | run before that commit | gate commit precedes first Log entry |
+| E-2 | starting work                | worktree cut from =main=; draft PR ([[file:../AGENTS.md][AGENTS.md]])                                                        | cut from an unmerged branch             | =gh pr list --state open=                    |
+| E-3 | each run                     | go through =gmake -C pbt check=; Log date, inspect.fs provenance (=gforth_run.py= prints it), seed, result | omit failures                 | Log line names blob + seed                  |
+| E-4 | during the work              | commit and push =exp/NNN-slug= as you go                                                        | results only in a local worktree        | branch on origin                            |
+| E-5 | after the first run          | append to the Log                                                                              | edit the gate or the prediction         | gate section unchanged in =git log -p=       |
+| E-6 | bug found in =env/inspect.fs= | hand it to the inspector's owner as a shrunk case + one-line reproducer; the finding test stays red until the fix lands | fix the inspector; weaken the test to go green | test red until fix |
+| E-7 | gate passes or finding solid | PR to =main= via [[file:../docs/REVIEW.md][REVIEW.md]]; coordinator merges; a refuted hypothesis merges as a Log with no code | merge own PR      | PR body has a Review section                |
+| E-8 | choosing the inspector       | take it from =INSPECT_REF=                                                                       | test the working tree implicitly | provenance line names the blob |
+| E-9 | calibrating an unfixed bug   | pin its own ref: =CALIBRATE_005_REF= (default =0842eda=)                                         | follow =INSPECT_REF=                      | red on pinned ref, green on the fix         |
+| E-10 | each gforth run             | own =XDG_STATE_HOME= in a temp dir; relative file name                                          | a record holding a real path            | no absolute path in any record              |
 
-Experiments test the inspector; they never fix it. Bug in =env/inspect.fs=:
-hand the owner a shrunk case and a one-line reproducer. The finding test
-stays red until the fix lands. Never weaken it.
+| re  | kind  | claim                                                    |
+|-----+-------+----------------------------------------------------------|
+| E-8 | why   | every experiment tests one named blob                    |
+| E-8 | how   | =gmake verify= sets =INSPECT_REF=HEAD=                      |
+| E-8 | limit | the =pbt/= default is =harden=                               |
 
-* Loop
-
-1. Coordinator commits to =main=, before the first run: a row in
-   =experiments/README.org=, and =experiments/NNN-slug/README.org= with
-   hypothesis, prediction and gate.
-2. Agent works in a worktree cut from =main=; draft PR at once.
-3. Every run goes through =gmake -C pbt check=. Log each run: date,
-   inspect.fs provenance (printed by =gforth_run.py=), seed, result.
-   Log failures too.
-4. Commit and push as you go.
-5. Gate met, or finding solid: PR to =main=, through REVIEW.md;
-   coordinator merges. A refuted hypothesis merges too, as a Log.
-
-Gate and prediction: never edited after the first run. Log: append-only.
-
-* Isolation
-
-- Test a pinned blob, never a moving name. =INSPECT_REF= selects it; the
-  root =gmake verify= sets =INSPECT_REF=HEAD=. (Defaults in =pbt/= still name
-  =harden=: follow-up, change to =HEAD=.)
-- A calibration about an unfixed producer pins its own ref
-  (=CALIBRATE_005_REF=, default =0842eda=). Never follow =INSPECT_REF=.
-- Each gforth run: own temp dir, own =HOME= and =XDG_STATE_HOME=, relative
-  file names. No record may hold a real path.
+Open: change the =pbt/= default =INSPECT_REF= from =harden= to =HEAD=.

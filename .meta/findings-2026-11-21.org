@@ -1,43 +1,24 @@
-#+TITLE: Findings 2026-11-21: gforth 0.7.3 by hand, before the tests
+#+TITLE: gforth 0.7.3 facts, 2026-11-21
 #+STARTUP: showall
 
-* lldb: exact only at a Forth-side breakpoint
-
-=brk= enters C via =call-c=, which flushes the VM registers to
-=gforth_SP= / =FP= / =RP= / =LP=. Elsewhere lldb guesses: no arm64 port in
-0.7.3, registers move at =-O2=, gforth-fast keeps TOS in a register. A
-=-g -O0= build is exact. lldb can't attach from a sandboxed agent session.
-*Rule: no lldb in any live pipeline.*
-
-* Threaded code differs from what the stock tools assume
-
-- xt = code-field address. =dodoes:= pushes =>body=. A =does>= word is
-  =[dodoes:][does-code][body]=.
-- Direct-threaded engines: a colon call is two cells, =call <body>=. Stock
-  =dbg= is ITC-only (=debug.fs=: "!!! dependency: ITC") and crashes on the
-  first step in gforth and gforth-fast. =dbg-fix= and =nestXT+= insert the
-  two-cell breakpoint.
-- A control-flow stack item is three cells (orig / dest / do-dest).
-- =pause= saves sp/fp/rp/lp in the task area; a server task can read the
-  REPL task's stacks from there.
-
-* An inspector that reads the return stack moves it
-
-=.stacks= once printed its own frame's return stack, not its caller's:
-plausible and wrong. Hence non-interference and faithfulness are separate
-properties (001), and =.stacks=, =~~~=, =all-~~= =~~= are tested as three
-paths: each stores =snap-rp= differently.
-
-* Sockets
-
-- =unix/socket.fs= needs =C_INCLUDE_PATH= set to the gforth bottle's
-  =include/= (Homebrew's libcc header path is wrong).
-- =create-server= binds 0.0.0.0: bind 127.0.0.1 yourself.
-- =tasker.fs= sets =key= to =task-key=: the REPL pauses while idle.
-- A 30-line server-task prototype found its socket fd on the REPL's data
-  stack: the two tasks shared one stack.
-
-* Floats (confirmed by 001, fixed in #1)
-
-=-0e= logged as =0.00000000000000E0=, sign lost; =json-f= printed through
-=fs.= with 15 significant digits. Records did not round-trip.
+| ID   | fact                                                                                                                                                       | rule                                                   |
+|------+------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------|
+| F-1a | lldb stacks are exact at a Forth-side =brk=: =brk= reaches C through =call-c=, which flushes the VM registers to =gforth_SP= / =FP= / =RP= / =LP= | NEVER lldb in a live pipeline |
+| F-1b | away from =brk=, lldb guesses the stacks                                                  |                                               |
+| F-1c | 0.7.3 has no arm64 port                                                                 |                                               |
+| F-1d | registers move at =-O2=                                                                   |                                               |
+| F-1e | =gforth-fast= keeps TOS in a register                                                     |                                               |
+| F-1f | a =-g -O0= build is exact                                                                 |                                               |
+| F-1g | lldb cannot attach from a sandboxed agent session                                       |                                               |
+| F-2  | an xt is a code-field address; =dodoes:= pushes =>body=; a =does>= word is =[dodoes:][does-code][body]=                                                           |                                                        |
+| F-3  | in the direct-threaded engines a colon call is two cells, =call <body>=; stock 0.7.3 =dbg= is ITC-only (=debug.fs=: "!!! dependency: ITC") and crashes in =gforth= and =gforth-fast= on the first step | use =dbg-fix= (two-cell breakpoint) and =nestXT+= (for =n=) |
+| F-4  | each control-flow stack item is three cells (orig / dest / do-dest)                                                                                         |                                                        |
+| F-5  | =pause= saves sp/fp/rp/lp into the task area                                                                                                                 | a server task can read the REPL task's stacks          |
+| F-6  | =.stacks= once printed its own frame's copy of the return stack, not its caller's                                                                            | test =.stacks=, =~~~=, =all-~~= =~~= as three paths: each stores =snap-rp= differently (exp 001; O-1, O-2) |
+| F-7  | =unix/socket.fs= works once =C_INCLUDE_PATH= points at the gforth bottle's =include/= (the Homebrew bottle gets the libcc header path wrong)                   |                                                        |
+| F-8  | =create-server= binds 0.0.0.0                                                                                                                                | a server binds 127.0.0.1 itself                        |
+| F-9  | =tasker.fs= sets =key= to =task-key=, so the REPL pauses while idle                                                                                              |                                                        |
+| F-10 | in a 30-line prototype server task, the server's socket fd turned up on the REPL's data stack: the two tasks shared one stack                               |                                                        |
+| F-11a | before #1, =-0e= was logged as =0.00000000000000E0=: the sign was lost                  | fixed in #1; exp 001 is the regression test   |
+| F-11b | before #1, =json-f= printed floats through =fs.=                                         |                                               |
+| F-11c | =fs.= keeps 15 significant digits, so a logged float did not round-trip                 |                                               |
