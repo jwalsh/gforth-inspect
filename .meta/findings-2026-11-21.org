@@ -11,11 +11,14 @@
 | F-1f | a =-g -O0= build is exact                                                                 |                                               |
 | F-1g | lldb cannot attach from a sandboxed agent session                                       |                                               |
 | F-2  | an xt is a code-field address; =dodoes:= pushes =>body=; a =does>= word is =[dodoes:][does-code][body]=                                                           |                                                        |
-| F-3  | in the direct-threaded engines a colon call is two cells, =call <body>=; stock 0.7.3 =dbg= is ITC-only (=debug.fs=: "!!! dependency: ITC") and crashes in =gforth= and =gforth-fast= on the first step | use =dbg-fix= (two-cell breakpoint) and =nestXT+= (for =n=) |
+| F-3a | in the direct-threaded engines (=gforth=, =gforth-fast=) a colon call is two cells, =call <body>= | |
+| F-3b | stock 0.7.3 =dbg= is ITC-only (=debug.fs=: "!!! dependency: ITC")                        | |
+| F-3c | because of F-3a and F-3b, stock =dbg= crashes in =gforth= and =gforth-fast= on the first step | use =dbg-fix= (two-cell breakpoint) and =nestXT+= (for =n=) |
 | F-4  | each control-flow stack item is three cells (orig / dest / do-dest)                                                                                         |                                                        |
 | F-5  | =pause= saves sp/fp/rp/lp into the task area                                                                                                                 | a server task can read the REPL task's stacks          |
 | F-6  | =.stacks= once printed its own frame's copy of the return stack, not its caller's                                                                            | test =.stacks=, =~~~=, =all-~~= =~~= as three paths: each stores =snap-rp= differently (exp 001; O-1, O-2) |
-| F-7  | =unix/socket.fs= works once =C_INCLUDE_PATH= points at the gforth bottle's =include/= (the Homebrew bottle gets the libcc header path wrong)                   |                                                        |
+| F-7a | loading =unix/socket.fs= needs =C_INCLUDE_PATH= set to the gforth bottle's =include/= | |
+| F-7b | why: the Homebrew bottle gets the libcc header path wrong                          | |
 | F-8  | =create-server= binds 0.0.0.0                                                                                                                                | a server binds 127.0.0.1 itself                        |
 | F-9  | =tasker.fs= sets =key= to =task-key=, so the REPL pauses while idle                                                                                              |                                                        |
 | F-10 | in a 30-line prototype server task, the server's socket fd turned up on the REPL's data stack: the two tasks shared one stack                               |                                                        |
