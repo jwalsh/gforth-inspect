@@ -25,3 +25,4 @@
 | F-11a | before #1, =-0e= was logged as =0.00000000000000E0=: the sign was lost                  | fixed in #1; exp 001 is the regression test   |
 | F-11b | before #1, =json-f= printed floats through =fs.=                                         |                                               |
 | F-11c | =fs.= keeps 15 significant digits, so a logged float did not round-trip                 |                                               |
+| F-12 | =get-dir ( c-addr u -- c-addr' u' )= is getcwd in 0.7.3 (all three engines, and 1.0.1): it returns the physical cwd, symlinks resolved, and ignores =$PWD=; =set-dir= exists too | find the project from =get-dir=, never =$PWD= (an inherited =PWD= misattributes; v0.3.0) |
