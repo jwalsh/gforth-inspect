@@ -143,9 +143,18 @@ class Run:
         repo = config.one(entries, "repo")
         self.candidate_blob = candidate.options["blob"]
         self.dist = self.run_dir / "assets" / "dist"
-        provenance = assets.build(candidate.path, self.candidate_blob, self.dist)
+        saved = json.loads((self.run_dir / "run.json").read_text()) if (self.run_dir / "run.json").exists() else None
+        if saved and self.dist.exists():
+            # a resumed run keeps the assets it started with: the candidate's
+            # worktree may have moved since (its prose assets pin the commit)
+            provenance = saved["assets"]
+            now = {path.name: assets.blob_of(path) for path in self.dist.iterdir()}
+            if now != provenance["assets"]:
+                raise SystemExit("resume: the run's dist/ is not the one it started with")
+        else:
+            provenance = assets.build(candidate.path, self.candidate_blob, self.dist)
         self.candidate_commit = provenance["commit"]
-        self.candidate_source = (candidate.path / "env" / "inspect.fs").read_bytes()
+        self.candidate_source = (self.dist / "inspect.fs").read_bytes()   # the same blob as the commit's
         older_ref = repo.options["older"]
         self.older_commit = assets.git(repo.path, "rev-parse", older_ref).strip()
         self.older_source = subprocess.run(["git", "-C", str(repo.path), "show", f"{older_ref}:env/inspect.fs"],
