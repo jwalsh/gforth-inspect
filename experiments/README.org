@@ -15,6 +15,7 @@ which is a separate question from whether a test went green.
 | 002 | escaping         | for any input line, the logged record is strict UTF-8 JSON, and =input.text= is the line with control characters mapped to space             | done    | main | 18ebe2d refuted on invalid bytes only (as predicted); harden 0.1.0 100% all classes, 3 engines — PR #8 |
 | 003 | declared-effects | for words with a plain data/float effect in the model's =words.json=, the depth deltas measured in gforth 0.7.3 match the declared effect      | done    | main | held: 96.2% of 796 agree; 27 of 30 misses are the model, 1 gforth (uallot) — PR #6 |
 | 004 | reference-consumers | the three frozen reference consumers give the same output on records from 18ebe2d and harden head, except for the #1 float fix: harden is not a MAJOR change | done    | main | no breaking diff in 4912 programs; MAJOR only by the moved default log path — PR #11 |
+| 005 | concurrent-producers | N gforths logging to one stacks.jsonl lose no record and leave every line parseable (#17) | running | main |        |
 
 Not yet proposed, from the handoff list: engine equivalence,
 control-flow stack nesting, =rs-full= prefix, =dbg+= step counts,
