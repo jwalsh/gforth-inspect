@@ -35,7 +35,7 @@ D = Downstream (course session), H (D) = H via D.
 | D-27 | ship v0.5.0 by 2026-11-22 for course use: =harden= is final, =canvas.fs= removed now (brings D-8 forward)                                                        | H     | D-8's end-of-week timing           | issue #23 |
 | D-28 | port the tooling from Python to Babashka after v0.5.0, as a gated experiment; shell scripts are suspect; frozen reference consumers stay as they are             | H     |                                    | exp 006 (proposal, PR #24) |
 | D-29 | a release is a contract: the inspector, the guidelines (=contract/CONSUMERS.org=, =contract/CONSUMER-AGENTS.md=), the skill (=contract/skill/SKILL.md=); never this repo's execution; consumer docs in =contract/=, not the root | H | D-15's four-asset list (now six + =SHA256SUMS=) | RELEASING.org asset table; =scripts/check-guides.sh=; =RELEASE_FILES=, =gmake release-check= |
-| D-30 | plugin published from this repo's own marketplace (=.claude-plugin/marketplace.json=, source =./contract=), after v0.5.0; not listed in defrecord until a second consumer exists; one tag per release (=vX.Y.Z=), no separate =gforth--vX.Y.Z= plugin tag; plugin version = release version | O (skills-c2 advising) | | issue #23 |
+| D-30 | the plugin is published from this repo's own marketplace | O (skills-c2 advising) | | issue #23 |
 | D-31 | =strict= off on =main='s required check until the first tag (option 1 of #26)                                                                                   | H     |                                    | =.github/branch-protection.json=; issue #26 |
 | D-32 | plan for the first release to be v1.0.0 rather than v0.5.0                                                                                                    | H     | D-19 (open: decided at tag time)   | issue #23 |
 | D-33 | keep jq; Python reference consumers (=checker.py=, =mock_server.py=) get bb twins and are deleted once the runner is ported                                          | H     | D-28's "stay as they are"          | exp 007 (PR #28) |
@@ -44,9 +44,20 @@ D = Downstream (course session), H (D) = H via D.
 | D-36 | by 1.0.0 the envelope (=v=, =event=, =t=, =hello.contract=) is frozen and versioned on its own; a far-future producer (contract 10.0) still emits it, so a 0.5-era consumer stops by version, never by crash | H | | exp 009 H3 (PR #30); issue #23 |
 | D-37 | the version check is compound: record =v=, =hello.contract=, =hello.inspect=, schema =$schema= / =x-version= / =x-contract=, the =GET /stacks= API spec; consumers check them together | H | D-11's single-field check | exp 009 H5 (PR #30) |
 | D-38 | invariant I-1, never changes: every log line begins ={"v":=<integer>=,=; =v= is never renamed, moved, retyped or dropped; consumers check the prefix first and fail early | H | | exp 009 H6 (PR #30) |
-| D-39 | =.meta/= is not rendered: no =.llm.org= sidecars; files stay compressed; English prose stays only where an eval shows it carries (ablation verdict =carries=) | H | | M-1; ablation not yet run here (tools on www.wal.sh =exp/llm-compressed=) |
+| D-39 | =.meta/= gets no =.llm.org= sidecars and stays compressed | H | | M-1; ablation (below) |
 
 | open | blocker                                                                                                 | owner |
 |------+---------------------------------------------------------------------------------------------------------+-------|
-| #25  | history of =lldb=, =model=, =harden= holds absolute paths: rewrite history, or leave those branches unpublished | H     |
+| D-25 | absolute paths in the history of =lldb=, =model=, =harden=, and a private repo name in =main='s history (=experiment-process.org= before f42d211): rewrite history, or leave those refs unpublished | H     |
 | #13  | the =harden= PR: has the Makefile standard (D-22), the issue #17 concurrent-producer fix, its own review (D-16); required =verify= check cannot run (GitHub Actions billing)                                | H     |
+
+| re   | kind  | claim                                                                                   |
+|------+-------+-----------------------------------------------------------------------------------------|
+| D-30 | how   | marketplace file =.claude-plugin/marketplace.json=, source =./contract=                  |
+| D-30 | when  | after v0.5.0                                                                            |
+| D-30 | never | listed in defrecord before a second consumer exists                                     |
+| D-30 | how   | one tag per release (=vX.Y.Z=); no separate =gforth--vX.Y.Z= plugin tag                 |
+| D-30 | how   | plugin version = release version                                                        |
+| D-39 | why   | =.meta/= is not rendered                                                                |
+| D-39 | how   | English prose stays only where an ablation verdict is =carries=                          |
+| D-39 | check | ablation of =.meta/= at 344b88b, 2026-11-22, run by the www.wal.sh session (STYLE.org v0.4.0; (private)): 1 prose unit cut, 7 unclear rows split |
