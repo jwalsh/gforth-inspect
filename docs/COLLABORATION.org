@@ -6,10 +6,10 @@ standalone tool, a book companion. This file covers how their maintainers,
 and the agents working for them, change the tool together without breaking
 each other.
 
-The contract it depends on is in [[file:contract/CONSUMERS.org][contract/CONSUMERS.org]], the release rules are in
-[[file:RELEASING.org][RELEASING.org]], and the per-agent rules are in [[file:AGENTS.md][AGENTS.md]] and [[file:REVIEW.md][REVIEW.md]].
+The contract it depends on is in [[file:../contract/CONSUMERS.org][contract/CONSUMERS.org]], the release rules are in
+[[file:RELEASING.org][RELEASING.org]], and the per-agent rules are in [[file:../AGENTS.md][AGENTS.md]] and [[file:REVIEW.md][REVIEW.md]].
 Everything here was either lived through on 2026-11-21 (see
-[[file:.meta/decisions.org][.meta/decisions.org]]) or is the smallest extension of that to N consumers.
+[[file:../.meta/decisions.org][.meta/decisions.org]]) or is the smallest extension of that to N consumers.
 
 *Status, 2026-11-21:* this is a design. Two parts don't exist yet: CI
 (=.github/workflows/verify.yml=, in review) and the =consumers/= runner that
@@ -188,5 +188,5 @@ there is one). A red result means this candidate breaks that consumer.
 | A gate that has never been seen red                                                               | 2026-11-21 (calibrate exit bug) | every gate has a planted fault that must fail with its own message                             |
 | A guide that drifts from the code, or developer notes in the README                               | expected                | =scripts/check-guides.sh= in =gmake verify=                                                              |
 | Private data published (paths, names, student code)                                               | 2026-11-21 (lldb logs)   | =scripts/privacy-scan.sh= on the tree and on every release asset; registry files public by rule          |
-| A rule decided in a message and never written down                                               | 2026-11-21              | [[file:.meta/decisions.org][.meta/decisions.org]], written when the decision lands                                                      |
+| A rule decided in a message and never written down                                               | 2026-11-21              | [[file:../.meta/decisions.org][.meta/decisions.org]], written when the decision lands                                                      |
 | A removal blocked by a safety check gets worked around                                            | 2026-11-21              | do not work around it: use =git clean= or a fresh temp dir, or ask the owner                              |
