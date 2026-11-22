@@ -41,8 +41,8 @@ return <R:58> top first
 input  *evaluated string*:-1 >in=5
 4 ~~ drop
      ^
-## log state/gforth-inspect/stacks.jsonl
-{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.2.0","contract":"1.1"}
+## log state/gforth-inspect/OWNER/REPO/WORKTREE/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
 {"v":1,"event":"snapshot","t":T,"where":"f1","src":"test/all-tilde-where.fs:4","data":[7],"float":[],"rs":[{"word":"f1","off":80},{"word":"f2","off":32}],"input":{"file":"test/all-tilde-where.fs","line":9,"in":2,"text":"f2"}}
 {"v":1,"event":"snapshot","t":T,"where":"down","src":"test/all-tilde-where.fs:6","data":[0],"float":[],"rs":[{"word":"down","off":136},{"word":"down","off":72},{"word":"down","off":72}],"input":{"file":"test/all-tilde-where.fs","line":10,"in":6,"text":"2 down"}}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[3],"float":[],"rs":[],"input":{"file":"test/all-tilde-where.fs","line":11,"in":5,"text":"3 ~~ drop"}}

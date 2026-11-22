@@ -1,0 +1,11 @@
+## stdout
+
+## stderr
+gforth-inspect requires gforth 0.7.3 (>= 0.7.3, < 1.0); this is gforth 1.0.1
+
+in file included from *OS command line*:-1
+in file included from test/version-too-new.fs:10
+env/inspect.fs:35: Aborted
+    stderr write-file throw  version-string stderr write-line throw  -1 >>>throw<<<
+Backtrace:
+## exit 1

@@ -535,7 +535,20 @@ def test_version_stop():
 
 DEFAULT_PROGRAM = "log-on 1 2 .stacks log-off"
 OLD_DEFAULT = "state/sicpminus/stacks.jsonl"         # 18ebe2d, where today's consumers look
-CONTRACT_DEFAULT = "state/gforth-inspect/stacks.jsonl"  # RELEASING.org "Log location"
+
+
+def _contract_default() -> str:
+    """The documented default (contract/stacks-log.org, "Files", since 0.3.0)
+    for this run: run_default_location keeps the runner's $PWD, so the log
+    goes to state/gforth-inspect/<owner>/<repo>/<worktree>/ of the checkout
+    the tests run in, or state/gforth-inspect/ without $PWD.  Computed by the
+    reference block in stacks-log.org (_011_helpers)."""
+    import _011_helpers
+    environ = {b"XDG_STATE_HOME": b"state", b"HOME": b"home", b"PWD": os.environb.get(b"PWD", b"")}
+    return _011_helpers.reference.log_dir(environ).decode("utf-8", "surrogateescape") + "/stacks.jsonl"
+
+
+CONTRACT_DEFAULT = _contract_default()  # RELEASING.org "Log location"
 
 
 class DefaultLocationBreak(AssertionError):

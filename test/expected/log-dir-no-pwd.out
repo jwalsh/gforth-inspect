@@ -1,0 +1,7 @@
+## stdout
+
+$TMP/state/gforth-inspect/stacks.jsonl
+## stderr
+## log state/gforth-inspect/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
+## exit 0

@@ -17,16 +17,261 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
 |-------------------------+-------------------------+--------------------------|
 | =<dir>/stacks.jsonl=    | =inspect.fs= (=log-on=) | one JSON object per line |
 
-=<dir>= is =$GFORTH_INSPECT_LOG_DIR= when that is set and non-empty, else
-=${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect=.  It is created
-(with parents) by =log-on=, which computes it at that moment; =log-where=
-prints the file's path.  An embedding project points
-=GFORTH_INSPECT_LOG_DIR= wherever its own tools look.
+=<dir>= is the first of these that applies (since 0.3.0):
+
+1. =$GFORTH_INSPECT_LOG_DIR=, when it is set and non-empty.
+2. =<base>=, when =$PWD= is unset or empty, where =<base>= is
+   =${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect= (the shared
+   default of 0.2.0 and before).
+3. The value of the last line starting =GFORTH_INSPECT_LOG_DIR== in
+   =<root>/.env=, when it is non-empty: one pair of surrounding ="= or ='=
+   is stripped and a leading =~/= is read as =$HOME/=; everything else is
+   literal.  =<root>= is the nearest ancestor of =$PWD=, itself included,
+   that holds a =.git= (a directory, or the file of a linked worktree), or
+   =$PWD= when none does.  This is how a project opts out, for example to
+   make all its worktrees share one log:
+   =GFORTH_INSPECT_LOG_DIR=~/.local/state/gforth-inspect/shared= in each
+   worktree's =.env=.
+4. =<base>/<owner>/<repo>/<worktree>=, read from the files of the git
+   metadata (git itself is never run):
+   - the git dir is =<root>/.git= when that is a directory; when it is a
+     file, the path on its =gitdir: <path>= line (relative to =<root>=).
+     The common git dir is the git dir's =commondir= file (relative to the
+     git dir), else the git dir itself;
+   - =<owner>/<repo>= are the last two segments of the path of the first
+     =url= in the =[remote "origin"]= section of the common dir's =config=,
+     =.git= stripped from =<repo>=.  Accepted: =git@host:owner/repo=,
+     =ssh://[user@]host[:port]/owner/repo=, =https://host/owner/repo=, with
+     any number of segments; a url with one segment gives owner =_=.  The
+     config is read line by line: a section header must be exactly
+     =[remote "origin"]= (=remote= in any case), the key =url= in any case,
+     the value trimmed, one pair of ="= stripped, no inline comments.  With
+     no origin url, =<owner>= is =_local= and =<repo>= is the name of the
+     main worktree: the last-but-one component of the common dir, with =.=
+     and =..= resolved lexically;
+   - =<worktree>= is the branch of =HEAD=, =ref: refs/heads/<branch>= (it
+     may contain =/=).  A detached =HEAD= gives =_detached-= followed by
+     the hashed name of =<root>='s last component (below);
+   - outside any repository the three are =_nogit=, the name of =$PWD='s
+     last component, and =_=.
+
+   Each name (owner, repo, branch, directory name) becomes exactly one
+   path component: itself when it matches =^[a-z0-9][a-z0-9._-]{0,63}$=;
+   otherwise its slug, =~=, and the first 12 lower-case hex digits of
+   FNV-1a 64 (offset basis =0xcbf29ce484222325=, prime =0x100000001b3=)
+   over its exact bytes.  The slug is the name ASCII-lowercased, every byte
+   outside =[a-z0-9._-]= turned into =-=, leading =.= and =-= stripped, cut
+   to 48 bytes (36 after =_detached-=), and =_= if nothing is left.  A
+   plain name never holds =~= and a marker (=_local=, =_nogit=, =_=,
+   =_detached-...~...=) is never a plain name, so two different projects
+   or branches never share a directory; every component is ASCII, so
+   case-insensitive and normalizing file systems cannot merge two either.
+
+| =$PWD=, with                                            | =<dir>= below =<base>=                       |
+|---------------------------------------------------------+----------------------------------------------|
+| =~/src/widget=, origin =git@host:acme/widget.git=, on =main= | =acme/widget/main=                  |
+| a linked worktree of it on =feature/Parser=              | =acme/widget/feature-parser~eb9f8a4eb252=   |
+| origin =https://example.org/Acme/Widget=, detached =HEAD= in =~/src/w= | =acme~84d1d48b0b85/widget~ae3bcbd78794/_detached-w~af63ea4c8602= |
+| a repository with no origin in =~/src/Local.Repo=, on =topic= | =_local/local.repo~17f2393cee21/topic=  |
+| =/tmp/My Proj=, no =.git= above it                       | =_nogit/my-proj~c0571c5e0b05/_=             |
+
+The directory is created (with parents) by =log-on=, which computes it at
+that moment; =log-where= prints the file's path.  A consumer finds the log
+by running =gforth inspect.fs -e 'log-where bye'= from the project
+directory, or by setting =GFORTH_INSPECT_LOG_DIR= for both sides.  The
+reference implementation below gives the same directory; copy it as it
+is (=log_dir()= reads =os.environb=; the property tests check
+=inspect.fs= against this block):
+
+#+name: log-dir-reference
+#+begin_src python
+"""Where gforth-inspect 0.3.0 writes stacks.jsonl (stacks-log.org, "Files").
+
+log_dir(environ) returns the directory, as bytes, that inspect.fs would
+use for the given environment (os.environb by default).  Paths and file
+contents are bytes throughout; nothing here runs git.
+"""
+import os
+
+SAFE = b"abcdefghijklmnopqrstuvwxyz0123456789._-"
+
+
+def fnv1a64(data):
+    value = 0xcbf29ce484222325
+    for byte in data:
+        value = ((value ^ byte) * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF
+    return value
+
+
+def slug(name, room):
+    lowered = bytes(byte | 0x20 if 65 <= byte <= 90 else byte for byte in name)
+    mapped = bytes(byte if byte in SAFE else ord("-") for byte in lowered)
+    return mapped.lstrip(b".-")[:room] or b"_"
+
+
+def hashed(prefix, name, room):
+    return prefix + slug(name, room) + b"~" + (b"%016x" % fnv1a64(name))[:12]
+
+
+def enc(name):
+    """One path component: name itself if it is plain, else slug~hash."""
+    plain = (1 <= len(name) <= 64 and name[0] in SAFE[:36]
+             and all(byte in SAFE for byte in name))
+    return name if plain else hashed(b"", name, 48)
+
+
+def trim(text):
+    start, end = 0, len(text)
+    while start < end and text[start] <= 32:
+        start += 1
+    while end > start and text[end - 1] <= 32:
+        end -= 1
+    return text[start:end]
+
+
+def read(path):
+    try:
+        with open(path, "rb") as handle:
+            return handle.read()
+    except OSError:
+        return b""
+
+
+def basename(path):
+    return path[path.rfind(b"/") + 1:]
+
+
+def find_root(pwd):
+    """(root, True) for the nearest ancestor of pwd holding .git, else (pwd, False)."""
+    path = pwd
+    while True:
+        if os.path.exists(path + b"/.git"):
+            return path or b"/", True
+        cut = path.rfind(b"/")
+        if cut < 0:
+            return pwd, False
+        path = path[:cut]
+
+
+def unquote(text, quotes):
+    if len(text) >= 2 and text[0] in quotes and text[-1] == text[0]:
+        return text[1:-1]
+    return text
+
+
+def dotenv(root, home):
+    value = b""
+    for line in read(root + b"/.env").split(b"\n"):
+        line = line[:-1] if line.endswith(b"\r") else line
+        if line.startswith(b"GFORTH_INSPECT_LOG_DIR="):
+            value = line[len(b"GFORTH_INSPECT_LOG_DIR="):]
+    value = unquote(value, b"\"'")
+    return home + value[1:] if value.startswith(b"~/") else value
+
+
+def git_dir(root):
+    dot_git = root + b"/.git"
+    if os.path.isdir(dot_git):
+        return dot_git
+    line = trim(read(dot_git))
+    path = trim(line[len(b"gitdir:"):]) if line.startswith(b"gitdir:") else b".git"
+    return path if path.startswith(b"/") else root + b"/" + path
+
+
+def common_dir(gitdir):
+    common = trim(read(gitdir + b"/commondir"))
+    if not common:
+        return gitdir
+    return common if common.startswith(b"/") else gitdir + b"/" + common
+
+
+def main_name(common):
+    """Basename of the common dir's parent, with . and .. resolved lexically."""
+    parts = []
+    for part in common.split(b"/"):
+        if part == b"..":
+            parts = parts[:-1]
+        elif part not in (b"", b"."):
+            parts.append(part)
+    return parts[-2] if len(parts) >= 2 else b""
+
+
+def origin_url(config):
+    """The first url of [remote "origin"]: a line-based subset of git-config."""
+    in_origin = False
+    for line in config.split(b"\n"):
+        line = trim(line)
+        if line.startswith(b"["):
+            in_origin = len(line) == 17 and line[:8].lower() == b"[remote " \
+                and line[8:] == b'"origin"]'
+        elif in_origin and b"=" in line:
+            key, value = line.split(b"=", 1)
+            if trim(key).lower() == b"url":
+                return unquote(trim(value), b'"')
+    return None
+
+
+def owner_repo(url):
+    """(owner or None, repo) from the last two path segments, or None."""
+    scheme = url.find(b"://")
+    if scheme >= 0:
+        rest = url[scheme + 3:]
+        path = rest[rest.find(b"/") + 1:] if b"/" in rest else b""
+    else:
+        colon, slash = url.find(b":"), url.find(b"/")
+        path = url[colon + 1:] if colon >= 0 and (slash < 0 or colon < slash) else url
+    segments = [segment for segment in path.split(b"/") if segment]
+    if not segments:
+        return None
+    repo = segments[-1][:-4] if segments[-1].endswith(b".git") else segments[-1]
+    return (segments[-2] if len(segments) >= 2 else None), repo
+
+
+def branch(head):
+    line = trim(head)
+    prefix = b"ref: refs/heads/"
+    return line[len(prefix):] if line.startswith(prefix) and len(line) > len(prefix) else None
+
+
+def components(root, has_git):
+    """[owner, repo, worktree], each already one safe path component."""
+    if not has_git:
+        return [b"_nogit", enc(basename(root)), b"_"]
+    gitdir = git_dir(root)
+    common = common_dir(gitdir)
+    url = origin_url(read(common + b"/config"))
+    pair = owner_repo(url) if url is not None else None
+    if pair:
+        owner, repo = pair
+        parts = [b"_" if owner is None else enc(owner), enc(repo)]
+    else:
+        parts = [b"_local", enc(main_name(common))]
+    name = branch(read(gitdir + b"/HEAD"))
+    parts.append(enc(name) if name is not None else hashed(b"_detached-", basename(root), 36))
+    return parts
+
+
+def log_dir(environ=os.environb):
+    explicit = environ.get(b"GFORTH_INSPECT_LOG_DIR", b"")
+    if explicit:
+        return explicit
+    state = environ.get(b"XDG_STATE_HOME") or environ.get(b"HOME", b"") + b"/.local/state"
+    base = state + b"/gforth-inspect"
+    pwd = environ.get(b"PWD", b"")
+    if not pwd:
+        return base
+    root, has_git = find_root(pwd)
+    override = dotenv(root, environ.get(b"HOME", b""))
+    if override:
+        return override
+    return b"/".join([base] + components(root, has_git))
+#+end_src
 
 Append-only. One complete object per line, UTF-8, terminated by a newline;
 a consumer that wants "now" reads the last line.
 
-*One producer per =GFORTH_INSPECT_LOG_DIR= is the supported setup.*
+*One producer per log directory is the supported setup.*  The per-worktree
+default gives each checkout its own.
 Several producers on one log are best-effort. The producer builds each
 record in memory and writes it as one whole line at the current end of
 the file, so producers that take turns (a REPL and a one-shot

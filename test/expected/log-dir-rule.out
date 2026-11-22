@@ -1,0 +1,17 @@
+## stdout
+<base>/acme/widget/main
+<base>/acme/widget/feature-parser~eb9f8a4eb252
+<base>/acme/widget/fix-1
+<base>/_local/det/_detached-det~ca9a2c18f462
+<base>/_local/local.repo~17f2393cee21/main
+<base>/_local/local.repo~17f2393cee21/topic
+<base>/team/tools/main
+<base>/_/solo/main
+<base>/acme~84d1d48b0b85/widget~ae3bcbd78794/main
+<base>/me/fork/main
+<base>/_nogit/x/_
+<base>/_nogit/my-proj~c0571c5e0b05/_
+<base>/_nogit/hidden~28280da0cdcb/_
+<base>
+## stderr
+## exit 0

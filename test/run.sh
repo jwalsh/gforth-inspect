@@ -86,7 +86,7 @@ run_one() { # engine test -> writes $tmp/actual, returns 0 if output usable
     echo "## stdout"; MASK_TMP=$tmp perl test/mask.pl "$tmp/stdout"
     echo "## stderr"; MASK_TMP=$tmp perl test/mask.pl "$tmp/stderr"
     while read -r j; do
-      echo "## log ${j#"$tmp"/}"; MASK_TMP=$tmp perl test/mask.pl "$j"
+      echo "## log ${j#"$tmp"/}" | perl test/mask.pl; MASK_TMP=$tmp perl test/mask.pl "$j"
     done < <(find "$tmp" -name '*.jsonl' | sort)
     while read -r f; do
       echo "## file ${f#"$tmp"/out/}"; MASK_TMP=$tmp perl test/mask.pl "$f"

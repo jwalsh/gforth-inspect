@@ -1,4 +1,4 @@
-\ gforth-inspect v0.2.0
+\ gforth-inspect v0.3.0
 \ stacks-log schema v1
 \ SPDX-License-Identifier: GPL-3.0-or-later
 \
@@ -18,24 +18,31 @@
 \             including n (nest) into colon words
 \   dbg+      dbg-fix, and print .s f.s and return words at every step
 \   log-id    ( c-addr u -- )  tag following snapshots with "id"; s" " log-id clears
-\   inspect-version  ( -- c-addr u )  "0.2.0"
+\   inspect-version  ( -- c-addr u )  "0.3.0"
 \ The hello record announces "contract":"1.1" (contract/stacks-log.org).
 \
 \ Works in gforth, gforth-fast and gforth-itc 0.7.3.  The words, their stack
 \ effects and output formats: contract/WORDS.org.  None of these words
 \ changes BASE or the float PRECISION.  Tests: test/, run with `gmake test'.
 
-\ ~~ (debugs.fs) and dbg (debug.fs) are already in the 0.7.3 image;
-\ REQUIRE-ing them again would redefine half the system.
-
-: inspect-version ( -- c-addr u ) s" 0.2.0" ;
-
-\ Supported: gforth 0.7.3 only (contract/WORDS.org).  Any other gforth gets
-\ a one-line notice on stderr and loads on as far as it can.
+\ Dependency check, before any definition (contract/WORDS.org): gforth
+\ >= 0.7.3, < 1.0.  On 1.0 or later (MAJOR, the digits before the first
+\ ".", is not 0) the load stops: one line on stderr, then -1 throw, so
+\ `gforth inspect.fs` exits non-zero and `include inspect.fs` throws.  Any
+\ other version that is not 0.7.3 gets a one-line notice and loads on.
+version-string 0 0 2swap >number 2drop d0= 0= [IF]
+    s" gforth-inspect requires gforth 0.7.3 (>= 0.7.3, < 1.0); this is gforth "
+    stderr write-file throw  version-string stderr write-line throw  -1 throw
+[THEN]
 version-string s" 0.7.3" compare [IF]
     s" gforth-inspect: tested on gforth 0.7.3 only; this is gforth " stderr write-file throw
     version-string stderr write-line throw
 [THEN]
+
+\ ~~ (debugs.fs) and dbg (debug.fs) are already in the 0.7.3 image;
+\ REQUIRE-ing them again would redefine half the system.
+
+: inspect-version ( -- c-addr u ) s" 0.3.0" ;
 
 \ --- naming addresses ------------------------------------------------
 
@@ -114,12 +121,19 @@ variable rs-full  rs-full off
 \   log-on    ( -- )  append JSON records to <dir>/stacks.jsonl
 \   log-off   ( -- )  stop and close
 \   log-where ( -- )  print the log file's path
-\ <dir> is $GFORTH_INSPECT_LOG_DIR if set and non-empty, else
-\ ${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect.  It is computed at
-\ log-on, so changing the environment after loading is honoured.
-\ While on, .stacks, ~~~ and (after all-~~) ~~ also write a snapshot record.
+\ <dir> is, first match wins (contract/stacks-log.org, "Files"):
+\   $GFORTH_INSPECT_LOG_DIR, if set and non-empty;
+\   <base> = ${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect, if $PWD
+\     is unset or empty;
+\   the GFORTH_INSPECT_LOG_DIR= line of <root>/.env, <root> being the
+\     nearest ancestor of $PWD holding .git, else $PWD itself;
+\   <base>/<owner>/<repo>/<worktree>, read from the files of .git (git is
+\     never run), each part one ASCII path component, see (enc+).
+\ It is computed at log-on, so changing the environment after loading is
+\ honoured.  While on, .stacks, ~~~ and (after all-~~) ~~ also write a
+\ snapshot record.
 
-1024 constant log-max
+4096 constant log-max
 create log-dir log-max allot  variable log-dir#
 create log-path log-max allot variable log-path#
 
@@ -128,13 +142,196 @@ create log-path log-max allot variable log-path#
     >r over r@ @ + log-max > abort" inspect.fs: log path too long"
     r@ @ + swap dup r> +! move ;
 
+create (one-char) 1 allot
+: (buf-char+) ( c buf len-var -- ) rot (one-char) c! (one-char) 1 2swap buf+ ;
+: (dir+) ( c-addr u -- ) log-dir log-dir# buf+ ;
+: (dir-char+) ( c -- ) log-dir log-dir# (buf-char+) ;
+: (dir/) ( -- ) [char] / (dir-char+) ;
+
+\ --- strings and files for the default log directory --------------------
+
+: (blank?) ( c -- f ) bl 1+ u< ;  \ a control character or a space
+: (trim) ( c-addr u -- c-addr' u' ) \ without leading and trailing blanks
+    BEGIN dup WHILE over c@ (blank?) WHILE 1 /string REPEAT THEN
+    BEGIN dup WHILE 2dup + 1- c@ (blank?) WHILE 1- REPEAT THEN ;
+: (index-of) ( c-addr u c -- n ) \ index of the first c, or -1
+    >r 2dup r> scan nip dup IF - nip ELSE drop 2drop -1 THEN ;
+: (slash-index) ( c-addr u -- n ) \ index of the last /, or -1
+    BEGIN dup WHILE 1- 2dup + c@ [char] / = IF nip EXIT THEN REPEAT 2drop -1 ;
+: (basename) ( c-addr u -- c-addr' u' ) 2dup (slash-index) 1+ /string ;
+: (abs?) ( c-addr u -- f ) IF c@ [char] / = ELSE drop false THEN ;
+: (lower) ( c -- c' ) dup [char] A [char] Z 1+ within IF bl or THEN ;
+: (ci=) ( c-addr1 u1 c-addr2 u2 -- f ) \ c-addr1 u1, ASCII-lowercased, is c-addr2 u2
+    rot over <> IF drop 2drop false EXIT THEN
+    0 ?DO over i + c@ (lower) over i + c@ <> IF 2drop false UNLOOP EXIT THEN LOOP
+    2drop true ;
+: (unquote) ( c-addr u c -- c-addr' u' ) \ strip one pair of c around c-addr u
+    >r dup 2 < IF rdrop EXIT THEN
+    over c@ r@ = >r 2dup + 1- c@ r> r> rot = and IF 1 /string 1- THEN ;
+: (line) ( c-addr u -- rest-a rest-u line-a line-u ) \ split at the first LF
+    2dup 10 (index-of) dup 0< IF drop 2dup + 0 2swap EXIT THEN
+    >r over r@ 2swap r> 1+ /string 2swap ;
+
+create (probe) log-max allot  variable (probe#)
+: (path/) ( c-addr1 u1 c-addr2 u2 -- c-addr u ) \ "<1>/<2>", built in (probe)
+    2swap 0 (probe#) !  (probe) (probe#) buf+  [char] / (probe) (probe#) (buf-char+)
+    (probe) (probe#) buf+  (probe) (probe#) @ ;
+: (exists?) ( c-addr u -- f ) file-status nip 0= ;
+: (dir?) ( c-addr u -- f ) open-dir IF drop false ELSE close-dir throw true THEN ;
+
+variable (file-a)  0 (file-a) !  variable (file-u)  0 (file-u) !
+: (file!) ( c-addr u -- ) \ read the whole file; empty when it cannot be read
+    ['] slurp-file catch IF 2drop 0 0 THEN  (file-u) ! (file-a) ! ;
+: (file@) ( -- c-addr u ) (file-a) @ (file-u) @ ;
+: (file-free) ( -- ) (file-a) @ ?dup IF free throw THEN  0 (file-a) !  0 (file-u) ! ;
+
+\ --- one path component: (enc+) ------------------------------------------
+\ A name matching ^[a-z0-9][a-z0-9._-]{0,63}$ is used as it is.  Any other
+\ becomes slug~hash: ASCII-lowercased, every other byte "-", leading "."
+\ and "-" dropped, cut to 48 bytes ("_" if that leaves nothing), then "~"
+\ and the first 12 hex digits of FNV-1a 64 over the name's own bytes.  A
+\ plain name never holds "~", so two names never share a component.
+
+$cbf29ce4 32 lshift $84222325 or constant (fnv-basis)
+$100000001b3 constant (fnv-prime)
+: (fnv1a64) ( c-addr u -- u' )
+    (fnv-basis) -rot bounds ?DO i c@ xor (fnv-prime) * LOOP ;
+: (hex12+) ( u -- ) \ the top 48 of u's 64 bits as 12 lower-case hex digits
+    12 0 DO dup 60 i 4 * - rshift $f and s" 0123456789abcdef" drop + c@ (dir-char+) LOOP
+    drop ;
+
+: (alnum?) ( c -- f ) dup [char] a [char] z 1+ within swap [char] 0 [char] 9 1+ within or ;
+: (safe?) ( c -- f ) dup (alnum?) over [char] . = or over [char] _ = or swap [char] - = or ;
+: (plain?) ( c-addr u -- f ) \ a name (enc+) uses as it is
+    dup 1 65 within 0= IF 2drop false EXIT THEN
+    over c@ (alnum?) 0= IF 2drop false EXIT THEN
+    bounds ?DO i c@ (safe?) 0= IF false UNLOOP EXIT THEN LOOP true ;
+: (lead?) ( c -- f ) dup [char] . = swap [char] - = or ;  \ dropped from a slug's start
+: (slug-byte) ( c -- c' ) (lower) dup (safe?) 0= IF drop [char] - THEN ;
+
+variable (slug-room)  variable (slug#)
+: (slug+) ( c-addr u room -- ) \ the slug of c-addr u, at most room bytes
+    (slug-room) !  0 (slug#) !
+    bounds ?DO i c@ (slug-byte)
+        (slug#) @ 0= over (lead?) and  (slug#) @ (slug-room) @ = or
+        IF drop ELSE (dir-char+) 1 (slug#) +! THEN
+    LOOP  (slug#) @ 0= IF [char] _ (dir-char+) THEN ;
+: (hashed+) ( c-addr u room -- ) \ slug~hash of c-addr u, the slug at most room bytes
+    >r 2dup (fnv1a64) -rot r> (slug+)  [char] ~ (dir-char+)  (hex12+) ;
+: (enc+) ( c-addr u -- ) 2dup (plain?) IF (dir+) ELSE 48 (hashed+) THEN ;
+
+\ --- the project: its root, .env and git metadata ----------------------
+
+: (git-root) ( c-addr u -- c-addr u' true | c-addr u false )
+    \ the nearest ancestor of the path, itself included, holding .git (a
+    \ directory, or the file of a linked worktree): a prefix of the path,
+    \ "/" for the root directory; else the path itself and false
+    2dup BEGIN
+        2dup s" .git" (path/) (exists?) IF
+            2swap 2drop dup 0= IF drop 1 THEN true EXIT THEN
+        2dup (slash-index) dup 0< IF drop 2drop false EXIT THEN nip
+    AGAIN ;
+
+variable (env-a)  variable (env-u)
+: (env-line?) ( c-addr u -- c-addr' u' true | false ) \ GFORTH_INSPECT_LOG_DIR=<value>
+    dup IF 2dup + 1- c@ 13 = IF 1- THEN THEN
+    2dup s" GFORTH_INSPECT_LOG_DIR=" string-prefix? IF 23 /string true EXIT THEN
+    2drop false ;
+: (env-value) ( c-addr u -- c-addr' u' ) \ the last such value in .env text, unquoted
+    0 (env-a) !  0 (env-u) !
+    BEGIN dup WHILE (line) (env-line?) IF (env-u) ! (env-a) ! THEN REPEAT 2drop
+    (env-a) @ (env-u) @  dup IF
+        over c@ [char] ' = IF [char] ' ELSE [char] " THEN (unquote) THEN ;
+: (dotenv+) ( root-a root-u -- f ) \ <root>/.env's value, ~/ read as $HOME/; false if none
+    s" .env" (path/) (file!)  (file@) (env-value) dup IF
+        2dup s" ~/" string-prefix? IF s" HOME" getenv (dir+) 1 /string THEN (dir+) true
+    ELSE 2drop false THEN  (file-free) ;
+
+create (git-dir) log-max allot  variable (git-dir#)
+create (common) log-max allot   variable (common#)
+: (git-dir+) ( c-addr u -- ) (git-dir) (git-dir#) buf+ ;
+: (common+) ( c-addr u -- ) (common) (common#) buf+ ;
+: (gitdir-line) ( c-addr u -- c-addr' u' true | false ) \ <path> of "gitdir: <path>"
+    (trim) 2dup s" gitdir:" string-prefix? IF 7 /string (trim) true ELSE 2drop false THEN ;
+: (in-root+) ( root-a root-u c-addr u -- ) \ the path, made absolute against root
+    2dup (abs?) IF 2swap 2drop (git-dir+) EXIT THEN
+    2swap (git-dir+) s" /" (git-dir+) (git-dir+) ;
+: (git-dir!) ( root-a root-u -- ) \ the worktree's git dir: .git, or its gitdir: line
+    0 (git-dir#) !  2dup s" .git" (path/) 2dup (dir?) IF (git-dir+) 2drop EXIT THEN
+    (file!) (file@) (gitdir-line) IF (in-root+) ELSE s" .git" (in-root+) THEN (file-free) ;
+: (common!) ( -- ) \ the common git dir: from the git dir's commondir file, else the git dir
+    0 (common#) !  (git-dir) (git-dir#) @ s" commondir" (path/) (file!) (file@) (trim)
+    dup IF 2dup (abs?) 0= IF (git-dir) (git-dir#) @ (common+) s" /" (common+) THEN (common+)
+    ELSE 2drop (git-dir) (git-dir#) @ (common+) THEN (file-free) ;
+
+create (norm) log-max allot  variable (norm#)
+: (norm+) ( c-addr u -- ) \ one component onto (norm): "" and "." skipped, ".." drops one
+    dup 0= IF 2drop EXIT THEN  2dup s" ." compare 0= IF 2drop EXIT THEN
+    2dup s" .." compare 0= IF 2drop (norm) (norm#) @ (slash-index) 0 max (norm#) ! EXIT THEN
+    s" /" (norm) (norm#) buf+  (norm) (norm#) buf+ ;
+: (main-name) ( -- c-addr u ) \ basename of the common dir's parent, . and .. lexical
+    0 (norm#) !  (common) (common#) @
+    BEGIN dup WHILE 2dup [char] / (index-of) dup 0< IF drop (norm+) 0 0 ELSE
+        >r over r@ (norm+) r> 1+ /string THEN REPEAT 2drop
+    (norm) (norm#) @ 2dup (slash-index) 0 max nip (basename) ;
+
+variable (in-origin)
+: (origin-header?) ( c-addr u -- f ) \ [remote "origin"], "remote" in any case
+    dup 17 <> IF 2drop false EXIT THEN
+    over 8 s" [remote " (ci=) -rot 8 /string s\" \"origin\"]" compare 0= and ;
+: (url-line?) ( c-addr u -- c-addr' u' true | false ) \ <value> of "url = <value>"
+    2dup [char] = (index-of) dup 0< IF drop 2drop false EXIT THEN
+    >r over r@ (trim) s" url" (ci=) 0= IF rdrop 2drop false EXIT THEN
+    r> 1+ /string (trim) [char] " (unquote) true ;
+: (origin-url) ( c-addr u -- c-addr' u' true | false ) \ the first url of [remote "origin"]
+    (in-origin) off
+    BEGIN dup WHILE (line) (trim) dup IF
+        over c@ [char] [ = IF (origin-header?) (in-origin) !
+        ELSE (in-origin) @ IF (url-line?) IF 2nip true EXIT THEN ELSE 2drop THEN THEN
+    ELSE 2drop THEN REPEAT 2drop false ;
+
+: (url-path) ( c-addr u -- c-addr' u' ) \ after scheme://host/, or host: ; else all of it
+    2dup s" ://" search IF 3 /string [char] / scan dup IF 1 /string THEN 2nip EXIT THEN
+    2drop 2dup [char] : (index-of) >r 2dup [char] / (index-of)
+    r@ 0< IF rdrop drop EXIT THEN
+    dup 0< swap r@ > or IF r> 1+ /string ELSE rdrop THEN ;
+: (-slashes) ( c-addr u -- c-addr u' )
+    BEGIN dup WHILE 2dup + 1- c@ [char] / = WHILE 1- REPEAT THEN ;
+: (last-segment) ( c-addr u -- c-addr u' seg-a seg-u ) \ u' = what is before it
+    (-slashes) 2dup (basename) 2>r 2r@ nip - 2r> ;
+: (-.git) ( c-addr u -- c-addr u' )
+    dup 4 < IF EXIT THEN 2dup + 4 - 4 s" .git" compare 0= IF 4 - THEN ;
+: (origin+) ( c-addr u -- f ) \ <owner>/<repo> from a remote url; false if it names no repo
+    (url-path) (last-segment) dup 0= IF 2drop 2drop false EXIT THEN
+    2>r (last-segment) 2swap 2drop dup IF (enc+) ELSE 2drop [char] _ (dir-char+) THEN
+    (dir/) 2r> (-.git) (enc+) true ;
+: (owner-repo+) ( -- ) \ <owner>/<repo> of origin, else _local/<the main worktree's name>
+    (common) (common#) @ s" config" (path/) (file!)
+    (file@) (origin-url) IF (origin+) ELSE false THEN
+    0= IF s" _local/" (dir+) (main-name) (enc+) THEN  (file-free) ;
+
+: (head-branch) ( c-addr u -- c-addr' u' true | false ) \ of "ref: refs/heads/<branch>"
+    (trim) 2dup s" ref: refs/heads/" string-prefix? IF 16 /string dup IF true EXIT THEN THEN
+    2drop false ;
+: (worktree+) ( root-a root-u -- ) \ the branch; detached: _detached-<root's name>, hashed
+    (git-dir) (git-dir#) @ s" HEAD" (path/) (file!)  (file@) (head-branch) IF (enc+) 2drop
+    ELSE (basename) s" _detached-" (dir+) 36 (hashed+) THEN  (file-free) ;
+
+: (base+) ( -- ) \ ${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect
+    s" XDG_STATE_HOME" getenv dup IF (dir+) ELSE
+        2drop s" HOME" getenv (dir+)  s" /.local/state" (dir+) THEN
+    s" /gforth-inspect" (dir+) ;
+: (project+) ( root-a root-u git? -- ) \ <base>/<owner>/<repo>/<worktree> of root
+    (base+) (dir/) IF 2dup (git-dir!) (common!) (owner-repo+) (dir/) (worktree+)
+    ELSE s" _nogit/" (dir+) (basename) (enc+) s" /_" (dir+) THEN ;
+: (log-dir-for) ( pwd-a pwd-u -- ) \ append the default log dir for this $PWD
+    dup 0= IF 2drop (base+) EXIT THEN
+    (git-root) >r 2dup (dotenv+) IF 2drop rdrop EXIT THEN r> (project+) ;
+
 : log-paths ( -- )
     0 log-dir# !  0 log-path# !
-    s" GFORTH_INSPECT_LOG_DIR" getenv dup IF log-dir log-dir# buf+ ELSE
-        2drop s" XDG_STATE_HOME" getenv dup IF log-dir log-dir# buf+ ELSE
-            2drop s" HOME" getenv log-dir log-dir# buf+
-            s" /.local/state" log-dir log-dir# buf+ THEN
-        s" /gforth-inspect" log-dir log-dir# buf+ THEN
+    s" GFORTH_INSPECT_LOG_DIR" getenv dup IF (dir+) ELSE
+        2drop s" PWD" getenv (log-dir-for) THEN
     log-dir log-dir# @ log-path log-path# buf+
     s" /stacks.jsonl" log-path log-path# buf+ ;
 

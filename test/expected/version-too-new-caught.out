@@ -1,0 +1,4 @@
+## stdout
+## stderr
+gforth-inspect requires gforth 0.7.3 (>= 0.7.3, < 1.0); this is gforth 9.9.9
+## exit 0

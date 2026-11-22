@@ -9,8 +9,8 @@ return <R:61> top first
 input  $TMP/out/we"ird\name.fs:1 >in=18
 : w ( -- ) ~~~ ; w
                   ^
-## log state/gforth-inspect/stacks.jsonl
-{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.2.0","contract":"1.1"}
+## log state/gforth-inspect/OWNER/REPO/WORKTREE/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
 {"v":1,"event":"snapshot","t":T,"where":"w","src":"$TMP/out/we\"ird\\name.fs:1","data":[],"float":[],"rs":[],"input":{"file":"$TMP/out/we\"ird\\name.fs","line":1,"in":18,"text":": w ( -- ) ~~~ ; w"}}
 ## file we"ird\name.fs
 : w ( -- ) ~~~ ; w

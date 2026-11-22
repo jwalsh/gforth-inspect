@@ -7,6 +7,7 @@ s/\$[0-9A-F]{5,}/\$ADDR/g;                       # hex. addresses
 s/^[0-9A-F]{8,} [0-9A-F]{8,} /ADDR ADDR /;       # dbg: ip and cell
 s/<-?[0-9]{9,}>/<CA>/g;                          # see: undecodable code address
 s/"t":[0-9]+/"t":T/g;                            # log timestamps
+s{gforth-inspect/[^/\s]+/[^/\s]+/[^/\s]+/stacks\.jsonl}{gforth-inspect/OWNER/REPO/WORKTREE/stacks.jsonl}g;  # the checkout's own default log dir
 s/(?<![0-9.E])-?[0-9]{10,}(?![0-9.E])/BIG/g;     # addresses printed as numbers
 $_ .= "
 " if eof && !/
