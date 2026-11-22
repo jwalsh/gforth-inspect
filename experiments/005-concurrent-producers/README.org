@@ -165,3 +165,43 @@ Verdict per gate item:
 5. Xfail: met in its changed form (decision above).  Strict xfail citing
    #17 while the write path is that of a pinned unfixed ref; when the fix
    lands on harden the test becomes a plain one and has to pass.
+
+** 2026-11-21 harden moved to 079de9c: pins, and the reworked fix
+
+The =harden= name now points at =079de9c= (blob =af95cdf354af=), which
+carries the #17 rework: the whole record is built in a buffer, then one
+seek and one =write-file= of the whole line.  "harden's head, unpatched"
+in the gate now means the pinned =0842eda= (blob =a7e5c141af51=, the same
+inspect.fs as =6af19f0= where 005 started).  It is pinned in code as
+=HARDEN_REF= in =pbt/_005_helpers.py=, and the calibration defaults to it.
+The moving =harden= name no longer stands for "unfixed".  =079de9c= is
+pinned as =FIXED_REF= and is a fourth side in the reports.
+
+The ref-aware xfail treats =079de9c= as fixed: its =log-write= differs
+from both pinned unfixed refs, so =test_concurrent_producers= runs as a
+plain test, and it passes on 201 / 51 / 51 schedules with every count at
+0.  =test_patched_copy= skips, because the write path changed.
+
+Run: =gmake -C pbt check SEED=5005= gave 98 passed, 3 skipped and 1
+xfailed (the xfail is not one of 005's); =gmake -C pbt calibrate= was red
+as expected on all 14 scripts.  Paced, =079de9c= matches the seek-only
+patch: 0 parse failures, 0 lost and 0 duplicated on every engine.
+
+Uncoordinated, 50 runs, seed 5005.  The schedules are the same for every
+side, so every side was asked for 16571 snapshots and 159 hellos.  The
+"kept" column counts snapshots that parsed and were valid:
+
+| ref                    | lines | parse | lost  | hellos  | kept            |
+|------------------------+-------+-------+-------+---------+-----------------|
+| 18ebe2d                |  7505 |   135 |  9264 |  63/159 |  7307 (44.1%)   |
+| 0842eda unfixed        |  6528 |   179 | 10278 |  56/159 |  6293 (38.0%)   |
+| 0842eda + seek-only    | 11902 |   557 |  5337 | 111/159 | 11234 (67.8%)   |
+| 079de9c buffer + write | 14658 |   212 |  2270 | 145/159 | 14301 (86.3%)   |
+
+Buffering the record narrows the window (14 % lost, against 32 % for
+seek-only), but a seek and a write are still two system calls, and true
+concurrency still loses records.  The harden PR measured 19149 of 30015
+lines kept with 3 producers of 2000 records each; these runs use smaller
+bursts (20 to 200 per producer) and 2 to 4 producers.  As before, only
+=O_APPEND= would close the window, and gforth 0.7.3 has no append fam.
+This stays report-only (gate item 3).

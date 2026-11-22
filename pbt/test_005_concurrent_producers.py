@@ -13,7 +13,7 @@ exactly once, with one hello per producer.
                              INSPECT_FS, default harden).  Strict xfail
                              citing #17 while its log-on and log-write are
                              those of a pinned unfixed ref (18ebe2d,
-                             6af19f0), a plain test once either changes
+                             0842eda), a plain test once either changes
   test_patched_copy          the runner's inspect.fs with the proposed fix
                              applied in a temp copy: must pass
   test_paced_tally           report only: totals per pinned ref
@@ -128,7 +128,7 @@ def engine_params(xfail: bool):
 def test_concurrent_producers(engine, apply_seed):
     validator = schema_validator()
 
-    # the regression case: the shrunk failure on 18ebe2d and on harden 6af19f0
+    # the regression case: the shrunk failure on 18ebe2d and on unfixed harden (6af19f0 = 0842eda)
     @apply_seed
     @settings(max_examples=GATE_EXAMPLES[engine] * SCALE, database=None)
     @example(schedule=(2, [(0, 1), (1, 1), (0, 1)]))
@@ -166,15 +166,17 @@ def pinned_sides():
     """(label, source, provenance, schema ref) for every pinned ref and the patch."""
     old, old_prov = helpers.current_source(helpers.OLD_REF)
     harden, harden_prov = helpers.current_source(helpers.HARDEN_REF)
+    fixed, fixed_prov = helpers.current_source(helpers.FIXED_REF)
     sides = [("18ebe2d", old, old_prov, helpers.OLD_REF),
-             ("harden", harden, harden_prov, helpers.HARDEN_REF)]
+             ("harden", harden, harden_prov, helpers.HARDEN_REF),
+             ("fixed", fixed, fixed_prov, helpers.FIXED_REF)]
     if helpers.patchable(harden):
         sides.append(("patched", helpers.patched(harden), f"{harden_prov} +seek-per-write",
                       helpers.HARDEN_REF))
     return sides
 
 
-SIDES = ("18ebe2d", "harden", "patched")
+SIDES = ("18ebe2d", "harden", "patched", "fixed")
 REPORTS: dict = defaultdict(helpers.Tally)
 REPORT_RUNS: dict = defaultdict(int)
 

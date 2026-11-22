@@ -45,7 +45,8 @@ import jsonschema
 import gforth_run
 
 OLD_REF = "18ebe2d"   # the copy the course runs today
-HARDEN_REF = "6af19f0"  # harden's head when 005 ran (local harden; pinned, not the moving name)
+HARDEN_REF = "0842eda"  # harden unfixed, blob a7e5c141af51 (same blob as 6af19f0, where 005 started)
+FIXED_REF = "079de9c"   # harden with the #17 rework: whole record in a buffer, one seek + one write-file
 MARK = 5005
 SELECTORS = ("INSPECT_FS", "INSPECT_REF", "SCHEMA_JSON")
 
