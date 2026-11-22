@@ -120,8 +120,9 @@ names a particular downstream project.
    assets themselves.
 4. =grep -c sicpminus= on the assets prints 0.
 5. The release notes include the test summary (engines, case counts, and
-   the Hypothesis seed) and a =Closes= line naming every issue the release
-   fixes, for example =Closes #1, #4=. Downstream projects use those
+   the Hypothesis seed) and a =Fixed:= line naming every issue the release
+   fixes, for example =Fixed: #1, #4= (each fixing PR says =Closes #N=, which
+   is what closes it on GitHub). Downstream projects use those
    numbers to retire their local patches (see below).
 
 CI on a macOS runner with =brew install gforth= runs 1 to 4. Until that CI
@@ -184,10 +185,10 @@ When a release ships, the downstream project takes these steps:
 
 1. Download the release and verify =SHA256SUMS=.
 2. Run each deviation's reproducer against the released files.
-3. Drop the rows that the release's =Closes= line fixes and that the
+3. Drop the rows that the release's =Fixed:= line names and that the
    reproducer confirms.
-4. File a new issue here for any deviation the release claims to fix but
-   does not, and keep that row.
+4. Reopen the issue for any deviation the release claims to fix but does
+   not, and keep that row.
 
 On this side, then: a fix is not closed until its reproducer passes against
 the release assets, and not merely against =main=. An issue that still has
