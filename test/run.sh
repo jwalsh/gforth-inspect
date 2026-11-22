@@ -15,6 +15,9 @@
 #   \ test: env NAME=VALUE      set a variable; $TMP is the test's temp dir
 #   \ test: unset NAME          remove a variable (HOME is always $TMP/home)
 #   \ test: exit N              expected exit status (default 0)
+#   \ test: ulimit-files N      run with at most N open files (ulimit -n)
+#   \ test: tmp-outside-git     SKIP if an ancestor of the temp dir holds .git
+#                               (the test's _nogit cases assume none does)
 # Every test also sees TEST_ENGINE (the engine running it, for a test that
 # starts a second gforth) and TEST_OUT (a dir for files it writes).
 #
@@ -42,6 +45,25 @@ CONTRACT=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["x-co
 WORK=$(mktemp -d "${TMPDIR:-/tmp}"/gforth-inspect-test.XXXXXX); WORK=${WORK//\/\//\/}
 trap 'rm -rf "$WORK"' EXIT
 
+# The checkout's own default log components (<owner>/<repo>/<worktree>):
+# a golden run from here logs there, which depends on where the checkout is
+# and its branch, so test/mask.pl prints them as OWNER/REPO/WORKTREE.  Only
+# these: a fixture's components stay visible, and a log-on that writes
+# anywhere else than log-where says shows up in the diff.
+mkdir -p "$WORK/project/home"
+MASK_PROJECT=$(env -u GFORTH_INSPECT_LOG_DIR HOME="$WORK/project/home" XDG_STATE_HOME="$WORK/project/state" \
+  gforth env/inspect.fs -e 'log-where bye' 2>/dev/null | sed -n 's|^.*/project/state/gforth-inspect/\(.*\)/stacks\.jsonl$|\1|p')
+case $MASK_PROJECT in */*/*) ;; *) echo "run.sh: cannot read this checkout's default log dir (got '$MASK_PROJECT')"; exit 2;; esac
+export MASK_PROJECT
+# an ancestor of the temp dir holding .git (TMPDIR inside a checkout)
+tmp_in_git=""
+dir=$(cd "$WORK" && pwd -P)
+while [ -n "$dir" ]; do
+  if [ -e "$dir/.git" ]; then tmp_in_git=1; break; fi
+  [ "$dir" = / ] && break
+  dir=$(dirname "$dir")
+done
+
 directive() { sed -n "s/^\\\\ test: $2 *//p" "$1"; }
 
 # A 10 s limit per run: GNU timeout, Homebrew's gtimeout, or perl's alarm
@@ -61,6 +83,7 @@ run_one() { # engine test -> writes $tmp/actual, returns 0 if output usable
   name=$(basename "$t" .fs)
   tmp=$WORK/$e-$name
   mkdir -p "$tmp/home" "$tmp/state" "$tmp/out"
+  real=$(cd "$tmp" && pwd -P)  # get-dir gives the physical path
   local -a cmd=("$e")
   grep -q '^\\ test: noinspect' "$t" || cmd+=(env/inspect.fs)
   cmd+=(test/lib/assert.fs)
@@ -79,17 +102,20 @@ run_one() { # engine test -> writes $tmp/actual, returns 0 if output usable
   keys=$(directive "$t" stdin)
   # shellcheck disable=SC2059
   printf -- "$keys" > "$tmp/stdin"
-  env "${unsets[@]}" "${clean[@]}" "${LIMIT[@]}" "${cmd[@]}" \
+  local files
+  files=$(directive "$t" ulimit-files); files=${files:-unlimited}
+  ( [ "$files" = unlimited ] || ulimit -n "$files"
+    exec env "${unsets[@]}" "${clean[@]}" "${LIMIT[@]}" "${cmd[@]}" ) \
       < "$tmp/stdin" > "$tmp/stdout" 2> "$tmp/stderr"
   local rc=$?
   {
-    echo "## stdout"; MASK_TMP=$tmp perl test/mask.pl "$tmp/stdout"
-    echo "## stderr"; MASK_TMP=$tmp perl test/mask.pl "$tmp/stderr"
+    echo "## stdout"; MASK_TMP=$tmp MASK_TMP_REAL=$real perl test/mask.pl "$tmp/stdout"
+    echo "## stderr"; MASK_TMP=$tmp MASK_TMP_REAL=$real perl test/mask.pl "$tmp/stderr"
     while read -r j; do
-      echo "## log ${j#"$tmp"/}" | perl test/mask.pl; MASK_TMP=$tmp perl test/mask.pl "$j"
+      echo "## log ${j#"$tmp"/}" | perl test/mask.pl; MASK_TMP=$tmp MASK_TMP_REAL=$real perl test/mask.pl "$j"
     done < <(find "$tmp" -name '*.jsonl' | sort)
     while read -r f; do
-      echo "## file ${f#"$tmp"/out/}"; MASK_TMP=$tmp perl test/mask.pl "$f"
+      echo "## file ${f#"$tmp"/out/}"; MASK_TMP=$tmp MASK_TMP_REAL=$real perl test/mask.pl "$f"
     done < <(find "$tmp/out" -type f | sort)
     echo "## exit $rc"
   } > "$tmp/actual"
@@ -100,6 +126,10 @@ for t in "${TESTS[@]}"; do
   reason=$(directive "$t" skip)
   if [ -n "$reason" ]; then
     echo "SKIP $name: $reason"; skip=$((skip + 1)); continue
+  fi
+  if [ -n "$tmp_in_git" ] && grep -q '^\\ test: tmp-outside-git' "$t"; then
+    echo "SKIP $name: an ancestor of the temp dir (TMPDIR) holds .git, so its _nogit cases cannot hold"
+    skip=$((skip + 1)); continue
   fi
   for e in $ENGINES; do
     run_one "$e" "$t"

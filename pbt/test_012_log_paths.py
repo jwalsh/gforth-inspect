@@ -103,12 +103,15 @@ def configs(draw):
     key = draw(st.sampled_from([b"\turl = ", b"url=", b"  URL =  "]))
     value = b'"' + url + b'"' if draw(st.booleans()) else url
     before = draw(st.sampled_from([b"", b"[core]\n\tbare = false\n", b'[remote "upstream"]\n\turl = https://h/u/p\n']))
-    return before + header + b"\n" + key + value + b"\n"
+    after = draw(st.sampled_from([b"", b"", b"[extensions]\n\trefStorage = reftable\n",
+                                  b'[Extensions]\n\trefstorage = "REFTABLE"\n', b"[extensions]\n\trefStorage = files\n"]))
+    return before + header + b"\n" + key + value + b"\n" + after
 
 
 heads = st.one_of(
     branch_names.map(lambda name: b"ref: refs/heads/" + name + b"\n"),
     st.just(b"0123456789abcdef0123456789abcdef01234567\n"),
+    st.just(b"ref: refs/heads/.invalid\n"),  # the reftable stub
     st.just(b""),
     st.none(),
 )
@@ -119,8 +122,25 @@ dir_names = st.text(
 ).filter(lambda name: name not in (".", "..", ".git", ".env", "wt", "sub")
          and len(name.encode()) <= 200).map(lambda name: unicodedata.normalize("NFC", name))
 
+
+@st.composite
+def dotenv_lines(draw):
+    """[export] GFORTH_INSPECT_LOG_DIR = value, in the forms .env files use."""
+    blanks = st.sampled_from([b"", b" ", b"\t", b"  "])
+    lead = draw(blanks) + draw(st.sampled_from([b"", b"export ", b"export\t", b"exported "]))
+    key = draw(st.sampled_from([b"GFORTH_INSPECT_LOG_DIR", b"GFORTH_INSPECT_LOG_DIRX", b"OTHER"]))
+    value = draw(st.sampled_from([b"", b"~", b"~/", b"~/shared", b"~x", b"logs", b"a b", b"/abs/dir",
+                                  b"rel/#x", b"#hash", b"a~b/c"]))
+    quote = draw(st.sampled_from([b"", b"", b'"', b"'"]))
+    comment = draw(st.sampled_from([b"", b" # note", b"\t#x", b"#tail"]))
+    end = draw(st.sampled_from([b"\n", b"\r\n", b""]))
+    return (lead + key + draw(blanks) + b"=" + draw(blanks) + quote + value + quote
+            + draw(blanks) + comment + end)
+
+
 dotenvs = st.one_of(
-    st.none(), st.none(), st.none(),
+    st.none(), st.none(),
+    st.lists(dotenv_lines(), min_size=1, max_size=3).map(lambda lines: b"\n".join(lines) + b"\n"),
     st.sampled_from([b"OTHER=1\n", b"GFORTH_INSPECT_LOG_DIR=\n", b"GFORTH_INSPECT_LOG_DIR=~/shared\n",
                      b"GFORTH_INSPECT_LOG_DIR='~/q'\r\n", b'GFORTH_INSPECT_LOG_DIR="rel dir"\n',
                      b"GFORTH_INSPECT_LOG_DIR=a\nGFORTH_INSPECT_LOG_DIR=b\n"]),
@@ -256,6 +276,16 @@ TRICKY = [
     Fixture("linked-abs", "w2", "m", b'[remote "origin"]\n\turl = https://h/g/acme/repo\n',
             b"ref: refs/heads/" + b"l" * 70 + b"\n", None, 2),
     Fixture("nogit", "-dash.dot", "m", None, None, None, 0),
+    # two detached worktrees, both named wt, of one repository
+    Fixture("linked-abs", "wt", "m1", b'[remote "origin"]\n\turl = git@h:acme/same.git\n',
+            b"0123456789abcdef0123456789abcdef01234567\n", None, 0),
+    Fixture("linked-rel", "wt", "m2", b'[remote "origin"]\n\turl = git@h:acme/same.git\n',
+            b"0123456789abcdef0123456789abcdef01234567\n", None, 0),
+    Fixture("main", "rt", "m", b'[remote "origin"]\n\turl = git@h:acme/rt.git\n[extensions]\n\trefStorage = reftable\n',
+            b"ref: refs/heads/.invalid\n", None, 0),
+    Fixture("linked-rel", "rt2", "rtm", b'[remote "origin"]\n\turl = git@h:acme/rt.git\n',
+            b"ref: refs/heads/.invalid\n", None, 0),
+    Fixture("main", "e2", "m", None, b"ref: refs/heads/main\n", b"  export GFORTH_INSPECT_LOG_DIR = logs # c\n", 1),
     Fixture("main", "s1", "m", b'[remote "origin"]\n\turl = ssh://host/group-a/sub/repo.git\n',
             b"ref: refs/heads/main\n", None, 0),
     Fixture("main", "s2", "m", b'[remote "origin"]\n\turl = ssh://host/group-b/sub/repo.git\n',
@@ -338,6 +368,10 @@ CWD_TRIO = [
 ]
 
 
+# pinned 2026-11-22: a directory name holding LF with a relative .env value;
+# the harness split log-where's output on LF (a harness bug, not the rule)
+@example([Fixture("main", "\nx", "m", b"[core]\n", b"ref: refs/heads/main\n",
+                  b" GFORTH_INSPECT_LOG_DIR=a~b/c\t#x\n", 1)], 1, "gforth-fast")
 @example(CWD_TRIO, 1, "gforth")
 @example(CWD_TRIO, 2, "gforth-fast")
 @example(CWD_TRIO, None, "gforth-itc")
@@ -364,7 +398,7 @@ def test_reference_matches_goldens():
     assert ref.enc(b"feature/Parser") == b"feature-parser~eb9f8a4eb252"
     assert ref.enc(b"Acme") == b"acme~84d1d48b0b85"
     assert ref.enc(b"My Proj") == b"my-proj~c0571c5e0b05"
-    assert ref.hashed(b"_detached-", b"w", 36) == b"_detached-w~af63ea4c8602"
+    assert ref.hashed(b"_detached-", b"w", 36, key=b"/srv/src/w") == b"_detached-w~d8647ebcdaa4"
     assert ref.fnv1a64(b"a") == 0xaf63dc4c8601ec8c  # the published FNV-1a 64 vector
     assert ref.owner_repo(b"ssh://git@git.example.org:2222/team/tools.git") == (b"team", b"tools")
 

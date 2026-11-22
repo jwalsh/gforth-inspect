@@ -46,7 +46,7 @@ the =jsonschema= package; without it only by the built-in validator.
    not bless any of those.
 
 Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
-=exit= (see the top of =test/run.sh=).  =test/lib/assert.fs= gives
+=exit=, =ulimit-files=, =tmp-outside-git= (see the top of =test/run.sh=).  =test/lib/assert.fs= gives
 =assert ( f c-addr u -- )=, =assert= ( actual expected c-addr u -- )= and
 =out-path ( c-addr u -- c-addr' u' )=.
 
@@ -64,12 +64,12 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 | =dbg-fix= / =dbg+=  | dbg-step, dbg-nest-n, dbg-adjacent, dbg-loop-keys, dbg-demo, dbg-loop, dbg-nest |
 | log records         | log-records, version, log-id, all-tilde, base-kept          |
 | two producers (#17) | log-two-producers (a second gforth appends between records) |
-| log location        | log-dir-env, log-dir-xdg, log-dir-home, log-dir-project, log-dir-rule (owner/repo/worktree, linked worktrees, detached, no origin, url forms, no repository), log-dir-dotenv, log-dir-env-dotenv, log-dir-cwd-not-pwd (started in worktree b, $PWD inherited from worktree a: logs to b), log-dir-no-pwd |
-| dependency check    | version-notice (0.7.9: notice, loads on), version-too-new (1.0.1: exit 1), version-too-new-caught (9.9.9: =include= throws) |
+| log location        | log-dir-env, log-dir-xdg, log-dir-home, log-dir-project, log-dir-rule (owner/repo/worktree, linked worktrees, detached, no origin, url forms, no repository), log-dir-dotenv, log-dir-env-dotenv, log-dir-cwd-not-pwd (started in worktree b, $PWD inherited from worktree a: logs to b), log-dir-no-pwd, log-dir-dotenv-relative (a relative .env value is relative to the root), log-dir-env-is-dir (a .env directory, 64 open files at most) |
+| dependency check    | version-notice (0.7.9: notice, loads on), version-too-new (1.0.1: exit 1), version-too-old (0.7.0: exit 1), version-too-new-caught (9.9.9: =include= throws), cells-32bit (4-byte cells: exit 1) |
 | JSON                | json-escape (quotes, backslash, controls, UTF-8, invalid bytes), json-src, json-float |
 | lldb =brk= (no lldb) | demo                                                       |
 
-46 tests x 3 engines = 138 cases, plus =idle.fs= (skipped: it parks for
+50 tests x 3 engines = 150 cases, plus =idle.fs= (skipped: it parks for
 =lldb -p=).
 
 * Known limits
@@ -109,7 +109,10 @@ golden run from the checkout logs to
 =state/gforth-inspect/<owner>/<repo>/<worktree>/=, which depends on where
 the checkout is and which branch it is on, so =test/mask.pl= (and the
 runner's =## log= line) print the checkout's own three components as
-=OWNER/REPO/WORKTREE=.  The rule itself is tested where the components are
+=OWNER/REPO/WORKTREE=: run.sh computes them once (=log-where= from the
+repository root) and masks exactly those, so a fixture's components stay
+visible and a =log-on= writing elsewhere than =log-where= says shows in
+the diff.  The rule itself is tested where the components are
 known: =log-dir-rule= builds fixture trees under =$FX= (=$TMP/fx=) and
 prints =(log-dir-for)= for each with =test/lib/log-dir.fs=, unmasked; its
 hashes were checked against the Python reference.  The project is the

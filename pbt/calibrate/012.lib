@@ -27,10 +27,10 @@ expect_red() {
         uv run --no-project --with hypothesis --with jsonschema --with pytest \
         pytest -q -p no:cacheprovider -k forth test_012_log_paths.py 2>&1)
     red=""
-    printf '%s\n' "$out" | grep -q '^FAILED.*test_forth_matches_reference' && red="$red P4"
-    printf '%s\n' "$out" | grep -q '^FAILED.*test_forth_components_safe' && red="$red P1"
-    printf '%s\n' "$out" | grep -q '^FAILED.*test_forth_injective' && red="$red P3"
-    printf '%s\n' "$out" | grep -q '^FAILED.*test_forth_cwd_beats_pwd' && red="$red P5"
+    printf '%s\n' "$out" | grep -c '^FAILED.*test_forth_matches_reference' >/dev/null && red="$red P4"
+    printf '%s\n' "$out" | grep -c '^FAILED.*test_forth_components_safe' >/dev/null && red="$red P1"
+    printf '%s\n' "$out" | grep -c '^FAILED.*test_forth_injective' >/dev/null && red="$red P3"
+    printf '%s\n' "$out" | grep -c '^FAILED.*test_forth_cwd_beats_pwd' >/dev/null && red="$red P5"
     echo "red:${red:- none}"
     if [ "${NO_P4:-0}" = 1 ]; then wants="$*"; else wants="P4 $*"; fi
     for want in $wants; do

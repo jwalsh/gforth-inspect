@@ -3,6 +3,7 @@
 \ test: load test/lib/log-dir.fs
 \ test: env FX=$TMP/fx
 \ test: unset PWD
+\ test: tmp-outside-git
 \ test: load test/lib/worktrees.fs
 s" b/wt" fx set-dir throw
 log-where .log-dir

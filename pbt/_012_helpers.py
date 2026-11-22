@@ -136,15 +136,21 @@ def raw_components(pwd: bytes) -> tuple:
         return (("marker", b"_nogit"), ("name", ref.basename(root)), ("marker", b"_"))
     gitdir = ref.git_dir(root)
     common = ref.common_dir(gitdir)
-    url = ref.origin_url(ref.read(common + b"/config"))
+    config = ref.read(common + b"/config")
+    url = ref.origin_url(config)
     pair = ref.owner_repo(url) if url is not None else None
     if pair:
         owner = ("marker", b"_") if pair[0] is None else ("name", pair[0])
         repo = ("name", pair[1])
     else:
         owner, repo = ("marker", b"_local"), ("name", ref.main_name(common))
-    name = ref.branch(ref.read(gitdir + b"/HEAD"))
-    worktree = ("name", name) if name is not None else ("detached", ref.basename(root))
+    name = None if ref.reftable(config) else ref.branch(ref.read(gitdir + b"/HEAD"))
+    if ref.reftable(config) or name == b".invalid":
+        worktree = ("reftable", root)
+    elif name is None:
+        worktree = ("detached", root)
+    else:
+        worktree = ("name", name)
     return (owner, repo, worktree)
 
 
@@ -216,8 +222,9 @@ def forth_cwd(fixtures: list[Fixture], pwd_shift: int | None, engine: str = "gfo
             proc = subprocess.run([engine, os.fsdecode(tmp_path / "inspect.fs"), "-e", "log-where bye"],
                                   cwd=cwd, env=env, capture_output=True, timeout=30,
                                   stdin=subprocess.DEVNULL)
-            lines = proc.stdout.split(b"\n")
-            printed = lines[1] if len(lines) > 1 else b""
+            # log-where prints LF, the path, LF; the path itself may hold LF
+            out = proc.stdout
+            printed = out[1:-1] if out.startswith(b"\n") and out.endswith(b"\n") else out
             forth = printed[:-len(b"/stacks.jsonl")] if printed.endswith(b"/stacks.jsonl") else printed
             expected = reference.log_dir(environ, cwd=os.fsencode(os.path.realpath(cwd)))
             runs.append(CwdRun(_relative(cwd, tmp_path), None if pwd is None else _relative(pwd, tmp_path),

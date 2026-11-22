@@ -10,7 +10,9 @@ may change in any release.
 
 | gforth | engines                          | status                                                                 |
 |--------+----------------------------------+------------------------------------------------------------------------|
-| 0.7.3  | =gforth=, =gforth-fast=, =gforth-itc= | supported and tested: every word below, every release                  |
+| 0.7.3, 64-bit | =gforth=, =gforth-fast=, =gforth-itc= | supported and tested: every word below, every release                  |
+| 0.7.3, 32-bit | —                                | not supported: load fails with =gforth-inspect requires a 64-bit gforth 0.7.3; this one has 4-byte cells= (the log-dir hash needs 64-bit cells) |
+| < 0.7.3 | —                               | not supported: load fails with the dependency message |
 | 1.0.x  | —                                | not supported: load fails with a dependency message. Since 0.3.0 the first lines of =inspect.fs=, before any definition, print =gforth-inspect requires gforth 0.7.3 (>= 0.7.3, < 1.0); this is gforth 1.0.1= on stderr and =-1 throw=: =gforth inspect.fs= exits 1 and =include inspect.fs= throws. Without that check it would stop at an undefined word: three 0.7.3 internals it uses (=interpret1=, =handler-intro,=, =.debugline-stderr=) are gone in 1.0.0 and 1.0.1 |
 | other 0.x | —                              | not tested: one line on stderr (=gforth-inspect: tested on gforth 0.7.3 only; this is gforth 0.7.9=), then it loads on as far as it can |
 

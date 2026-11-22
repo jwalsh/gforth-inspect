@@ -115,3 +115,37 @@ red on it too.  =test_004='s default-location run now starts in
 =<tmp>/proj= (=_004_helpers.py=), so its documented default is
 =state/gforth-inspect/_nogit/proj/_/stacks.jsonl=.
 
+** 2026-11-22 /code-review of 4397a90: four important findings, five nits
+
+All in the rule; the Forth matched the reference.  Fixed in this PR, the
+reference and stacks-log.org Files with it:
+
+- a relative =.env= value is relative to =<root>=, not the cwd;
+- reftable (=[extensions] refStorage = reftable=, or the stub =HEAD= =ref:
+  refs/heads/.invalid=): =_wt-<name>~<hash of root's path>=;
+- detached: hashed over =<root>='s physical path, not its name;
+- cells under 8 bytes, and versions below 0.7.3, fail the dependency check;
+- =.env= forms: =export=, blanks around ===, quotes, =#= comments, bare =~=;
+- =(file!)= opens, reads and closes itself (=slurp-file= leaked the fd when
+  the read failed, e.g. a =.env= directory);
+- path buffers hold a full =log-max= directory plus 256; past that, =<base>=;
+- TMPDIR inside a checkout: =test_004= takes the run's physical cwd, the
+  =_nogit= goldens SKIP with a reason;
+- =test/mask.pl= masks only the checkout's own components.
+
+Generators: the reftable stub and =[extensions]= sections, two detached
+worktrees with one name, the =.env= forms (=dotenv_lines=).  Pinned: a
+directory name holding LF with a relative =.env= value, which the P5 harness
+split on LF.  New plants:
+
+| fault                                          | script                       | red         |
+|------------------------------------------------+------------------------------+-------------|
+| detached hashed by its name only               | 012-detached-basename.sh     | P4 P3 P5    |
+| reftable not recognised                        | 012-reftable-ignored.sh      | P4 P3 P5    |
+
+The fd-leak golden was red on the old =(file!)= (=ulimit-files 64=), the
+detached and reftable pair asserts red on the name-only hash.  Once, under
+012-fnv-prime, P1 went red as well; three reruns of 60 examples did not
+repeat it (=_run= asserts gforth's exit status, so a run that failed or
+timed out counts against P1).
+

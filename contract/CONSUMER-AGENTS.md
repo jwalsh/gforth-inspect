@@ -9,9 +9,10 @@ The reasoning behind each rule is in [COLLABORATION.org](../docs/COLLABORATION.o
 
 ## Requirements
 
-- gforth `>= 0.7.3, < 1.0`; 0.7.3 is the version tested, in `gforth`,
-  `gforth-fast` and `gforth-itc`. On 1.0 or later `inspect.fs` fails its
-  dependency check at load: one line on stderr, then the load throws.
+- A 64-bit gforth `>= 0.7.3, < 1.0`; 0.7.3 is the version tested, in
+  `gforth`, `gforth-fast` and `gforth-itc`. Outside that range, or with
+  32-bit cells, `inspect.fs` fails its dependency check at load: one line
+  on stderr, then the load throws.
 - The log: `stacks.jsonl` in `$GFORTH_INSPECT_LOG_DIR` when set, else in
   the `GFORTH_INSPECT_LOG_DIR=` of your project's `.env`, else in a
   directory per project and worktree under
