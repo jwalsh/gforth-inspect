@@ -142,3 +142,4 @@ follows the same path, in one commit:
 | 2026-11-21 | snapshot floats: 17 digits, =-0.0= kept  | PATCH (values only) | #1  | 0.1.0      | none needed        |
 | 2026-11-21 | =all-~~= snapshots fill =where= / =src=  | PATCH (values only) | #2  | 0.1.0      | none needed        |
 | 2026-11-21 | 1.1: snapshot =id= (optional), word =log-id=; =hello.contract=; consumers stop on a MAJOR or MINOR change | MINOR | #3 | 0.1.0 | checker, dashboard |
+| 2026-11-21 | append-only with several producers on one log: =log-write= seeks to the end before every record | PATCH (no schema change) | #17 | 0.1.0 | none needed |

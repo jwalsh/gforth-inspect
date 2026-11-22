@@ -1,0 +1,23 @@
+## stdout
+data   <1> 1 
+float  <0> 
+return <R:39> top first
+  ... interpreter (rs-full on to see it)
+input  test/log-two-producers.fs:9 >in=31
+log-on s" A1" log-id 1 .stacks drop
+                               ^
+data   <1> 2 
+float  <0> 
+return <R:39> top first
+  ... interpreter (rs-full on to see it)
+input  test/log-two-producers.fs:12 >in=24
+s" A2" log-id 2 .stacks drop log-off
+                        ^
+## stderr
+## log state/gforth-inspect/stacks.jsonl
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"snapshot","t":T,"id":"A1","where":null,"src":null,"data":[1],"float":[],"rs":[],"input":{"file":"test/log-two-producers.fs","line":9,"in":31,"text":"log-on s\" A1\" log-id 1 .stacks drop"}}
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"snapshot","t":T,"id":"B1","where":null,"src":null,"data":[9],"float":[],"rs":[],"input":{"file":"test/lib/log-producer-b.fs","line":3,"in":31,"text":"log-on s\" B1\" log-id 9 .stacks drop log-off"}}
+{"v":1,"event":"snapshot","t":T,"id":"A2","where":null,"src":null,"data":[2],"float":[],"rs":[],"input":{"file":"test/log-two-producers.fs","line":12,"in":24,"text":"s\" A2\" log-id 2 .stacks drop log-off"}}
+## exit 0

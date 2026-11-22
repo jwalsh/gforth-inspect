@@ -241,7 +241,9 @@ create snap-id 64 allot  0 snap-id c!
     jc s" contract" jkey contract-version json-str  [char] } emit cr ;
 
 : log-write ( xt -- )
-    \ run xt with output to the log, in decimal; BASE is restored after
+    \ run xt with output to the log, in decimal; BASE is restored after.
+    \ Seek to the end first: another producer may have appended (#17).
+    log-fid @ file-size throw log-fid @ reposition-file throw
     base @ >r decimal
     log-fid @ ['] outfile-execute catch
     r> base !  throw

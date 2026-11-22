@@ -62,12 +62,13 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 | =.cs=               | cs-if, cs-begin, cs-do, cs-guard                            |
 | =dbg-fix= / =dbg+=  | dbg-step, dbg-nest-n, dbg-adjacent, dbg-loop-keys, dbg-demo, dbg-loop, dbg-nest |
 | log records         | log-records, version, log-id, all-tilde, base-kept          |
+| two producers (#17) | log-two-producers (a second gforth appends between records) |
 | log location        | log-dir-env, log-dir-xdg, log-dir-home                      |
 | JSON                | json-escape (quotes, backslash, controls, UTF-8, invalid bytes), json-src, json-float |
 | canvas              | canvas-line, canvas-plot, canvas-files (P1/P3/XBM), canvas-errors |
 | lldb =brk= (no lldb) | demo                                                       |
 
-39 tests x 3 engines = 117 cases, plus =idle.fs= (skipped: it parks for
+40 tests x 3 engines = 120 cases, plus =idle.fs= (skipped: it parks for
 =lldb -p=).
 
 * Known limits
@@ -89,6 +90,15 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 - =gmake verify= runs =gmake -C pbt calibrate=, which is owned by =pbt/=.
 
 * Log
+
+** 2026-11-21 (#17)
+
+=log-two-producers=: producer A logs, a second gforth of the same engine
+(=test/lib/log-producer-b.fs=, started by =system= so the order is fixed)
+appends a hello and a snapshot, then A logs again.  Without the
+seek-to-end in =log-write= A's second record lands on B's hello and line 4
+does not parse, in all three engines; with it all five records survive.
+The runner now exports =TEST_ENGINE= for tests like this one.
 
 ** 2026-11-21 (contract 1.1)
 

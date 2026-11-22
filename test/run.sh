@@ -14,6 +14,8 @@
 #   \ test: env NAME=VALUE      set a variable; $TMP is the test's temp dir
 #   \ test: unset NAME          remove a variable (HOME is always $TMP/home)
 #   \ test: exit N              expected exit status (default 0)
+# Every test also sees TEST_ENGINE (the engine running it, for a test that
+# starts a second gforth) and TEST_OUT (a dir for files it writes).
 #
 # Golden: test/expected/<name>.out, or <name>@<engine>.out when an engine
 # really differs.  It holds masked stdout, stderr, every *.jsonl and every
@@ -56,7 +58,7 @@ run_one() { # engine test -> writes $tmp/actual, returns 0 if output usable
   cmd+=(test/lib/assert.fs)
   while read -r f; do [ -n "$f" ] && cmd+=("$f"); done < <(directive "$t" load)
   cmd+=("$t" -e bye)
-  local -a envs=(HOME="$tmp/home" XDG_STATE_HOME="$tmp/state" TEST_OUT="$tmp/out")
+  local -a envs=(HOME="$tmp/home" XDG_STATE_HOME="$tmp/state" TEST_OUT="$tmp/out" TEST_ENGINE="$e")
   local -a unsets=(-u GFORTH_INSPECT_LOG_DIR)
   while read -r kv; do
     [ -n "$kv" ] && envs+=("${kv//\$TMP/$tmp}")
