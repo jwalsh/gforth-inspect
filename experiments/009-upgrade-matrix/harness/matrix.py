@@ -147,13 +147,19 @@ def verdict_match(name: str, predicted: str, observed: str) -> bool:
     return predicted == observed
 
 
-def observe(out: Out, log: Path, schema_path: Path, expect: str, names: list[str], **context) -> dict:
+def observe(out: Out, log: Path, schema_path: Path, expect: str, names: list[str],
+            present: bool | None = None, **context) -> dict:
+    """`present`: whether the ruling says a log is at this path (None: not judged)."""
     content = log.read_bytes() if log.exists() else None
     schema = json.loads(schema_path.read_text())
     results = {}
     for name in names:
         result = cached(out, name, log, schema_path, expect)
         predicted = predict(name, content, schema, expect)
+        if present is False:
+            predicted = "absent"
+        elif present is True and content is None:
+            predicted = "present"
         out.row(consumer=name, expect=expect, predicted=predicted, observed=result.verdict,
                 match="yes" if verdict_match(name, predicted, result.verdict) else "NO",
                 note=json.dumps(result.extra, sort_keys=True) if result.extra else "", **context)
@@ -333,6 +339,7 @@ class Slot:
         self.out, self.run, self.index, self.engine = out, run, index, engine
         self.sxrid = f"{run}s{index}"
         self.seed = seed
+        (out.work / "runs" / run).mkdir(parents=True, exist_ok=True)
         self.sandbox = producer.Sandbox.make(out.work / "runs" / run, f"s{index}", xdg_fallback)
         self.session = sessions.Session.start(self.sxrid, self.sandbox.root, self.sandbox.env)
         self.current: str | None = None
@@ -421,9 +428,12 @@ def live_run(out: Out, producers, n: int, order: str, run_index: int, names) -> 
             for slot in slots:
                 ctx = dict(run=run, N=n, order=order, transition=transition, step=step, slot=slot.index,
                            engine=slot.engine, xrid=slot.segments.get(slot.current, (None, ""))[1])
-                observe(out, slot.contract_log, schema_path, expect, poll, **ctx)
+                # V1 on honour GFORTH_INSPECT_LOG_DIR and fall back to .../gforth-inspect/;
+                # V0 and Vc write their legacy default whatever the environment says
+                present = any(producers[key].default_dir == "gforth-inspect" for key in slot.segments)
+                observe(out, slot.contract_log, schema_path, expect, poll, present=present, **ctx)
                 for name, status in slot.live_status().items():
-                    predicted = "follow" if slot.contract_log.exists() or name == "follower-live" else "absent"
+                    predicted = "follow" if present or name == "follower-live" else "absent"
                     observed = status.split()[0]
                     if name == "jq-live" and observed == "follow":
                         parts = dict(item.split("=") for item in status.split()[1:])
@@ -549,7 +559,7 @@ def main(argv: list[str]) -> int:
                     live_run(out, producers, n, order, run_index, names)
                 except Exception as error:  # a failed run is a row, never a silent gap
                     out.row(run=f"r{run_index:02d}", N=n, order=order, consumer="harness",
-                            predicted="run completes", observed=f"error:{type(error).__name__}: {error}"[:200],
+                            predicted="run completes", observed=f"error:{type(error).__name__}: {error}".replace(str(work), "$WORK")[:200],
                             match="NO")
                     sessions.kill_ours()
                 print(f"live N={n} {order} r{run_index:02d} {time.monotonic() - started:.0f}s rows={len(out.rows)}",
