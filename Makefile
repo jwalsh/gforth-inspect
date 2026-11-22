@@ -25,7 +25,8 @@ CONTRACT := $(shell python3 -c 'import json; print(json.load(open("$(SCHEMA)"))[
 export CONTRACT
 
 # canvas.fs is a test bed on harden only and never ships (RELEASING.org)
-RELEASE_FILES := env/inspect.fs $(SCHEMA)
+RELEASE_FILES := env/inspect.fs $(SCHEMA) contract/stacks-log.org CONSUMERS.org
+DIST_FILES    := dist/inspect.fs dist/stacks-log.schema.json dist/stacks-log.org dist/CONSUMERS.org
 
 .PHONY: test test-contract test-selftest test-goldens test-one goldens \
         stress test-lldb verify release-check
@@ -89,9 +90,11 @@ release-check: verify
 	  grep -q "s\" $$v\" ;" env/inspect.fs || { echo "inspect-version != header v$$v"; exit 1; }
 	@test -f LICENSE || { echo "release-check: no LICENSE"; exit 1; }
 	mkdir -p dist && cp $(RELEASE_FILES) dist/
-	cd dist && shasum -a 256 inspect.fs stacks-log.schema.json > SHA256SUMS
-	scripts/privacy-scan.sh dist/inspect.fs dist/stacks-log.schema.json dist/SHA256SUMS
-	@n=$$(cat dist/inspect.fs dist/stacks-log.schema.json | grep -c sicpminus || true); \
+	bash scripts/dist-links.sh --calibrate
+	@v=$$(sed -n 's/^\\ gforth-inspect v//p' env/inspect.fs); bash scripts/dist-links.sh dist $$v
+	cd dist && shasum -a 256 inspect.fs stacks-log.schema.json stacks-log.org CONSUMERS.org > SHA256SUMS
+	scripts/privacy-scan.sh $(DIST_FILES) dist/SHA256SUMS
+	@n=$$(cat $(DIST_FILES) | grep -c sicpminus || true); \
 	  test "$$n" = 0 || { echo "release-check: sicpminus in assets"; exit 1; }
 	@cat dist/SHA256SUMS
 	@echo "release-check: dist/ ready; tagging and publishing are the owner's call"
