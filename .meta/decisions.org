@@ -46,6 +46,7 @@ D = Downstream (course session), H (D) = H via D.
 | D-38 | invariant I-1, never changes: every log line begins ={"v":=<integer>=,=; =v= is never renamed, moved, retyped or dropped; consumers check the prefix first and fail early | H | | exp 009 H6 (PR #30) |
 | D-39 | =.meta/= gets no =.llm.org= sidecars and stays compressed | H | | M-1; ablation (below) |
 | D-40 | while GitHub Actions billing stops every job: no required status check on =main=, the =verify= workflow disabled, no CI badge in the README; local =gmake verify= on the PR head, pasted into the PR body, is the gate | H | D-21's required =verify= check | =.github/branch-protection.json= (=required_status_checks: null=); [[file:../docs/RELEASING.org::*Mainline protection][RELEASING.org::*Mainline protection]] |
+| D-41 | cut v0.1.0 now, while the repo is private, as a prerelease that rehearses tag + release + README update before the repo opens; =inspect-version= and the demo already say 0.1.0 | H | D-19 (first tag v0.5.0) | [[file:../docs/RELEASING.org::*Cutting one][RELEASING.org::*Cutting one]]; =scripts/readme-release.sh= |
 
 | open | blocker                                                                                                 | owner |
 |------+---------------------------------------------------------------------------------------------------------+-------|
