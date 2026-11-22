@@ -10,6 +10,7 @@ run	engine	probe	exit	verdict	first error or warning
 0.7.3	gforth-fast	inspect-version	0	works	
 0.7.3	gforth-fast	json-parts	0	works	
 0.7.3	gforth-fast	load	0	works	
+0.7.3	gforth-fast	log-plain	0	works	
 0.7.3	gforth-fast	log-tilde	0	works	
 0.7.3	gforth-fast	log	0	works	
 0.7.3	gforth-fast	rs-full	0	works	
@@ -27,6 +28,7 @@ run	engine	probe	exit	verdict	first error or warning
 0.7.3	gforth-itc	inspect-version	0	works	
 0.7.3	gforth-itc	json-parts	0	works	
 0.7.3	gforth-itc	load	0	works	
+0.7.3	gforth-itc	log-plain	0	works	
 0.7.3	gforth-itc	log-tilde	0	works	
 0.7.3	gforth-itc	log	0	works	
 0.7.3	gforth-itc	rs-full	0	works	
@@ -44,6 +46,7 @@ run	engine	probe	exit	verdict	first error or warning
 0.7.3	gforth	inspect-version	0	works	
 0.7.3	gforth	json-parts	0	works	
 0.7.3	gforth	load	0	works	
+0.7.3	gforth	log-plain	0	works	
 0.7.3	gforth	log-tilde	0	works	
 0.7.3	gforth	log	0	works	
 0.7.3	gforth	rs-full	0	works	
@@ -61,6 +64,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.0	gforth-ditc	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-ditc	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-ditc	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-ditc	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-ditc	log	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-ditc	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
@@ -78,6 +82,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.0	gforth-fast	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-fast	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-fast	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-fast	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-fast	log	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-fast	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
@@ -95,6 +100,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.0	gforth-itc	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-itc	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-itc	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-itc	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-itc	log	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth-itc	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
@@ -112,6 +118,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.0	gforth	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth	log	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.0	gforth	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
@@ -129,6 +136,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.1	gforth-ditc	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-ditc	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-ditc	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-ditc	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-ditc	log	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-ditc	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
@@ -146,6 +154,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.1	gforth-fast	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-fast	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-fast	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-fast	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-fast	log	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-fast	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
@@ -163,6 +172,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.1	gforth-itc	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-itc	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-itc	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-itc	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-itc	log	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth-itc	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
@@ -180,6 +190,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.1	gforth	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth	log	1	errors	inspect.fs:73:13: error: Undefined word
 1.0.1	gforth	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
@@ -197,6 +208,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.0-shim	gforth-ditc	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth-ditc	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth-ditc	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-ditc	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth-ditc	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
 1.0.0-shim	gforth-ditc	log	139	errors	probe.fs:5:10: error: Invalid memory address
 1.0.0-shim	gforth-ditc	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
@@ -214,6 +226,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.0-shim	gforth-fast	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth-fast	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth-fast	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-fast	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth-fast	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
 1.0.0-shim	gforth-fast	log	139	errors	probe.fs:5:10: error: Invalid memory address
 1.0.0-shim	gforth-fast	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
@@ -231,6 +244,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.0-shim	gforth-itc	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth-itc	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth-itc	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth-itc	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
 1.0.0-shim	gforth-itc	log	139	errors	probe.fs:5:10: error: Invalid memory address
 1.0.0-shim	gforth-itc	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
@@ -248,6 +262,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.0-shim	gforth	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.0-shim	gforth	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
 1.0.0-shim	gforth	log	139	errors	probe.fs:5:10: error: Invalid memory address
 1.0.0-shim	gforth	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
@@ -265,6 +280,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.1-shim	gforth-ditc	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth-ditc	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth-ditc	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-ditc	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth-ditc	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
 1.0.1-shim	gforth-ditc	log	139	errors	probe.fs:5:10: error: Invalid memory address
 1.0.1-shim	gforth-ditc	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
@@ -282,6 +298,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.1-shim	gforth-fast	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth-fast	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth-fast	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-fast	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth-fast	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
 1.0.1-shim	gforth-fast	log	139	errors	probe.fs:5:10: error: Invalid memory address
 1.0.1-shim	gforth-fast	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
@@ -299,6 +316,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.1-shim	gforth-itc	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth-itc	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth-itc	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth-itc	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
 1.0.1-shim	gforth-itc	log	139	errors	probe.fs:5:10: error: Invalid memory address
 1.0.1-shim	gforth-itc	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
@@ -316,6 +334,7 @@ run	engine	probe	exit	verdict	first error or warning
 1.0.1-shim	gforth	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
 1.0.1-shim	gforth	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
 1.0.1-shim	gforth	log	139	errors	probe.fs:5:10: error: Invalid memory address
 1.0.1-shim	gforth	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address

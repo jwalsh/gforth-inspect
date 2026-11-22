@@ -231,3 +231,46 @@ the same in 1.0.0 and 1.0.1 and in all four engines unless noted:
 The JSON writer itself is unchanged: =json-data=, =json-float= and
 =json-input= on 1.0.x print byte-for-byte what they print on 0.7.3
 (=json-parts=), including =-0.0=, =1e300= and 17-digit floats.
+
+** 2026-11-22 the log, and the goldens
+
+Correction to the entry above: its "works" list named =log-off=,
+=log-where= and =log-id= before any probe had used them without a
+snapshot (the =log= probe dies at its first =.stacks=).  The new
+=log-plain= probe (=log-on=, =log-id=, =log-where=, =log-off=, =log-on=
+=log-off=, no snapshot) now does: unshimmed it fails like every probe
+(exit 1, the load error); shimmed it works in all eight engine builds, and
+writes two hello records.
+
+*Log (gate 4, I-1).*  Unshimmed, 1.0.x writes no log at all: =log-on= is
+never defined.  Shimmed, 24 =stacks.jsonl= files were written (=log=,
+=log-tilde=, =log-plain= × 4 engines × 2 versions), 32 lines, every one a
+hello record and every one the same apart from =t=:
+={"v":1,"event":"hello","t":T,"gforth":"1.0.0","inspect":"0.1.1","contract":"1.1"}=
+(="1.0.1"= for 1.0.1).  All 32 validate against
+=contract/stacks-log.schema.json= (=test/validate.py=, jsonschema and the
+built-in validator), all begin with ={"v":1,= (I-1, D-38), and
+=test/consumer.py 1.1= accepts every file.  =hello.gforth= is gforth's own
+=version-string=, so a consumer can see a 1.0 producer for what it is.
+No snapshot record was ever written on 1.0: every path to one walks the
+return stack and crashes first, so whether a 1.0 snapshot would validate
+is not measured.  The parts that do not walk the return stack print
+exactly what 0.7.3 prints (=json-parts=).
+
+*Goldens.*  =test/run.sh -e "gforth gforth-fast gforth-itc gforth-ditc"=
+with the wrapped 1.0 engines first on =PATH= (it runs =env/inspect.fs=,
+the same blob =82860519a7d3=): 0 of 148 cases pass on 1.0.0, 0 of 148 on
+1.0.1 (37 tests × 4 engines; =idle= skipped).  144 fail with "exit status
+1, want 0" and a diff that starts at the load error; the other 4 are
+=demo= (=noinspect=, it loads =env/brk.fs=), which dies with "Invalid
+memory address" and exit 139 at its first =brk=: =call-c= on a raw
+=lib-sym= address no longer works.  Control, same tree, stock 0.7.3: 111
+of 111 pass.  Per case: =results/goldens.tsv=.
+
+The runner would not have caught 1.0's redefinitions: it looks for
+=^redefined =, 0.7.3's format, and 1.0 writes =file:line:col: warning:
+redefined .stacks=.  That only matters once the load gets past line 73.
+
+*Isolation.*  Probes, goldens and reproducers all ran with their own
+temp dir as cwd, =HOME= and =XDG_STATE_HOME=; =probe.sh= found no stray
+=stacks.jsonl= outside the run's own =GFORTH_INSPECT_LOG_DIR=.

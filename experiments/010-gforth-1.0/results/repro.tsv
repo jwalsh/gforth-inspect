@@ -1,0 +1,135 @@
+0.7.3	gforth	R1	defined
+0.7.3	gforth	R2	defined
+0.7.3	gforth	R3	defined
+0.7.3	gforth	R4	-1 
+0.7.3	gforth	R5	0 
+0.7.3	gforth	R6	-1 
+0.7.3	gforth	R7	-1 
+0.7.3	gforth	R8	: t  
+0.7.3	gforth	R9	patched
+0.7.3	gforth	R10	1 
+0.7.3	gforth	R11	1 
+0.7.3	gforth	R12	0 
+0.7.3	gforth	R13	(no output)
+0.7.3	gforth	R14	(no output)
+0.7.3	gforth	R15	returned
+0.7.3	gforth-fast	R1	defined
+0.7.3	gforth-fast	R2	defined
+0.7.3	gforth-fast	R3	defined
+0.7.3	gforth-fast	R4	-1 
+0.7.3	gforth-fast	R5	0 
+0.7.3	gforth-fast	R6	-1 
+0.7.3	gforth-fast	R7	-1 
+0.7.3	gforth-fast	R8	: t  
+0.7.3	gforth-fast	R9	patched
+0.7.3	gforth-fast	R10	1 
+0.7.3	gforth-fast	R11	1 
+0.7.3	gforth-fast	R12	0 
+0.7.3	gforth-fast	R13	(no output)
+0.7.3	gforth-fast	R14	(no output)
+0.7.3	gforth-fast	R15	returned
+0.7.3	gforth-itc	R1	defined
+0.7.3	gforth-itc	R2	defined
+0.7.3	gforth-itc	R3	defined
+0.7.3	gforth-itc	R4	-1 
+0.7.3	gforth-itc	R5	0 
+0.7.3	gforth-itc	R6	-1 
+0.7.3	gforth-itc	R7	-1 
+0.7.3	gforth-itc	R8	: t  
+0.7.3	gforth-itc	R9	patched
+0.7.3	gforth-itc	R10	1 
+0.7.3	gforth-itc	R11	1 
+0.7.3	gforth-itc	R12	0 
+0.7.3	gforth-itc	R13	(no output)
+0.7.3	gforth-itc	R14	(no output)
+0.7.3	gforth-itc	R15	returned
+1.0.0	gforth	R1	*args*:2:3: error: Undefined word
+1.0.0	gforth	R2	*args*:2:3: error: Undefined word
+1.0.0	gforth	R3	*args*:2:3: error: Undefined word
+1.0.0	gforth	R4	0 
+1.0.0	gforth	R5	-1 
+1.0.0	gforth	R6	0 
+1.0.0	gforth	R7	0 
+1.0.0	gforth	R8	*args*:2:7: error: Only works on gforth-itc
+1.0.0	gforth	R9	:2:43: warning: Compiling outside a definition
+1.0.0	gforth	R10	4368736336 
+1.0.0	gforth	R11	0 
+1.0.0	gforth	R12	-1 
+1.0.0	gforth	R13	:2:19: warning: name>int is obsolete
+1.0.0	gforth	R14	:2:5: warning: '0.' is a double-cell integer; type `help' for more info
+1.0.0	gforth	R15	*args*:2:89: error: Invalid memory address
+1.0.0	gforth-fast	R1	*args*:2:3: error: Undefined word
+1.0.0	gforth-fast	R2	*args*:2:3: error: Undefined word
+1.0.0	gforth-fast	R3	*args*:2:3: error: Undefined word
+1.0.0	gforth-fast	R4	0 
+1.0.0	gforth-fast	R5	-1 
+1.0.0	gforth-fast	R6	0 
+1.0.0	gforth-fast	R7	0 
+1.0.0	gforth-fast	R8	*args*:2:7: error: Only works on gforth-itc
+1.0.0	gforth-fast	R9	:2:43: warning: Compiling outside a definition
+1.0.0	gforth-fast	R10	4345471056 
+1.0.0	gforth-fast	R11	0 
+1.0.0	gforth-fast	R12	-1 
+1.0.0	gforth-fast	R13	:2:19: warning: name>int is obsolete
+1.0.0	gforth-fast	R14	:2:5: warning: '0.' is a double-cell integer; type `help' for more info
+1.0.0	gforth-fast	R15	*args*:2:89: error: Invalid memory address
+1.0.0	gforth-itc	R1	*args*:2:3: error: Undefined word
+1.0.0	gforth-itc	R2	*args*:2:3: error: Undefined word
+1.0.0	gforth-itc	R3	*args*:2:3: error: Undefined word
+1.0.0	gforth-itc	R4	0 
+1.0.0	gforth-itc	R5	-1 
+1.0.0	gforth-itc	R6	0 
+1.0.0	gforth-itc	R7	-1 
+1.0.0	gforth-itc	R8	*args*:2:11: error: Undefined error: 0
+1.0.0	gforth-itc	R9	patched
+1.0.0	gforth-itc	R10	4310081616 
+1.0.0	gforth-itc	R11	0 
+1.0.0	gforth-itc	R12	-1 
+1.0.0	gforth-itc	R13	:2:19: warning: name>int is obsolete
+1.0.0	gforth-itc	R14	:2:5: warning: '0.' is a double-cell integer; type `help' for more info
+1.0.0	gforth-itc	R15	*args*:2:89: error: Invalid memory address
+1.0.1	gforth	R1	*args*:2:3: error: Undefined word
+1.0.1	gforth	R2	*args*:2:3: error: Undefined word
+1.0.1	gforth	R3	*args*:2:3: error: Undefined word
+1.0.1	gforth	R4	0 
+1.0.1	gforth	R5	-1 
+1.0.1	gforth	R6	0 
+1.0.1	gforth	R7	0 
+1.0.1	gforth	R8	*args*:2:7: error: Only works on gforth-itc
+1.0.1	gforth	R9	:2:43: warning: Compiling outside a definition
+1.0.1	gforth	R10	4377567432 
+1.0.1	gforth	R11	0 
+1.0.1	gforth	R12	-1 
+1.0.1	gforth	R13	:2:19: warning: name>int is obsolete
+1.0.1	gforth	R14	:2:5: warning: '0.' is a double-cell integer; type `help' for more info
+1.0.1	gforth	R15	*args*:2:89: error: Invalid memory address
+1.0.1	gforth-fast	R1	*args*:2:3: error: Undefined word
+1.0.1	gforth-fast	R2	*args*:2:3: error: Undefined word
+1.0.1	gforth-fast	R3	*args*:2:3: error: Undefined word
+1.0.1	gforth-fast	R4	0 
+1.0.1	gforth-fast	R5	-1 
+1.0.1	gforth-fast	R6	0 
+1.0.1	gforth-fast	R7	0 
+1.0.1	gforth-fast	R8	*args*:2:7: error: Only works on gforth-itc
+1.0.1	gforth-fast	R9	:2:43: warning: Compiling outside a definition
+1.0.1	gforth-fast	R10	4305674440 
+1.0.1	gforth-fast	R11	0 
+1.0.1	gforth-fast	R12	-1 
+1.0.1	gforth-fast	R13	:2:19: warning: name>int is obsolete
+1.0.1	gforth-fast	R14	:2:5: warning: '0.' is a double-cell integer; type `help' for more info
+1.0.1	gforth-fast	R15	*args*:2:89: error: Invalid memory address
+1.0.1	gforth-itc	R1	*args*:2:3: error: Undefined word
+1.0.1	gforth-itc	R2	*args*:2:3: error: Undefined word
+1.0.1	gforth-itc	R3	*args*:2:3: error: Undefined word
+1.0.1	gforth-itc	R4	0 
+1.0.1	gforth-itc	R5	-1 
+1.0.1	gforth-itc	R6	0 
+1.0.1	gforth-itc	R7	-1 
+1.0.1	gforth-itc	R8	*args*:2:11: error: error #-512
+1.0.1	gforth-itc	R9	patched
+1.0.1	gforth-itc	R10	4345749704 
+1.0.1	gforth-itc	R11	0 
+1.0.1	gforth-itc	R12	-1 
+1.0.1	gforth-itc	R13	:2:19: warning: name>int is obsolete
+1.0.1	gforth-itc	R14	:2:5: warning: '0.' is a double-cell integer; type `help' for more info
+1.0.1	gforth-itc	R15	*args*:2:89: error: Invalid memory address

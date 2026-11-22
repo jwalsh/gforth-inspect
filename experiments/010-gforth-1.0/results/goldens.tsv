@@ -1,0 +1,408 @@
+version	engine	test	result	reason
+0.7.3	gforth	all-tilde-where	pass	
+0.7.3	gforth-fast	all-tilde-where	pass	
+0.7.3	gforth-itc	all-tilde-where	pass	
+0.7.3	gforth	all-tilde	pass	
+0.7.3	gforth-fast	all-tilde	pass	
+0.7.3	gforth-itc	all-tilde	pass	
+0.7.3	gforth	base-kept	pass	
+0.7.3	gforth-fast	base-kept	pass	
+0.7.3	gforth-itc	base-kept	pass	
+0.7.3	gforth	cs-begin	pass	
+0.7.3	gforth-fast	cs-begin	pass	
+0.7.3	gforth-itc	cs-begin	pass	
+0.7.3	gforth	cs-do	pass	
+0.7.3	gforth-fast	cs-do	pass	
+0.7.3	gforth-itc	cs-do	pass	
+0.7.3	gforth	cs-guard	pass	
+0.7.3	gforth-fast	cs-guard	pass	
+0.7.3	gforth-itc	cs-guard	pass	
+0.7.3	gforth	cs-if	pass	
+0.7.3	gforth-fast	cs-if	pass	
+0.7.3	gforth-itc	cs-if	pass	
+0.7.3	gforth	dbg-adjacent	pass	
+0.7.3	gforth-fast	dbg-adjacent	pass	
+0.7.3	gforth-itc	dbg-adjacent	pass	
+0.7.3	gforth	dbg-defer-does	pass	
+0.7.3	gforth-fast	dbg-defer-does	pass	
+0.7.3	gforth-itc	dbg-defer-does	pass	
+0.7.3	gforth	dbg-demo	pass	
+0.7.3	gforth-fast	dbg-demo	pass	
+0.7.3	gforth-itc	dbg-demo	pass	
+0.7.3	gforth	dbg-loop-keys	pass	
+0.7.3	gforth-fast	dbg-loop-keys	pass	
+0.7.3	gforth-itc	dbg-loop-keys	pass	
+0.7.3	gforth	dbg-loop	pass	
+0.7.3	gforth-fast	dbg-loop	pass	
+0.7.3	gforth-itc	dbg-loop	pass	
+0.7.3	gforth	dbg-nest-n	pass	
+0.7.3	gforth-fast	dbg-nest-n	pass	
+0.7.3	gforth-itc	dbg-nest-n	pass	
+0.7.3	gforth	dbg-nest	pass	
+0.7.3	gforth-fast	dbg-nest	pass	
+0.7.3	gforth-itc	dbg-nest	pass	
+0.7.3	gforth	dbg-step	pass	
+0.7.3	gforth-fast	dbg-step	pass	
+0.7.3	gforth-itc	dbg-step	pass	
+0.7.3	gforth	demo-env	pass	
+0.7.3	gforth-fast	demo-env	pass	
+0.7.3	gforth-itc	demo-env	pass	
+0.7.3	gforth	demo	pass	
+0.7.3	gforth-fast	demo	pass	
+0.7.3	gforth-itc	demo	pass	
+0.7.3	gforth	fclearstack	pass	
+0.7.3	gforth-fast	fclearstack	pass	
+0.7.3	gforth-itc	fclearstack	pass	
+0.7.3	gforth	input-caret	pass	
+0.7.3	gforth-fast	input-caret	pass	
+0.7.3	gforth-itc	input-caret	pass	
+0.7.3	gforth	json-escape	pass	
+0.7.3	gforth-fast	json-escape	pass	
+0.7.3	gforth-itc	json-escape	pass	
+0.7.3	gforth	json-float	pass	
+0.7.3	gforth-fast	json-float	pass	
+0.7.3	gforth-itc	json-float	pass	
+0.7.3	gforth	json-src	pass	
+0.7.3	gforth-fast	json-src	pass	
+0.7.3	gforth-itc	json-src	pass	
+0.7.3	gforth	log-dir-env	pass	
+0.7.3	gforth-fast	log-dir-env	pass	
+0.7.3	gforth-itc	log-dir-env	pass	
+0.7.3	gforth	log-dir-home	pass	
+0.7.3	gforth-fast	log-dir-home	pass	
+0.7.3	gforth-itc	log-dir-home	pass	
+0.7.3	gforth	log-dir-xdg	pass	
+0.7.3	gforth-fast	log-dir-xdg	pass	
+0.7.3	gforth-itc	log-dir-xdg	pass	
+0.7.3	gforth	log-id	pass	
+0.7.3	gforth-fast	log-id	pass	
+0.7.3	gforth-itc	log-id	pass	
+0.7.3	gforth	log-records	pass	
+0.7.3	gforth-fast	log-records	pass	
+0.7.3	gforth-itc	log-records	pass	
+0.7.3	gforth	log-two-producers	pass	
+0.7.3	gforth-fast	log-two-producers	pass	
+0.7.3	gforth-itc	log-two-producers	pass	
+0.7.3	gforth	rs-full	pass	
+0.7.3	gforth-fast	rs-full	pass	
+0.7.3	gforth-itc	rs-full	pass	
+0.7.3	gforth	rs-nested	pass	
+0.7.3	gforth-fast	rs-nested	pass	
+0.7.3	gforth-itc	rs-nested	pass	
+0.7.3	gforth	stacks-data	pass	
+0.7.3	gforth-fast	stacks-data	pass	
+0.7.3	gforth-itc	stacks-data	pass	
+0.7.3	gforth	stacks-float	pass	
+0.7.3	gforth-fast	stacks-float	pass	
+0.7.3	gforth-itc	stacks-float	pass	
+0.7.3	gforth	stacks-rp	pass	
+0.7.3	gforth-fast	stacks-rp	pass	
+0.7.3	gforth-itc	stacks-rp	pass	
+0.7.3	gforth	tilde	pass	
+0.7.3	gforth-fast	tilde	pass	
+0.7.3	gforth-itc	tilde	pass	
+0.7.3	gforth	tilde3-nested	pass	
+0.7.3	gforth-fast	tilde3-nested	pass	
+0.7.3	gforth-itc	tilde3-nested	pass	
+0.7.3	gforth	tilde3-recursive	pass	
+0.7.3	gforth-fast	tilde3-recursive	pass	
+0.7.3	gforth-itc	tilde3-recursive	pass	
+0.7.3	gforth	version	pass	
+0.7.3	gforth-fast	version	pass	
+0.7.3	gforth-itc	version	pass	
+1.0.0	gforth	all-tilde-where	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	all-tilde-where	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	all-tilde-where	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	all-tilde-where	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	all-tilde	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	all-tilde	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	all-tilde	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	all-tilde	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	base-kept	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	base-kept	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	base-kept	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	base-kept	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	cs-begin	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	cs-begin	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	cs-begin	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	cs-begin	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	cs-do	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	cs-do	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	cs-do	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	cs-do	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	cs-guard	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	cs-guard	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	cs-guard	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	cs-guard	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	cs-if	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	cs-if	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	cs-if	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	cs-if	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	dbg-adjacent	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	dbg-adjacent	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	dbg-adjacent	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	dbg-adjacent	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	dbg-defer-does	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	dbg-defer-does	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	dbg-defer-does	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	dbg-defer-does	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	dbg-demo	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	dbg-demo	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	dbg-demo	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	dbg-demo	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	dbg-loop-keys	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	dbg-loop-keys	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	dbg-loop-keys	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	dbg-loop-keys	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	dbg-loop	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	dbg-loop	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	dbg-loop	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	dbg-loop	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	dbg-nest-n	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	dbg-nest-n	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	dbg-nest-n	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	dbg-nest-n	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	dbg-nest	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	dbg-nest	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	dbg-nest	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	dbg-nest	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	dbg-step	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	dbg-step	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	dbg-step	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	dbg-step	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	demo-env	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	demo-env	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	demo-env	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	demo-env	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	demo	fail	exit status 139, want 0 differs from golden
+1.0.0	gforth-fast	demo	fail	exit status 139, want 0 differs from golden
+1.0.0	gforth-itc	demo	fail	exit status 139, want 0 differs from golden
+1.0.0	gforth-ditc	demo	fail	exit status 139, want 0 differs from golden
+1.0.0	gforth	fclearstack	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	fclearstack	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	fclearstack	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	fclearstack	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	input-caret	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	input-caret	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	input-caret	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	input-caret	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	json-escape	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	json-escape	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	json-escape	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	json-escape	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	json-float	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	json-float	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	json-float	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	json-float	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	json-src	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	json-src	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	json-src	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	json-src	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	log-dir-env	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	log-dir-env	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	log-dir-env	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	log-dir-env	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	log-dir-home	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	log-dir-home	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	log-dir-home	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	log-dir-home	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	log-dir-xdg	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	log-dir-xdg	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	log-dir-xdg	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	log-dir-xdg	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	log-id	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	log-id	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	log-id	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	log-id	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	log-records	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	log-records	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	log-records	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	log-records	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	log-two-producers	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	log-two-producers	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	log-two-producers	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	log-two-producers	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	rs-full	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	rs-full	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	rs-full	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	rs-full	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	rs-nested	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	rs-nested	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	rs-nested	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	rs-nested	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	stacks-data	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	stacks-data	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	stacks-data	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	stacks-data	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	stacks-float	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	stacks-float	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	stacks-float	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	stacks-float	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	stacks-rp	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	stacks-rp	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	stacks-rp	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	stacks-rp	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	tilde	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	tilde	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	tilde	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	tilde	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	tilde3-nested	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	tilde3-nested	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	tilde3-nested	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	tilde3-nested	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	tilde3-recursive	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	tilde3-recursive	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	tilde3-recursive	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	tilde3-recursive	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth	version	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-fast	version	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-itc	version	fail	exit status 1, want 0 differs from golden
+1.0.0	gforth-ditc	version	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	all-tilde-where	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	all-tilde-where	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	all-tilde-where	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	all-tilde-where	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	all-tilde	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	all-tilde	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	all-tilde	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	all-tilde	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	base-kept	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	base-kept	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	base-kept	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	base-kept	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	cs-begin	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	cs-begin	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	cs-begin	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	cs-begin	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	cs-do	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	cs-do	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	cs-do	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	cs-do	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	cs-guard	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	cs-guard	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	cs-guard	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	cs-guard	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	cs-if	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	cs-if	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	cs-if	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	cs-if	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	dbg-adjacent	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	dbg-adjacent	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	dbg-adjacent	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	dbg-adjacent	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	dbg-defer-does	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	dbg-defer-does	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	dbg-defer-does	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	dbg-defer-does	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	dbg-demo	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	dbg-demo	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	dbg-demo	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	dbg-demo	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	dbg-loop-keys	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	dbg-loop-keys	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	dbg-loop-keys	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	dbg-loop-keys	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	dbg-loop	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	dbg-loop	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	dbg-loop	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	dbg-loop	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	dbg-nest-n	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	dbg-nest-n	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	dbg-nest-n	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	dbg-nest-n	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	dbg-nest	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	dbg-nest	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	dbg-nest	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	dbg-nest	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	dbg-step	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	dbg-step	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	dbg-step	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	dbg-step	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	demo-env	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	demo-env	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	demo-env	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	demo-env	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	demo	fail	exit status 139, want 0 differs from golden
+1.0.1	gforth-fast	demo	fail	exit status 139, want 0 differs from golden
+1.0.1	gforth-itc	demo	fail	exit status 139, want 0 differs from golden
+1.0.1	gforth-ditc	demo	fail	exit status 139, want 0 differs from golden
+1.0.1	gforth	fclearstack	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	fclearstack	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	fclearstack	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	fclearstack	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	input-caret	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	input-caret	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	input-caret	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	input-caret	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	json-escape	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	json-escape	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	json-escape	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	json-escape	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	json-float	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	json-float	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	json-float	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	json-float	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	json-src	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	json-src	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	json-src	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	json-src	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	log-dir-env	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	log-dir-env	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	log-dir-env	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	log-dir-env	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	log-dir-home	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	log-dir-home	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	log-dir-home	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	log-dir-home	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	log-dir-xdg	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	log-dir-xdg	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	log-dir-xdg	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	log-dir-xdg	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	log-id	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	log-id	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	log-id	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	log-id	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	log-records	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	log-records	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	log-records	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	log-records	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	log-two-producers	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	log-two-producers	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	log-two-producers	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	log-two-producers	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	rs-full	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	rs-full	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	rs-full	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	rs-full	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	rs-nested	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	rs-nested	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	rs-nested	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	rs-nested	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	stacks-data	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	stacks-data	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	stacks-data	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	stacks-data	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	stacks-float	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	stacks-float	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	stacks-float	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	stacks-float	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	stacks-rp	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	stacks-rp	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	stacks-rp	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	stacks-rp	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	tilde	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	tilde	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	tilde	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	tilde	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	tilde3-nested	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	tilde3-nested	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	tilde3-nested	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	tilde3-nested	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	tilde3-recursive	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	tilde3-recursive	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	tilde3-recursive	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	tilde3-recursive	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth	version	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-fast	version	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-itc	version	fail	exit status 1, want 0 differs from golden
+1.0.1	gforth-ditc	version	fail	exit status 1, want 0 differs from golden
