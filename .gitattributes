@@ -1,0 +1,3 @@
+# GitHub language statistics: .fs is Forth here (linguist guesses F#), .inc is shell
+*.fs linguist-language=Forth
+*.inc linguist-language=Shell
