@@ -10,12 +10,12 @@ A stack inspector for gforth 0.7.3.
 * Install
 
 #+begin_src sh
-new=$(mktemp -d) && gh release download v0.2.0 -R jwalsh/gforth-inspect -D "$new"
+new=$(mktemp -d) && gh release download v0.3.0 -R jwalsh/gforth-inspect -D "$new"
 (cd "$new" && shasum -a 256 -c SHA256SUMS) && mkdir -p forth-env && cp "$new"/* forth-env/
 gforth forth-env/inspect.fs
 #+end_src
 
-=inspect-version type= prints 0.2.0. Within one MAJOR version the words
+=inspect-version type= prints 0.3.0. Within one MAJOR version the words
 and the log format do not break.
 
 * Usage
@@ -101,8 +101,8 @@ engine fuses into superinstructions.
 #+begin_example
 $ GFORTH_INSPECT_LOG_DIR=logs gforth inspect.fs -e 'log-on 1 2 -3 1.5e .stacks log-off bye' >/dev/null
 $ cat logs/stacks.jsonl
-{"v":1,"event":"hello","t":1795370955,"gforth":"0.7.3","inspect":"0.2.0","contract":"1.1"}
-{"v":1,"event":"snapshot","t":1795370955,"where":null,"src":null,"data":[1,2,-3],"float":[1.5000000000000000E0 ],"rs":[],"input":{"file":"*OS command line*","line":-1,"in":27,"text":"log-on 1 2 -3 1.5e .stacks log-off bye"}}
+{"v":1,"event":"hello","t":1795384752,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
+{"v":1,"event":"snapshot","t":1795384752,"where":null,"src":null,"data":[1,2,-3],"float":[1.5000000000000000E0 ],"rs":[],"input":{"file":"*OS command line*","line":-1,"in":27,"text":"log-on 1 2 -3 1.5e .stacks log-off bye"}}
 #+end_example
 
 Without =GFORTH_INSPECT_LOG_DIR=, each project and branch gets its own log
