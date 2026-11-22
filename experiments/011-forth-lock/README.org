@@ -1,0 +1,89 @@
+#+TITLE: 011 forth-lock: dependency management in Forth files, with a locked ci mode
+#+DATE: 2026-11-22
+#+STARTUP: showall
+
+Rules: [[file:../../.meta/README.org][.meta]]. Decision D-45. Every run has an xrid (RD-2).
+
+* Hypothesis
+
+H1. A manifest (=package.4th=) and a lockfile (=package.lock.4th=), both
+plain Forth source, can express rules R1–R7 (plan of 2026-11-22: one version
+per package, highest-satisfying with who-wants-what refusals, gforth
+requirement, dependency order without cycles, sha256 of required assets,
+no two packages providing one word, =require= only) and a locked build.
+
+H2. gforth 0.7.3 itself, loading only the lockfile and a small verifier
+(=fpkg.fs=), can run a =ci= check. The check refuses, with a message naming
+the cause:
+- a missing file;
+- a sha256 mismatch;
+- gforth outside the locked range;
+- a lock that no longer satisfies the manifest;
+- a word provided twice.
+It never resolves or upgrades. The SHA-256 used is written in Forth and
+agrees with =shasum -a 256= on every input.
+
+H3. The same two files are readable by a non-Forth tool (Python
+standard library), with the same verdicts as the Forth verifier.
+
+* Format (to be tested, not fixed)
+
+#+begin_src forth
+\ package.4th (theforth.net keys, plus our requirement and words)
+forth-package
+  key-value name gforth-inspect
+  key-value version 0.3.0
+  key-value license GPL-3.0-or-later
+  key-value main inspect.fs
+  key-value gforth >=0.7.3 <1.0.0
+  key-list provides .stacks .rs .input .cs ~~~ all-~~ dbg-fix dbg+ log-on log-off log-where log-id fclearstack inspect-version contract-version rs-full
+  key-list dependencies
+end-forth-package
+
+\ package.lock.4th (generated; loading it with fpkg.fs checks it)
+1 lock-format
+s" >=0.7.3 <1.0.0" lock-gforth
+s" gforth-inspect" s" 0.3.0" s" inspect.fs" s" <64 hex>" lock-file
+end-lock
+#+end_src
+
+* Prediction (before the first run)
+
+- P1. All of R1–R7 fit the format. R2 (resolution) lives only in the lock
+  generator, never in =ci=.
+- P2. A SHA-256 in gforth 0.7.3 Forth matches =shasum -a 256= on generated
+  inputs of 0 to 200000 bytes, including the 55/56/64-byte padding edges, in
+  all three engines.
+- P3. Each refusal in H2 is caught by =ci=, with exit status non-zero,
+  in all three engines.
+- P4. The Python reader and the Forth verifier agree on every scenario of
+  the 2026-11-22 simulation (=sim-json.py=, S1–S9 and the control).
+- P5. The lock has to be kept from being executed as arbitrary Forth: a
+  hand-edited lock can run any word. The verifier therefore loads it in a
+  wordlist holding only the lock words. Measured: does a planted =bye= or
+  =system= in the lock get refused?
+
+* Gate
+
+1. Calibration: each =ci= refusal and each SHA-256 property is seen red on
+   a planted fault, then green. Planted faults:
+   - one byte flipped in a file;
+   - a wrong length in the padding;
+   - gforth range 1.0;
+   - manifest bumped past the lock;
+   - a second provider of =.stacks=;
+   - =bye= in the lock.
+2. SHA-256: Hypothesis property, Forth equals =shasum= on at least 500
+   inputs, in all three engines.
+3. Scenarios S1–S9 and C6, re-expressed as =package.4th= / =package.lock.4th=:
+   the =ci= verdict and the Python verdict equal the expected outcome.
+4. The lock for the real v0.2.0 release (8 assets, sha256 from its
+   =SHA256SUMS=) passes =ci= on a fresh download and fails on a tampered one.
+5. Nothing here changes =env/= or =contract/=. The format is a proposal
+   for 0.4.0.
+
+* Log
+
+** 2026-11-22 registered
+
+Coordinator. The gate freezes at the first run.
