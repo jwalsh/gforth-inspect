@@ -3,15 +3,16 @@
 
 Rules for agents. Format: =ID | WHEN | DO | NEVER | CHECK=. Cite rules by ID.
 
-| file                               | IDs    | scope                    |
-|------------------------------------+--------+--------------------------|
-| [[file:experiment-process.org][experiment-process.org]]             | E-*    | roles, loop, isolation   |
-| [[file:methodology-delta.org][methodology-delta.org]]              | O-*    | oracles                  |
-| [[file:findings-2026-11-21.org][findings-2026-11-21.org]]            | F-*    | gforth 0.7.3 facts       |
-| [[file:finding-requirements-in-flight.org][finding-requirements-in-flight.org]] | RD-*   | requirements discovery   |
-| [[file:decisions.org][decisions.org]]                      | D-*    | decisions, authority     |
+| file                               | IDs  | scope                  |
+|------------------------------------+------+------------------------|
+| [[file:experiment-process.org][experiment-process.org]]             | E-*  | roles, loop, isolation |
+| [[file:methodology-delta.org][methodology-delta.org]]              | O-*  | oracles                |
+| [[file:findings-2026-11-21.org][findings-2026-11-21.org]]            | F-*  | gforth 0.7.3 facts     |
+| [[file:finding-requirements-in-flight.org][finding-requirements-in-flight.org]] | RD-* | requirements discovery |
+| [[file:decisions.org][decisions.org]]                      | D-*  | decisions, authority   |
 
-| ID   | WHEN                 | DO                                    | NEVER                         | CHECK                     |
-|------+----------------------+---------------------------------------+-------------------------------+---------------------------|
-| M-1  | adding to =.meta/=   | write a rule or a checkable fact, with an ID | prose, history, narration | an agent can act on or test it |
-| M-2  | any =.meta/= edit     | run =scripts/privacy-scan.sh=           | paths, names, private repos   | scan clean                |
+| ID  | WHEN               | DO                                                   | NEVER                                       | CHECK                          |
+|-----+--------------------+------------------------------------------------------+---------------------------------------------+--------------------------------|
+| M-1 | adding to =.meta/= | write a rule or a checkable fact, with an ID          | prose, history, narration                   | an agent can act on or test it |
+| M-2 | compressing        | keep cite keys, URLs, link targets (with =::#anchor= or =::*heading=), every number, date, version, and every named entity carrying a claim | drop a SHA, count, file or section target | diff against the previous text: no claim-bearing token lost |
+| M-3 | any =.meta/= edit  | run =scripts/privacy-scan.sh=                          | absolute paths, names, private repo names ([[file:decisions.org][D-3]]) | scan clean                     |

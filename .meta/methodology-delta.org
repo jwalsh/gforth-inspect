@@ -1,22 +1,24 @@
 #+TITLE: Oracles
 #+STARTUP: showall
 
-The inspector is a reporter. Judge it by a read that bypasses it.
+=inspect.fs= is a reporter: it describes state gforth already holds. Check
+the report against that state, read by a path that does not pass through
+the reporter.
 
-| oracle                                         | exact              | live | use for                          |
-|------------------------------------------------+--------------------+------+----------------------------------|
-| lldb at Forth-side =brk=                         | yes                | no   | ground truth, few cases          |
-| =depth= =pick= =fdepth= =fpick= =rp@=              | yes (data, float)  | yes  | O-1, O-2                         |
-| engine differential (gforth, -fast, -itc)      | relative           | yes  | threading-independent output     |
-| JSON schema                                    | shape              | yes  | every record                     |
-| model =words.json=                              | declared           | n/a  | declared vs measured deltas      |
-| =.s= =f.s=                                       | no                 | yes  | nothing                          |
+| oracle                                                   | exact?                 | live?        | good for                                       |
+|----------------------------------------------------------+------------------------+--------------+------------------------------------------------|
+| lldb at a Forth-side =brk= (=call-c= flushes sp/fp/rp/lp) | yes                    | no (offline) | ground truth for a handful of cases            |
+| in-image =depth= =pick= =fdepth= =fpick= =rp@=              | yes for data and float | yes          | O-1, O-2                                       |
+| engine differential: gforth / gforth-fast / gforth-itc   | relative               | yes          | any output that should not depend on threading |
+| the JSON schema                                          | shape only             | yes          | every record from every run                    |
+| model =words.json= (declared stack effects)               | declared, not measured | n/a          | declared vs measured depth deltas (exp 003)    |
+| =.s= and =f.s= text                                        | rounded, truncated     | yes          | nothing: a second reporter                     |
 
-| ID   | WHEN                           | DO                                              | NEVER                                | CHECK                          |
-|------+--------------------------------+-------------------------------------------------+--------------------------------------+--------------------------------|
-| O-1  | testing non-interference        | diff the program with vs without inspector      | infer it from the report             | stacks bit-identical           |
-| O-2  | testing faithfulness            | compare record to =depth=/=pick=, =fdepth=/=fpick=; floats as bits | compare printed floats  | exact match                    |
-| O-3  | need a check from outside image | use engine differential or offline lldb         | trust in-image oracles alone         | fault shared with =depth= visible |
-| O-4  | declared ≠ measured effect      | report both sides                               | decide which side is wrong           | finding names both             |
-| O-5  | gforth-fast step counts differ  | mask                                            | count as a finding                   | mask documented in test        |
-| O-6  | any stack value as data         | read the log                                    | parse =.s= or =f.s=                    |                                |
+| ID  | WHEN                                   | DO                                                                   | NEVER                                 | CHECK                       |
+|-----+----------------------------------------+----------------------------------------------------------------------+---------------------------------------+-----------------------------|
+| O-1 | testing non-interference                | run the same program with and without the inspector                  | infer it from the report              | stacks bit-identical (exp 001) |
+| O-2 | testing faithfulness                    | independent read: =depth= + =pick=, =fdepth= + =fpick=; floats as their bits | let a printer's rounding stand in for agreement | exact match (exp 001) |
+| O-3 | a fault could be shared by =depth= and the inspector | check from outside the image: engine differential or offline lldb | trust in-image oracles alone | outside check run        |
+| O-4 | =words.json= and a measured delta disagree | report both: gforth or the model is wrong                           | decide which side from the property   | finding names both sides    |
+| O-5 | gforth-fast step counts differ          | mask (TOS in a register, fused superinstructions: documented)         | count it as a finding                 | mask in the test            |
+| O-6 | need a stack value as data              | read the log                                                         | parse =.s= or =f.s=                     |                             |
