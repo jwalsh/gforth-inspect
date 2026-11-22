@@ -53,9 +53,9 @@ import checker  # noqa: E402  (the original, imported as written; never edited)
 
 pytestmark = pytest.mark.skipif(shutil.which("bb") is None, reason="bb is not installed")
 
-STATS: dict = {"records": 0, "logs": 0, "checker": 0, "server": 0, "bytes_identical": 0,
+STATS: dict = {"records": 0, "logs": 0, "checker": 0, "server": 0, "bytes_identical": 0, "stdout_compared": 0,
                "disagreements": Counter(), "started": time.monotonic(), "lines": [],
-               "time": Counter()}
+               "time": Counter(), "differential_ran": False}
 
 
 class _Summary:
@@ -65,8 +65,8 @@ class _Summary:
         write(f"twins: {BB_DIR.relative_to(REPO) if BB_DIR.is_relative_to(REPO) else BB_DIR.name}  "
               f"producer: {gforth_run.inspect_source()[1]}")
         write(f"gforth snapshot records {STATS['records']}  logs {STATS['logs']}  "
-              f"checker comparisons {STATS['checker']} (stdout byte-identical "
-              f"{STATS['bytes_identical']})  server comparisons {STATS['server']}  "
+              f"checker comparisons {STATS['checker']} (stdout byte-identical in "
+              f"{STATS['bytes_identical']} of {STATS['stdout_compared']} past usage errors)  server comparisons {STATS['server']}  "
               f"wall {time.monotonic() - STATS['started']:.1f}s")
         if STATS["time"]:
             write("  time in the differential: " + ", ".join(f"{k} {v:.1f}s" for k, v in sorted(STATS["time"].items())))
@@ -160,6 +160,7 @@ def checker_disagreement(py: dict, bb: dict) -> str | None:
         return f"bb stdout is not JSON: {bb['out'][:200]!r}"
     if not _same(_parsed(py["out"]), bb_value):
         return f"stdout {py['out'][:200]} != {bb['out'][:200]}"
+    STATS["stdout_compared"] += 1
     if py["out"] == bb["out"]:
         STATS["bytes_identical"] += 1
     else:
@@ -195,13 +196,12 @@ def servers():
     """Both servers on one file: (served path, python server, bb server)."""
     with tempfile.TemporaryDirectory(prefix="gfi-007-srv-") as tmp:
         served = Path(tmp) / "stacks.jsonl"
-        python_server = Server([sys.executable, str(CONSUMERS / "mock_server.py"), str(served)])
-        bb_server = Server(["bb", str(BB_DIR / "mock_server.clj"), str(served)])
-        try:
+        with contextlib.ExitStack() as stack:
+            python_server = Server([sys.executable, str(CONSUMERS / "mock_server.py"), str(served)])
+            stack.callback(python_server.stop)
+            bb_server = Server(["bb", str(BB_DIR / "mock_server.clj"), str(served)])
+            stack.callback(bb_server.stop)
             yield served, python_server, bb_server
-        finally:
-            python_server.stop()
-            bb_server.stop()
 
 
 def expected_last_line(content: bytes) -> bytes | None:
@@ -550,9 +550,10 @@ def _record_disagreement(kind: str, failures: list[str], problem: str | None) ->
 
 
 @_phases
-@given(batch=st.lists(programs, min_size=4, max_size=10),
+@given(batch=st.lists(programs, min_size=6, max_size=10),  # >= 600 records at 100 examples
        cuts=st.lists(st.integers(0, 2**20), min_size=3, max_size=6))
 def test_generated_differential(batch, cuts, servers):
+    STATS["differential_ran"] = True
     source, _, _ = build(batch)
     result = gforth_run.run(source, timeout=30)
     assert result.returncode == 0, f"gforth exit {result.returncode}: {result.stderr[-400:]}"
@@ -635,6 +636,8 @@ def test_generated_differential(batch, cuts, servers):
 
 def test_zz_volume():
     """Gate 4 asks for at least 500 gforth records (runs after the differential)."""
+    if not STATS["differential_ran"]:
+        pytest.skip("test_generated_differential did not run in this session")
     assert STATS["records"] >= 500, f"only {STATS['records']} gforth snapshot records"
 
 
@@ -657,6 +660,9 @@ def test_server_bytes(servers):
         ("query", hello + b"\n", "/stacks?x=1"),
         ("empty query", hello + b"\n", "/stacks?"),
         ("encoded path", hello + b"\n", "/%73tacks"),
+        ("double slash", hello + b"\n", "//stacks"),
+        ("triple slash", hello + b"\n", "///stacks"),
+        ("double slash, other", hello + b"\n", "//other/stacks"),
     ]
     failures = []
     for name, content, path in cases:
@@ -687,7 +693,12 @@ def test_cli_matches_in_process(tmp_path):
         "surrogate": hello + b"\n" + good.replace(b'"text":"t"', b'"text":"\\ud800"') + b"\n",
         "keyerror": hello + b"\n" + good.replace(b'"data"', b'"stack"') + b"\n",
         "not-utf8": b"\xff\n",
+        "surrogate-low": hello + b"\n" + good.replace(b'"text":"t"', b'"text":"\\udc80"') + b"\n",
     }
+    (tmp_path / "plain.txt").write_text("x\n")
+    (tmp_path / "loop1").symlink_to("loop2")
+    (tmp_path / "loop2").symlink_to("loop1")
+    long_name = str(tmp_path / ("n" * 300))
     for name, content in logs.items():
         (tmp_path / f"{name}.jsonl").write_bytes(content)
     arg_lists = [
@@ -702,6 +713,20 @@ def test_cli_matches_in_process(tmp_path):
         [str(tmp_path / "good.jsonl"), str(schema), "--exp", "1.1", "--no"],
         [str(tmp_path / "good.jsonl")],
         [str(tmp_path / "good.jsonl"), str(schema), "--bogus"],
+        [str(tmp_path / "surrogate-low.jsonl"), str(schema)],
+        [str(tmp_path / "plain.txt" / "x"), str(schema)],
+        [str(tmp_path / "loop1"), str(schema)],
+        [long_name, str(schema)],
+        [str(tmp_path / "good.jsonl"), str(tmp_path)],
+        [str(tmp_path / "good.jsonl"), str(tmp_path / "plain.txt" / "x")],
+        [str(tmp_path / "good.jsonl"), str(tmp_path / "loop1")],
+        [str(tmp_path / "good.jsonl"), str(tmp_path / "missing.json")],
+        [str(tmp_path / "good.jsonl"), str(schema), "--expect", "-"],
+        [str(tmp_path / "good.jsonl"), str(schema), "--expect", "-1.1"],
+        [str(tmp_path / "good.jsonl"), str(schema), "--expect", "-x"],
+        ["-v", str(tmp_path / "good.jsonl"), str(schema)],
+        ["-", str(schema)],
+        [str(tmp_path / "good.jsonl"), str(schema), "--", "--expect"],
     ]
     bb_in_process = bb_checker_many(arg_lists, tmp_path)
     failures = []

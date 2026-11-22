@@ -49,14 +49,14 @@
 
 (defn- new-dict [] (with-meta {} {::order []}))
 
-(defn- dict-put [dict k v]
-  (if (contains? dict k)
-    (assoc dict k v)
-    (vary-meta (assoc dict k v) update ::order conj k)))
+(defn- dict-put [dict key-name item-value]
+  (if (contains? dict key-name)
+    (assoc dict key-name item-value)
+    (vary-meta (assoc dict key-name item-value) update ::order conj key-name)))
 
 (defn- dict-keys [dict] (::order (meta dict)))
-(defn- dict-entries [dict] (map (fn [k] [k (get dict k)]) (dict-keys dict)))
-(defn- dict [& pairs] (reduce (fn [d [k v]] (dict-put d k v)) (new-dict) (partition 2 pairs)))
+(defn- dict-entries [dict] (map (fn [key-name] [key-name (get dict key-name)]) (dict-keys dict)))
+(defn- dict [& pairs] (reduce (fn [partial-dict [key-name item-value]] (dict-put partial-dict key-name item-value)) (new-dict) (partition 2 pairs)))
 
 ;; --- strict JSON, as Python's json.loads reads it ------------------------
 
@@ -64,7 +64,7 @@
 
 (defn- bad-json [message] (throw (ex-info message {::json-error true})))
 
-(defn- json-ws? [c] (or (= c \space) (= c \tab) (= c \newline) (= c \return)))
+(defn- json-ws? [current-char] (or (= current-char \space) (= current-char \tab) (= current-char \newline) (= current-char \return)))
 
 (defn- skip-ws ^long [^String text ^long index]
   (let [length (.length text)]
@@ -87,8 +87,8 @@
             (let [big (BigInteger. ^String literal)]
               [(if (< (.bitLength big) 64) (.longValue big) big) end])))))))
 
-(defn- hex-digit? [c]
-  (or (<= (int \0) (int c) (int \9)) (<= (int \a) (int c) (int \f)) (<= (int \A) (int c) (int \F))))
+(defn- hex-digit? [current-char]
+  (or (<= (int \0) (int current-char) (int \9)) (<= (int \a) (int current-char) (int \f)) (<= (int \A) (int current-char) (int \F))))
 
 (def ^:private string-special (re-pattern "[\"\\\\\\u0000-\\u001f]"))
 
@@ -104,10 +104,10 @@
       (let [special (.start matcher)
             _ (.append builder text (int index) (int special))
             index special
-            c (.charAt text index)]
+            current-char (.charAt text index)]
         (cond
-          (= c \") [(.toString builder) (inc index)]
-          (= c \\)
+          (= current-char \") [(.toString builder) (inc index)]
+          (= current-char \\)
           (do (when (>= (inc index) length) (bad-json "Unterminated string"))
               (let [escape (.charAt text (inc index))]
                 (case escape
@@ -172,7 +172,7 @@
 
 (defn- parse-value [^String text ^long index allow-constants]
   (when (>= index (.length text)) (bad-json "Expecting value"))
-  (let [c (.charAt text index)
+  (let [current-char (.charAt text index)
         literal (fn [word value]
                   (when (.startsWith text ^String word (int index)) [value (+ index (count word))]))
         constant (fn [word value]
@@ -180,7 +180,7 @@
                      ;; the last-line parse passes parse_constant=_reject_constant
                      (when-not allow-constants (bad-json (str word " is not JSON")))
                      [value (+ index (count word))]))]
-    (or (case c
+    (or (case current-char
           \" (parse-string-body text (inc index))
           \{ (parse-object text (inc index) allow-constants)
           \[ (parse-array text (inc index) allow-constants)
@@ -222,9 +222,9 @@
     (and (py-float? left) (py-float? right)) (== (double left) (double right))
     (or (py-float? left) (py-float? right))
     (let [[float-side int-side] (if (py-float? left) [left right] [right left])
-          d (double float-side)]
-      (and (not (Double/isNaN d)) (not (Double/isInfinite d))
-           (zero? (.compareTo (BigDecimal. d) (BigDecimal. (to-big int-side))))))
+          double-value (double float-side)]
+      (and (not (Double/isNaN double-value)) (not (Double/isInfinite double-value))
+           (zero? (.compareTo (BigDecimal. double-value) (BigDecimal. (to-big int-side))))))
     :else (= (to-big left) (to-big right))))
 
 (defn- py-numeric? [value] (or (py-int? value) (py-float? value) (instance? Boolean value)))
@@ -240,7 +240,7 @@
     (and (= (count left) (count right)) (every? true? (map py-equal left right)))
     (and (py-dict? left) (py-dict? right))
     (and (= (set (keys left)) (set (keys right)))
-         (every? (fn [k] (py-equal (get left k) (get right k))) (keys left)))
+         (every? (fn [key-name] (py-equal (get left key-name) (get right key-name))) (keys left)))
     :else false))
 
 (defn- shortest-digits
@@ -248,25 +248,25 @@
   double: the shortest decimal that rounds to it, closest when tied for
   length.  Java's Double.toString gives that, except that when one digit
   would do it may give two (4.9E-324 for 5e-324)."
-  [d]
-  (let [from-java (.stripTrailingZeros (BigDecimal. (Double/toString d)))
-        one-digit (.stripTrailingZeros (.round (BigDecimal. (double d)) (MathContext. 1 RoundingMode/HALF_EVEN)))
+  [double-value]
+  (let [from-java (.stripTrailingZeros (BigDecimal. (Double/toString double-value)))
+        one-digit (.stripTrailingZeros (.round (BigDecimal. (double double-value)) (MathContext. 1 RoundingMode/HALF_EVEN)))
         chosen (if (and (= 2 (.precision from-java))
-                        (= d (Double/parseDouble (.toString one-digit))))
+                        (= double-value (Double/parseDouble (.toString one-digit))))
                  one-digit
                  from-java)
         digits (.toString (.unscaledValue chosen))]
     [digits (- (count digits) (.scale chosen))]))
 
-(defn py-float-repr [d]
-  (let [d (double d)]
+(defn py-float-repr [double-value]
+  (let [double-value (double double-value)]
     (cond
-      (Double/isNaN d) "nan"
-      (Double/isInfinite d) (if (pos? d) "inf" "-inf")
-      (zero? d) (if (neg? (Double/doubleToRawLongBits d)) "-0.0" "0.0")
+      (Double/isNaN double-value) "nan"
+      (Double/isInfinite double-value) (if (pos? double-value) "inf" "-inf")
+      (zero? double-value) (if (neg? (Double/doubleToRawLongBits double-value)) "-0.0" "0.0")
       :else
-      (let [[digits point] (shortest-digits (Math/abs d))
-            sign (if (neg? d) "-" "")
+      (let [[digits point] (shortest-digits (Math/abs double-value))
+            sign (if (neg? double-value) "-" "")
             length (count digits)]
         (str sign
              (if (or (<= point -4) (> point 16))
@@ -318,7 +318,7 @@
     (py-float? value) (py-float-repr value)
     (string? value) (py-str-repr value)
     (py-list? value) (str "[" (str/join ", " (map py-repr value)) "]")
-    (py-dict? value) (str "{" (str/join ", " (for [[k v] (dict-entries value)] (str (py-repr k) ": " (py-repr v)))) "}")
+    (py-dict? value) (str "{" (str/join ", " (for [[key-name item-value] (dict-entries value)] (str (py-repr key-name) ": " (py-repr item-value)))) "}")
     :else (throw (IllegalStateException. (str "no repr for " (type value))))))
 
 (defn- py-str [value] (if (string? value) value (py-repr value)))
@@ -326,8 +326,8 @@
 (defn- dumps-string [^String text]
   (let [builder (StringBuilder. "\"")]
     (dotimes [index (.length text)]
-      (let [c (.charAt text index)]
-        (case c
+      (let [current-char (.charAt text index)]
+        (case current-char
           \" (.append builder "\\\"")
           \\ (.append builder "\\\\")
           \newline (.append builder "\\n")
@@ -335,9 +335,9 @@
           \tab (.append builder "\\t")
           \backspace (.append builder "\\b")
           \formfeed (.append builder "\\f")
-          (if (< (int c) 0x20)
-            (.append builder (format "\\u%04x" (int c)))
-            (.append builder c)))))
+          (if (< (int current-char) 0x20)
+            (.append builder (format "\\u%04x" (int current-char)))
+            (.append builder current-char)))))
     (.append builder "\"")
     (.toString builder)))
 
@@ -349,13 +349,13 @@
     (true? value) "true"
     (false? value) "false"
     (py-int? value) (str value)
-    (py-float? value) (let [d (double value)]
-                        (cond (Double/isNaN d) "NaN"
-                              (Double/isInfinite d) (if (pos? d) "Infinity" "-Infinity")
-                              :else (py-float-repr d)))
+    (py-float? value) (let [double-value (double value)]
+                        (cond (Double/isNaN double-value) "NaN"
+                              (Double/isInfinite double-value) (if (pos? double-value) "Infinity" "-Infinity")
+                              :else (py-float-repr double-value)))
     (string? value) (dumps-string value)
     (py-list? value) (str "[" (str/join ", " (map dumps value)) "]")
-    (py-dict? value) (str "{" (str/join ", " (for [[k v] (dict-entries value)] (str (dumps-string k) ": " (dumps v)))) "}")
+    (py-dict? value) (str "{" (str/join ", " (for [[key-name item-value] (dict-entries value)] (str (dumps-string key-name) ": " (dumps item-value)))) "}")
     :else (throw (IllegalStateException. (str "cannot dump " (type value))))))
 
 (defn- surrogate-error
@@ -363,8 +363,8 @@
   UnicodeEncodeError message for `text`, or nil if it encodes."
   [^String text]
   (let [code-points (vec (iterator-seq (.iterator (.codePoints text))))
-        surrogate? (fn [cp] (<= 0xD800 (int cp) 0xDFFF))
-        start (first (keep-indexed (fn [i cp] (when (surrogate? cp) i)) code-points))]
+        surrogate? (fn [code-point] (<= 0xD800 (int code-point) 0xDFFF))
+        start (first (keep-indexed (fn [position code-point] (when (surrogate? code-point) position)) code-points))]
     (when start
       (let [end (loop [end start] (if (and (< (inc end) (count code-points)) (surrogate? (code-points (inc end))))
                                     (recur (inc end)) end))]
@@ -379,9 +379,12 @@
 (def implemented-keywords
   #{"type" "const" "enum" "required" "properties" "additionalProperties" "items" "oneOf"})
 
-;; keywords checker.py does not implement and ignores, which the contract
-;; schema uses; `pattern` is a validation keyword, ignored as checker.py ignores it
-(def ignored-keywords #{"$schema" "$id" "title" "description" "pattern"})
+;; keywords checker.py does not implement and ignores: the annotations, and
+;; `pattern`, a validation keyword the contract schema uses, ignored as
+;; checker.py ignores it.  Any other keyword (format, minItems, ...) could
+;; change a verdict, so the twin refuses it rather than guess
+(def ignored-keywords #{"$schema" "$id" "$comment" "title" "description" "default" "examples"
+                        "deprecated" "readOnly" "writeOnly" "pattern"})
 
 (defn unknown-keywords
   "Every keyword in the schema that checker.py neither implements nor is
@@ -391,17 +394,17 @@
    (if-not (py-dict? schema)
      [(str where " (not an object)")]
      (concat
-      (for [k (dict-keys schema)
-            :when (not (or (implemented-keywords k) (ignored-keywords k) (str/starts-with? k "x-")))]
-        (str where "." k))
+      (for [key-name (dict-keys schema)
+            :when (not (or (implemented-keywords key-name) (ignored-keywords key-name) (str/starts-with? key-name "x-")))]
+        (str where "." key-name))
       (when-let [properties (get schema "properties")]
         (if (py-dict? properties)
-          (mapcat (fn [[k sub]] (unknown-keywords sub (str where ".properties." k))) (dict-entries properties))
+          (mapcat (fn [[key-name subschema]] (unknown-keywords subschema (str where ".properties." key-name))) (dict-entries properties))
           [(str where ".properties (not an object)")]))
       (when (contains? schema "items") (unknown-keywords (get schema "items") (str where ".items")))
       (when-let [branches (get schema "oneOf")]
         (if (py-list? branches)
-          (mapcat (fn [i sub] (unknown-keywords sub (str where ".oneOf[" i "]"))) (range) branches)
+          (mapcat (fn [position subschema] (unknown-keywords subschema (str where ".oneOf[" position "]"))) (range) branches)
           [(str where ".oneOf (not an array)")]))))))
 
 (defn- type-ok? [value type-name]
@@ -421,13 +424,13 @@
     (py-equal left right)))
 
 (defn- code-point-compare [^String left ^String right]
-  (let [a (.toArray (.codePoints left)) b (.toArray (.codePoints right))]
-    (loop [i 0]
-      (cond (and (= i (alength a)) (= i (alength b))) 0
-            (= i (alength a)) -1
-            (= i (alength b)) 1
-            (not= (aget a i) (aget b i)) (compare (aget a i) (aget b i))
-            :else (recur (inc i))))))
+  (let [left-points (.toArray (.codePoints left)) right-points (.toArray (.codePoints right))]
+    (loop [position 0]
+      (cond (and (= position (alength left-points)) (= position (alength right-points))) 0
+            (= position (alength left-points)) -1
+            (= position (alength right-points)) 1
+            (not= (aget left-points position) (aget right-points position)) (compare (aget left-points position) (aget right-points position))
+            :else (recur (inc position))))))
 
 (defn validate
   "nil if value conforms, else the first error found, in checker.py's order."
@@ -445,15 +448,15 @@
       (str where ": not one of " (py-repr (get schema "enum"))))
     (when (py-dict? value)
       (let [properties (get schema "properties" (new-dict))]
-        (or (some (fn [k] (when-not (contains? value k) (str where ": missing " (py-repr k))))
+        (or (some (fn [key-name] (when-not (contains? value key-name) (str where ": missing " (py-repr key-name))))
                   (get schema "required" []))
-            (some (fn [[k sub]] (when (contains? value k) (validate (get value k) sub (str where "." k))))
+            (some (fn [[key-name subschema]] (when (contains? value key-name) (validate (get value key-name) subschema (str where "." key-name))))
                   (dict-entries properties))
             (when (false? (get schema "additionalProperties"))
               (let [extra (sort code-point-compare (remove #(contains? properties %) (dict-keys value)))]
                 (when (seq extra) (str where ": unexpected " (py-repr (vec extra)))))))))
     (when (and (py-list? value) (contains? schema "items"))
-      (some (fn [[i item]] (validate item (get schema "items") (str where "[" i "]")))
+      (some (fn [[position item]] (validate item (get schema "items") (str where "[" position "]")))
             (map-indexed vector value)))
     (when (contains? schema "oneOf")
       (let [matches (count (filter #(nil? (validate value % where)) (get schema "oneOf")))]
@@ -499,11 +502,44 @@
     (string? value) (py-raise "TypeError" "string indices must be integers, not 'str'")
     :else (py-raise "TypeError" (str "'" (python-type-name value) "' object is not subscriptable"))))
 
-(defn- strerror [^Exception error]
-  (cond (instance? NoSuchFileException error) "No such file or directory"
-        (= "java.nio.file.AccessDeniedException" (.getName (class error))) "Permission denied"
-        (= "Is a directory" (.getMessage error)) "Is a directory"
-        :else (.getMessage error)))
+(defn- strerror
+  "The OS reason, as Python's OSError.strerror gives it.  java.nio's
+  FileSystemException (not a class babashka exposes) prefixes the path:
+  \"<path>: <reason>\"; that prefix is dropped."
+  [^Exception error ^String file-path]
+  (let [message (str (.getMessage error))
+        reason (if (str/starts-with? message (str file-path ": "))
+                 (subs message (+ 2 (count file-path)))
+                 message)]
+    (cond (instance? NoSuchFileException error) "No such file or directory"
+          (= "java.nio.file.AccessDeniedException" (.getName (class error))) "Permission denied"
+          (str/starts-with? reason "Too many levels of symbolic links") "Too many levels of symbolic links"
+          (= message file-path) "No such file or directory"
+          :else reason)))
+
+(def ^:private os-errors
+  ;; reason -> [Python OSError subclass, errno] for the schema file
+  {"No such file or directory" ["FileNotFoundError" 2]
+   "Permission denied" ["PermissionError" 13]
+   "Is a directory" ["IsADirectoryError" 21]
+   "Not a directory" ["NotADirectoryError" 20]
+   "Too many levels of symbolic links" ["OSError" 62]
+   "File name too long" ["OSError" 63]})
+
+(declare decode-utf8)
+
+(defn- read-schema-text
+  "Path(schema).read_text(): strict UTF-8, OSErrors raised as Python raises them."
+  [^String schema-path]
+  (let [raw (try (Files/readAllBytes (Paths/get schema-path (make-array String 0)))
+                 (catch java.io.IOException error
+                   (let [reason (strerror error schema-path)
+                         [class-name errno] (os-errors reason ["OSError" nil])]
+                     (py-raise class-name (str (when errno (str "[Errno " errno "] ")) reason ": "
+                                               (py-repr schema-path))))))]
+    (try (decode-utf8 raw)
+         (catch CharacterCodingException _
+           (py-raise "UnicodeDecodeError" "'utf-8' codec can't decode the schema")))))
 
 (defn- decode-utf8 [^bytes raw]
   (-> (.newDecoder StandardCharsets/UTF_8)
@@ -517,7 +553,7 @@
   (let [raw (try (Files/readAllBytes (Paths/get log-path (make-array String 0)))
                  (catch java.io.IOException error error))]
     (if (instance? Exception raw)
-      (dict "error" (str "unreadable: " (strerror raw)))
+      (dict "error" (str "unreadable: " (strerror raw log-path)))
       (let [text (try (decode-utf8 raw) (catch CharacterCodingException _ nil))]
         (if (nil? text)
           (dict "error" "not UTF-8")
@@ -535,10 +571,10 @@
                       (dict "error" (str "invalid: " error))
                       (let [result (dict "event" (getitem record "event"))]
                         (if (py-equal (getitem record "event") "snapshot")
-                          (let [result (reduce (fn [result k] (dict-put result k (getitem record k)))
+                          (let [result (reduce (fn [result key-name] (dict-put result key-name (getitem record key-name)))
                                                result snapshot-keys)]
                             (dict-put result "input"
-                                      (apply dict (mapcat (fn [k] [k (getitem (getitem record "input") k)])
+                                      (apply dict (mapcat (fn [key-name] [key-name (getitem (getitem record "input") key-name)])
                                                           input-keys))))
                           result)))))))))))))
 
@@ -549,6 +585,13 @@
 (defn- usage-error [message]
   {:exit 2 :out "" :err (str "usage: checker.clj [-h] [--expect EXPECT] [--no-version-stop] log schema\n"
                              "checker.clj: error: " message "\n")})
+
+(defn- option-like?
+  "argparse: a token is an option unless it is `-`, or looks like a negative
+  number (this parser has no option that does)."
+  [^String token]
+  (and (str/starts-with? token "-") (not= token "-")
+       (not (re-matches #"-\d+$|-\d*\.\d+$" token))))
 
 (defn- parse-args
   "argparse: options anywhere, unique prefixes, --expect=V, `--` ends options."
@@ -568,9 +611,10 @@
               (if inline {:error (str "argument --no-version-stop: ignored explicit argument '" inline "'")}
                   (recur more (assoc parsed :no-version-stop true)))
               inline (recur more (assoc parsed :expect inline))
-              (or (nil? more) (str/starts-with? (first more) "-"))
+              (or (nil? more) (option-like? (first more)))
               {:error "argument --expect: expected one argument"}
               :else (recur (next more) (assoc parsed :expect (first more)))))
+          (option-like? token) {:error (str "unrecognized arguments: " token)}
           :else (recur more (update parsed :positional conj token)))))))
 
 (defn run-cli
@@ -585,11 +629,7 @@
       :else
       (try
         (let [[log-path schema-path] (:positional parsed)
-              schema (read-json (try (String. (Files/readAllBytes (Paths/get schema-path (make-array String 0))) "UTF-8")
-                                     (catch NoSuchFileException _
-                                       (py-raise "FileNotFoundError"
-                                                 (str "[Errno 2] No such file or directory: " (py-repr schema-path)))))
-                                true)
+              schema (read-json (read-schema-text schema-path) true)
               unknown (unknown-keywords schema)]
           (if (seq unknown)
             {:exit 2 :out ""
