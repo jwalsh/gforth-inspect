@@ -1,0 +1,59 @@
+#+TITLE: Finding: the requirements moved faster than the experiments
+#+DATE: 2026-11-21
+#+STARTUP: showall
+
+* What happened
+
+In one evening the repository picked up 25 decisions ([[file:decisions.org][decisions.org]]). Most
+arrived while agents were in the middle of runs that assumed the earlier
+rule. Over the same hours the ref under test, =harden=, moved six times:
+18ebe2d, cda47e2, ea4ae27, 9b92746, fc283da, 1b2aee9.
+
+- Experiment 002 was written against the escaping that 18ebe2d does. By
+  its first run, =harden= had rewritten =json-str=. It shipped with two
+  oracles, chosen from the =hello= record, and logged a run under each.
+- Experiment 004 was briefed against 9b92746. By its first run =harden= was
+  at fc283da, and a contract version stop had been added to the consumers
+  it was freezing.
+- Experiment 001's float verdict would have depended on which blob the
+  default ref happened to point at that minute.
+- "v0.1.0 is the first release" was written down and then replaced by
+  "v0.5.0 is the first tag" within the hour.
+
+* What kept the results meaningful
+
+- *The gate is written before the run and never edited.* When the rules
+  changed, an agent appended to its Log. It did not move the gate to fit.
+  002's pre-registered oracle still answers the question as it was asked,
+  for the ref it was asked about.
+- *Every ref is pinned by hash, and every log line names its blob.*
+  =gforth_run.py= prints its provenance on every run. The default
+  =INSPECT_REF=harden= was the source of every near-miss. A moving name is
+  not a version.
+- *Every rule goes into a file before the next agent reads it.* The
+  agents checked against RELEASING.org and CONSUMERS.org, not against the
+  Operator's memory of the conversation. A decision that existed only in a
+  message reached exactly one agent.
+- *Before and after, not a single verdict.* Pinning the before (18ebe2d)
+  and the after (the fix) turned a moving target into evidence that #1 was
+  fixed.
+
+* What it cost
+
+- One contradiction got through: "breaking any reference consumer is
+  MAJOR" together with "the checker stops on a MINOR mismatch". The two
+  rules came from the same source minutes apart. A third rule was needed
+  to reconcile them (decisions #12).
+- Agents carried stale instructions. 004 used a message format that
+  CONSUMERS.org had already revised, and it noticed only by reading the
+  file rather than the brief.
+- Coordination traffic grew with the number of rules, not with the work.
+
+* For the next project
+
+When the requirements are still being found, *pin what you test, write
+down what you decide, and let the gate be the only thing nobody edits.*
+Pinning and gating are already house practice. The new part is the
+decisions log, written as each decision lands. It holds the date, who
+made the decision, what it replaces and what enforces it. Without it, the
+rules end up spread across five documents and a memory file.
