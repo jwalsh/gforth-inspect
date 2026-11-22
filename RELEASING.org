@@ -120,13 +120,79 @@ names a particular downstream project.
    assets themselves.
 4. =grep -c sicpminus= on the assets prints 0.
 5. The release notes include the test summary (engines, case counts, and
-   the Hypothesis seed) and a =Closes= line naming every issue the release
-   fixes, for example =Closes #1, #4=. Downstream projects use those
+   the Hypothesis seed) and a =Fixed:= line naming every issue the release
+   fixes, for example =Fixed: #1, #4= (each fixing PR says =Closes #N=, which
+   is what closes it on GitHub). Downstream projects use those
    numbers to retire their local patches (see below).
 
-CI on a macOS runner with =brew install gforth= runs 1 to 4. Until that CI
-exists, whoever cuts the release runs them by hand and pastes the output
-into the notes.
+CI (=.github/workflows/verify.yml=, a macOS runner with gforth 0.7.3 from
+Homebrew) runs on every pull request and every push to =main=. Once the
+root Makefile has a =verify= target, CI runs =gmake verify=, against the
+tree's own =env/inspect.fs= and schema. Until then it runs the privacy scan,
+the guide check and the =pbt/= checks, and =pbt/= tests harden's
+=inspect.fs=. CI does not yet run the =PROFILE=ci= long run, scan the
+release assets or grep them (2, 3 over =dist/=, and 4). Until it does,
+whoever cuts the release runs those by hand and pastes the output into the
+notes.
+
+* Mainline protection
+
+=main= is protected, so that what CI checks is what lands. The rule set is
+[[file:.github/branch-protection.json][.github/branch-protection.json]], in the shape the PUT endpoint takes:
+
+| rule                                       | why                                                                       |
+|--------------------------------------------+---------------------------------------------------------------------------|
+| a pull request before merging, 0 approvals | one owner and several agents: the PR is the record, not a sign-off         |
+| status check =verify=, strict              | a PR merges only when CI is green on a head that is up to date with =main= |
+| linear history                             | the repository squash-merges; =main= stays one commit per change          |
+| no force pushes, no deletion               | tags and downstream =DEVIATIONS.org= rows point at =main='s commits       |
+| conversation resolution                    | a review thread on the PR is resolved before merge, not left hanging      |
+| =enforce_admins= false                     | admins can bypass, see the phases below                                   |
+
+Merges are squash only, and head branches are not deleted on merge:
+experiment branches are kept as records.
+
+The check =verify= is the id of the job in =verify.yml=. The workflow's
+name does not matter to the rule, but renaming the job, or giving it a
+=name:=, does: every PR would then wait on a check that never reports.
+Change the job and this rule set together.
+
+** Phases
+
+1. *Until v0.5.0.* The repository is under active review, and coordinators
+   commit to =main= directly (coordination documents, as AGENTS.md says).
+   =enforce_admins= is false, so admins bypass the PR and the check. For
+   them the protection only stops force pushes and deletion. Anyone
+   without admin rights merges only through a PR with =verify= green. An
+   agent that pushes with the owner's credentials is an admin to GitHub:
+   for it, as for the owner, the PR and the green check are rules of
+   AGENTS.md, not of the protection.
+2. *From v0.5.0.* =enforce_admins= goes to true, and every change, the
+   owner's and the agents' included, goes through a PR:
+
+   #+begin_src sh
+   gh api -X POST repos/{owner}/{repo}/branches/main/protection/enforce_admins
+   #+end_src
+
+   Set ="enforce_admins": true= in =branch-protection.json= in the same
+   change, so the file and the live rules agree. =-X DELETE= on the same
+   path turns it back off, for an emergency.
+
+** Changing the rules
+
+Edit =.github/branch-protection.json= and this section in a PR. Once it
+merges, apply the file and read the result back:
+
+#+begin_src sh
+gh api -X PUT repos/{owner}/{repo}/branches/main/protection --input .github/branch-protection.json
+gh api repos/{owner}/{repo}/branches/main/protection
+#+end_src
+
+Run these from a checkout: =gh= fills in ={owner}/{repo}= from its remote.
+A PUT replaces every rule, so always send the whole file. The read-back is
+not a valid PUT body (it has =url= keys, and =enforce_admins= and
+=required_linear_history= come back as ={"enabled": ...}= objects), so
+compare it with the file, do not feed it back in.
 
 * Cutting one
 
@@ -184,10 +250,10 @@ When a release ships, the downstream project takes these steps:
 
 1. Download the release and verify =SHA256SUMS=.
 2. Run each deviation's reproducer against the released files.
-3. Drop the rows that the release's =Closes= line fixes and that the
+3. Drop the rows that the release's =Fixed:= line names and that the
    reproducer confirms.
-4. File a new issue here for any deviation the release claims to fix but
-   does not, and keep that row.
+4. Reopen the issue for any deviation the release claims to fix but does
+   not, and keep that row.
 
 On this side, then: a fix is not closed until its reproducer passes against
 the release assets, and not merely against =main=. An issue that still has
