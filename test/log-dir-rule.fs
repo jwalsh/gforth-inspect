@@ -50,6 +50,12 @@ s" u" fx .log-dir-for
 s\" [remote \"upstream\"]\\n\\turl = https://example.org/x/y\\n[remote \"origin\"]\\n\\turl = https://example.org/me/fork/\\n\\turl = https://example.org/no/second\\n" url-fixture
 s" u" fx .log-dir-for
 
+\ GitLab subgroups: the owner is every segment before the repo, one component
+s\" [remote \"origin\"]\\n\\turl = ssh://host/group-a/sub/repo.git\\n" url-fixture
+s" u" fx .log-dir-for
+s\" [remote \"origin\"]\\n\\turl = ssh://host/group-b/sub/repo.git\\n" url-fixture
+s" u" fx .log-dir-for
+
 \ outside any repository: _nogit/<the directory's name>/_
 s" mkdir -p $FX/plain/x" fx-sh
 s" plain/x" fx .log-dir-for

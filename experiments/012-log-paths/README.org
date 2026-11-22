@@ -20,7 +20,7 @@ reference in =stacks-log.org= computes, on real fixture trees (P4).
 
 P1-P4 hold for every branch name =git check-ref-format --branch= accepts,
 for arbitrary owner and repo bytes, and for every accepted url form; each
-of eight planted faults turns P4 red, and the faults that break safety or
+of nine planted faults turns P4 red, and the faults that break safety or
 injectivity also turn P1 or P3 red.
 
 * Gate
@@ -64,5 +64,30 @@ Mutation table (=pbt/calibrate/012-*.sh=, 25 examples each, no shrinking):
 | leading =.= not stripped                   | 012-no-dot-strip.sh     | P4     |
 | =~= allowed in a plain name                | 012-tilde-plain.sh      | P4     |
 
-32-bit truncation also breaks P3: the component shows the top 48 of 64
-bits, of which only 16 then carry hash, so collisions come within a batch.
+32-bit truncation also broke P3 on that run: the component shows the top
+48 of 64 bits, of which only 16 then carry hash, so collisions can come
+within a batch.  It is not reliable at 25 examples (P4 only on the rerun
+below).
+
+** 2026-11-22 owner = every segment before the repo (coordinator's spec fix)
+
+The next-to-last segment alone merged GitLab subgroups:
+=ssh://host/group-a/sub/repo.git= and =.../group-b/sub/repo.git= both gave
+owner =sub=.  The owner is now all segments before the repo, joined by
+=/=, one component (=group-a-sub~046464b4cc65=).  New property
+=test_reference_owner_keeps_earlier_segments=; the url generator draws
+arbitrary earlier segments; two subgroup fixtures in the fixed batch and
+in the =log-dir-rule= golden.  =pytest test_012_log_paths.py=: 10 passed.
+Rerun of every plant:
+
+| fault                                    | script                  | red    |
+|------------------------------------------+-------------------------+--------|
+| =/= passed through a slug                  | 012-slash-passes.sh     | P4 P1  |
+| no ASCII lowercasing                     | 012-no-lowercase.sh     | P4     |
+| no hash (slug only)                      | 012-no-hash.sh          | P4 P3  |
+| hash over the slug, not the name         | 012-hash-of-slug.sh     | P4 P3  |
+| wrong FNV prime                          | 012-fnv-prime.sh        | P4     |
+| FNV truncated to 32 bits                 | 012-fnv-32bit.sh        | P4     |
+| leading =.= not stripped                   | 012-no-dot-strip.sh     | P4     |
+| =~= allowed in a plain name                | 012-tilde-plain.sh      | P4     |
+| owner = the next-to-last segment only    | 012-owner-last-only.sh  | P4 P3  |

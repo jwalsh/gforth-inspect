@@ -301,9 +301,18 @@ variable (in-origin)
     (-slashes) 2dup (basename) 2>r 2r@ nip - 2r> ;
 : (-.git) ( c-addr u -- c-addr u' )
     dup 4 < IF EXIT THEN 2dup + 4 - 4 s" .git" compare 0= IF 4 - THEN ;
+create (owner) log-max allot  variable (owner#)
+: (owner-segment+) ( c-addr u -- ) \ a non-empty segment onto (owner), /-separated
+    dup 0= IF 2drop EXIT THEN
+    (owner#) @ IF [char] / (owner) (owner#) (buf-char+) THEN  (owner) (owner#) buf+ ;
+: (owner!) ( c-addr u -- ) \ (owner) := the path's segments, empty ones dropped, joined by /
+    0 (owner#) !
+    BEGIN dup WHILE 2dup [char] / (index-of) dup 0< IF drop (owner-segment+) 0 0 ELSE
+        >r over r@ (owner-segment+) r> 1+ /string THEN REPEAT 2drop ;
 : (origin+) ( c-addr u -- f ) \ <owner>/<repo> from a remote url; false if it names no repo
+    \ <repo> is the last segment, <owner> every segment before it, one component
     (url-path) (last-segment) dup 0= IF 2drop 2drop false EXIT THEN
-    2>r (last-segment) 2swap 2drop dup IF (enc+) ELSE 2drop [char] _ (dir-char+) THEN
+    2>r (owner!) (owner#) @ IF (owner) (owner#) @ (enc+) ELSE [char] _ (dir-char+) THEN
     (dir/) 2r> (-.git) (enc+) true ;
 : (owner-repo+) ( -- ) \ <owner>/<repo> of origin, else _local/<the main worktree's name>
     (common) (common#) @ s" config" (path/) (file!)

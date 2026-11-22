@@ -38,11 +38,14 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
      file, the path on its =gitdir: <path>= line (relative to =<root>=).
      The common git dir is the git dir's =commondir= file (relative to the
      git dir), else the git dir itself;
-   - =<owner>/<repo>= are the last two segments of the path of the first
-     =url= in the =[remote "origin"]= section of the common dir's =config=,
-     =.git= stripped from =<repo>=.  Accepted: =git@host:owner/repo=,
-     =ssh://[user@]host[:port]/owner/repo=, =https://host/owner/repo=, with
-     any number of segments; a url with one segment gives owner =_=.  The
+   - =<repo>= is the last segment of the path of the first =url= in the
+     =[remote "origin"]= section of the common dir's =config=, =.git=
+     stripped; =<owner>= is every segment before it (empty ones dropped),
+     joined with =/= and encoded as one component, so GitLab subgroups
+     =group-a/sub= and =group-b/sub= stay apart.  Accepted:
+     =git@host:owner/repo=, =ssh://[user@]host[:port]/owner/repo=,
+     =https://host/owner/repo=, with any number of segments; a url with
+     one segment gives owner =_=.  The
      config is read line by line: a section header must be exactly
      =[remote "origin"]= (=remote= in any case), the key =url= in any case,
      the value trimmed, one pair of ="= stripped, no inline comments.  With
@@ -71,6 +74,7 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
 |---------------------------------------------------------+----------------------------------------------|
 | =~/src/widget=, origin =git@host:acme/widget.git=, on =main= | =acme/widget/main=                  |
 | a linked worktree of it on =feature/Parser=              | =acme/widget/feature-parser~eb9f8a4eb252=   |
+| origin =ssh://host/group-a/sub/repo.git= (a subgroup), on =main= | =group-a-sub~046464b4cc65/repo/main=  |
 | origin =https://example.org/Acme/Widget=, detached =HEAD= in =~/src/w= | =acme~84d1d48b0b85/widget~ae3bcbd78794/_detached-w~af63ea4c8602= |
 | a repository with no origin in =~/src/Local.Repo=, on =topic= | =_local/local.repo~17f2393cee21/topic=  |
 | =/tmp/My Proj=, no =.git= above it                       | =_nogit/my-proj~c0571c5e0b05/_=             |
@@ -212,7 +216,7 @@ def origin_url(config):
 
 
 def owner_repo(url):
-    """(owner or None, repo) from the last two path segments, or None."""
+    """(owner or None, repo): repo the last path segment, owner all before it."""
     scheme = url.find(b"://")
     if scheme >= 0:
         rest = url[scheme + 3:]
@@ -224,7 +228,7 @@ def owner_repo(url):
     if not segments:
         return None
     repo = segments[-1][:-4] if segments[-1].endswith(b".git") else segments[-1]
-    return (segments[-2] if len(segments) >= 2 else None), repo
+    return b"/".join(segments[:-1]) or None, repo
 
 
 def branch(head):

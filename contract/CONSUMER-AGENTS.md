@@ -15,7 +15,9 @@ The reasoning behind each rule is in [COLLABORATION.org](../docs/COLLABORATION.o
 - The log: `stacks.jsonl` in `$GFORTH_INSPECT_LOG_DIR` when set, else in
   the `GFORTH_INSPECT_LOG_DIR=` of your project's `.env`, else in a
   directory per project and worktree under
-  `${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/`. Run
+  `${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/`: `<owner>/<repo>/<branch>`,
+  where `<repo>` is the last path segment of origin's url and `<owner>`
+  everything before it (`group/sub` for a GitLab subgroup). Run
   `gforth inspect.fs -e 'log-where bye'` in the project to see where, or
   put `GFORTH_INSPECT_LOG_DIR=~/.local/state/gforth-inspect/shared` in each
   worktree's `.env` to share one log. The rule: `stacks-log.org`, "Files".

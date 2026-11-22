@@ -27,7 +27,7 @@ import errno
 import os
 import unicodedata
 
-from hypothesis import Phase, example, given, note, reject, settings
+from hypothesis import Phase, assume, example, given, note, reject, settings
 from hypothesis import strategies as st
 
 import _012_helpers as helpers
@@ -79,7 +79,8 @@ for_paths = names.filter(lambda raw: b"\r" not in raw)
 def urls(draw):
     owner, repo = draw(for_paths), draw(for_paths)
     host = draw(st.sampled_from([b"github.com", b"git.example.org", b"10.0.0.1", b"h"]))
-    prefix = b"".join(draw(st.lists(st.sampled_from([b"group/", b"a/b/", b"x/"]), max_size=2)))
+    prefix = b"".join(segment + b"/" for segment in draw(st.lists(
+        st.one_of(st.sampled_from([b"group", b"a", b"sub"]), for_paths), max_size=3)))
     path = prefix + owner + b"/" + repo + draw(st.sampled_from([b"", b".git", b"/", b".git/"]))
     form = draw(st.sampled_from(["scp", "ssh", "https", "one-segment"]))
     if form == "scp":
@@ -219,6 +220,27 @@ def test_reference_injective_with_markers(sources, roots):
     assert_injective(pairs)
 
 
+# a segment holding "://" would re-scheme an scp-like url: not a path segment
+segments = for_paths.filter(lambda raw: raw != b"" and b"://" not in raw)
+
+
+@example([b"group-a"], [b"group-b"], b"sub", b"repo.git")
+@example([b"a"], [], b"sub", b"repo")
+@example([b"x", b"y"], [b"x/y"], b"o", b"r")
+@given(st.lists(segments, max_size=3), st.lists(segments, max_size=3), segments, segments)
+def test_reference_owner_keeps_earlier_segments(prefix_a, prefix_b, owner, repo):
+    """P3 for nested owners: urls that differ only before the owner's last
+    segment (GitLab subgroups) never share an owner component."""
+    path_a = b"/".join(prefix_a + [owner, repo])
+    path_b = b"/".join(prefix_b + [owner, repo])
+    assume(path_a.split(b"/") != path_b.split(b"/"))
+    for form in (b"ssh://host/", b"https://host/", b"git@host:"):
+        owner_a, repo_a = ref.owner_repo(form + path_a)
+        owner_b, repo_b = ref.owner_repo(form + path_b)
+        assert repo_a == repo_b
+        assert ref.enc(owner_a).lower() != ref.enc(owner_b).lower(), (form, path_a, path_b)
+
+
 # --- P1, P3, P4 on inspect.fs ---------------------------------------------------
 
 # fixed batches the calibration relies on: each planted fault is caught on
@@ -232,6 +254,10 @@ TRICKY = [
     Fixture("linked-abs", "w2", "m", b'[remote "origin"]\n\turl = https://h/g/acme/repo\n',
             b"ref: refs/heads/" + b"l" * 70 + b"\n", None, 2),
     Fixture("nogit", "-dash.dot", "m", None, None, None, 0),
+    Fixture("main", "s1", "m", b'[remote "origin"]\n\turl = ssh://host/group-a/sub/repo.git\n',
+            b"ref: refs/heads/main\n", None, 0),
+    Fixture("main", "s2", "m", b'[remote "origin"]\n\turl = ssh://host/group-b/sub/repo.git\n',
+            b"ref: refs/heads/main\n", None, 0),
     Fixture("main", "e", "m", None, b"ref: refs/heads/main\n", b"GFORTH_INSPECT_LOG_DIR='~/shared'\n", 0),
 ]
 
