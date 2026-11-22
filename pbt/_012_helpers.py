@@ -133,7 +133,7 @@ def raw_components(pwd: bytes) -> tuple:
     ref = reference
     root, has_git = ref.find_root(pwd)
     if not has_git:
-        return (("marker", b"_nogit"), ("name", ref.basename(root)), ("marker", b"_"))
+        return (("marker", b"_nogit"), ("nogit", root), ("marker", b"_"))
     gitdir = ref.git_dir(root)
     common = ref.common_dir(gitdir)
     config = ref.read(common + b"/config")
@@ -143,7 +143,7 @@ def raw_components(pwd: bytes) -> tuple:
         owner = ("marker", b"_") if pair[0] is None else ("name", pair[0])
         repo = ("name", pair[1])
     else:
-        owner, repo = ("marker", b"_local"), ("name", ref.main_name(common))
+        owner, repo = ("marker", b"_local"), ("local", ref.normalize(common))
     name = None if ref.reftable(config) else ref.branch(ref.read(gitdir + b"/HEAD"))
     if ref.reftable(config) or name == b".invalid":
         worktree = ("reftable", root)

@@ -45,16 +45,18 @@ CONTRACT=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["x-co
 WORK=$(mktemp -d "${TMPDIR:-/tmp}"/gforth-inspect-test.XXXXXX); WORK=${WORK//\/\//\/}
 trap 'rm -rf "$WORK"' EXIT
 
-# The checkout's own default log components (<owner>/<repo>/<worktree>):
-# a golden run from here logs there, which depends on where the checkout is
-# and its branch, so test/mask.pl prints them as OWNER/REPO/WORKTREE.  Only
-# these: a fixture's components stay visible, and a log-on that writes
-# anywhere else than log-where says shows up in the diff.
-mkdir -p "$WORK/project/home"
-MASK_PROJECT=$(env -u GFORTH_INSPECT_LOG_DIR HOME="$WORK/project/home" XDG_STATE_HOME="$WORK/project/state" \
-  gforth env/inspect.fs -e 'log-where bye' 2>/dev/null | sed -n 's|^.*/project/state/gforth-inspect/\(.*\)/stacks\.jsonl$|\1|p')
-case $MASK_PROJECT in */*/*) ;; *) echo "run.sh: cannot read this checkout's default log dir (got '$MASK_PROJECT')"; exit 2;; esac
-export MASK_PROJECT
+# Every gforth runs in $WORK/run, never in the checkout: the default log
+# dir follows the current directory, so the checkout's own .git and .env
+# would decide where a golden run logs (a .env opt-out moved every log, or
+# out of $WORK).  $WORK/run links env/, test/ and contract/ (tests name
+# their files relative to the root) and holds a fixture .git: origin
+# golden/checkout, branch main, so a golden's default log is
+# state/gforth-inspect/golden/checkout/main/, the same in every checkout.
+RUN=$WORK/run
+mkdir -p "$RUN/.git"
+for d in env test contract; do ln -s "$ROOT/$d" "$RUN/$d"; done
+printf 'ref: refs/heads/main\n' > "$RUN/.git/HEAD"
+printf '[remote "origin"]\n\turl = https://example.org/golden/checkout.git\n' > "$RUN/.git/config"
 # an ancestor of the temp dir holding .git (TMPDIR inside a checkout)
 tmp_in_git=""
 dir=$(cd "$WORK" && pwd -P)
@@ -104,7 +106,8 @@ run_one() { # engine test -> writes $tmp/actual, returns 0 if output usable
   printf -- "$keys" > "$tmp/stdin"
   local files
   files=$(directive "$t" ulimit-files); files=${files:-unlimited}
-  ( [ "$files" = unlimited ] || ulimit -n "$files"
+  ( cd "$RUN" || exit 2
+    [ "$files" = unlimited ] || ulimit -n "$files"
     exec env "${unsets[@]}" "${clean[@]}" "${LIMIT[@]}" "${cmd[@]}" ) \
       < "$tmp/stdin" > "$tmp/stdout" 2> "$tmp/stderr"
   local rc=$?

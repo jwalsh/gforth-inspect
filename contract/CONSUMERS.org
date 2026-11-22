@@ -72,8 +72,9 @@ change no contract at all.
 5. Find the stream where the producer says it is: run
    =gforth inspect.fs -e 'log-where bye'= from the project directory, or set
    =GFORTH_INSPECT_LOG_DIR= for both sides. The default is per project and
-   worktree since 0.3.0 (=stacks-log.org=, "Files"); do not hard-code
-   =~/.local/state/gforth-inspect/stacks.jsonl=.
+   worktree since 0.3.0 (=stacks-log.org=, "Files"), each component
+   encoded (=feat/x= is =feat-x~= and 12 hex digits); do not build or
+   hard-code the path.
 
 Simple consumers, like the jq one-liner, do not read =hello= and so cannot
 stop. The rules in RELEASING.org exist to protect them.

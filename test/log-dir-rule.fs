@@ -33,8 +33,8 @@ s" printf 'ref: refs/heads/main\n' > $FX/Local.Repo/.git/HEAD" fx-sh
 s" printf 'ref: refs/heads/topic\n' > $FX/Local.Repo/.git/worktrees/lw/HEAD" fx-sh
 s" printf '../..\n' > $FX/Local.Repo/.git/worktrees/lw/commondir" fx-sh
 s" printf 'gitdir: ../../Local.Repo/.git/worktrees/lw\n' > $FX/elsewhere/lw/.git" fx-sh
-s" Local.Repo" fx .log-dir-for
-s" elsewhere/lw" fx .log-dir-for
+s" Local.Repo" fx .log-dir-for-hash
+s" elsewhere/lw" fx .log-dir-for-hash
 
 \ url forms: ssh:// with user and port, scp-like with one segment, an
 \ upper-case owner, a quoted value and a [Remote "origin"] header
@@ -76,18 +76,28 @@ s" rt/main" fx .log-dir-for-hash
 s" rt/w" fx .log-dir-for-hash
 s" rt/main" fx fx-buf 4096 + swap 2dup 2>r move 2r>  s" rt/w" fx distinct-dirs
 
-\ a directory deeper than log-max: still derived up to the buffers'
-\ 4352 bytes, the shared <base> beyond, never an abort
+\ a very deep directory: derived up to (room) - 64 = 4288 bytes, the shared
+\ <base> beyond, never an abort
 create deep 4500 allot
 : deep-path ( n -- c-addr u ) \ /gforth-inspect-no-such-dir then /aaaaaaa to n bytes
     >r s" /gforth-inspect-no-such-dir" deep swap move
     r@ 27 ?DO i 8 mod IF [char] a ELSE [char] / THEN deep i + c! LOOP  deep r> ;
+4200 deep-path .log-dir-for-hash
 4300 deep-path .log-dir-for
-4400 deep-path .log-dir-for
+
+\ one name in different parents: no origin (_local) and no repository
+\ (_nogit) are hashed over the path too
+s" mkdir -p $FX/la/scratch/.git $FX/lb/scratch/.git $FX/na/proj $FX/nb/proj" fx-sh
+s" printf 'ref: refs/heads/main\n' > $FX/la/scratch/.git/HEAD" fx-sh
+s" printf 'ref: refs/heads/main\n' > $FX/lb/scratch/.git/HEAD" fx-sh
+s" la/scratch" fx .log-dir-for-hash
+s" la/scratch" fx fx-buf 4096 + swap 2dup 2>r move 2r>  s" lb/scratch" fx distinct-dirs
+s" na/proj" fx .log-dir-for-hash
+s" na/proj" fx fx-buf 4096 + swap 2dup 2>r move 2r>  s" nb/proj" fx distinct-dirs
 
 \ outside any repository: _nogit/<the directory's name>/_
 s" mkdir -p $FX/plain/x" fx-sh
-s" plain/x" fx .log-dir-for
+s" plain/x" fx .log-dir-for-hash
 s" /gforth-inspect-no-such-dir/My Proj" .log-dir-for
 s" /gforth-inspect-no-such-dir/.hidden" .log-dir-for
 \ an empty $PWD: the shared base

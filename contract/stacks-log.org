@@ -20,10 +20,12 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
 =<dir>= is the first of these that applies (since 0.3.0):
 
 1. =$GFORTH_INSPECT_LOG_DIR=, when it is set and non-empty.
-2. =<base>=, when the current directory cannot be read (=get-dir= fails),
-   or a path built from it would not fit inspect.fs's buffers (4352
-   bytes), where =<base>= is =${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect=
-   (the shared default of 0.2.0 and before).
+2. =<base>=, when the current directory cannot be read (=get-dir= fails)
+   or is longer than 4288 bytes, or the derived directory below would be
+   longer than 4339 bytes (inspect.fs's buffers hold 4352, and
+   =/stacks.jsonl= takes 13), where =<base>= is
+   =${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect= (the shared
+   default of 0.2.0 and before).
 3. The =GFORTH_INSPECT_LOG_DIR= line of =<root>/.env=, when its value is
    non-empty.  =<root>= is the nearest ancestor of the current directory,
    itself included, that holds a =.git= (a directory, or the file of a
@@ -41,6 +43,14 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
    - =~= is =$HOME=, =~/x= is =$HOME/x=, an absolute value is used as it is,
      and any other value is relative to =<root>= (the directory holding the
      =.env=), whichever subdirectory gforth was started in.
+   - *Trust boundary.*  A =.env= is committed and comes with a clone, so
+     it may not send the log just anywhere: a value with a =..= segment,
+     or an absolute value outside =$HOME= (or any absolute value without
+     =$HOME=), is refused with one line on stderr,
+     =gforth-inspect: ignoring .env GFORTH_INSPECT_LOG_DIR outside $HOME=,
+     and the derived default (4.) is used.  So is a value whose path is
+     longer than 4339 bytes (=...: too long=).  The environment variable
+     is not restricted: it is the user's own.
    This is how a project opts out, for example to make all its worktrees
    share one log: =GFORTH_INSPECT_LOG_DIR=~/.local/state/gforth-inspect/shared=
    in each worktree's =.env=.
@@ -61,9 +71,10 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
      section header must be exactly =[remote "origin"]= (=remote= in any
      case), the key =url= in any case, the value trimmed, one pair of ="=
      stripped, no inline comments.  With no origin url, =<owner>= is
-     =_local= and =<repo>= is the name of the main worktree: the
-     last-but-one component of the common dir, with =.= and =..= resolved
-     lexically;
+     =_local= and =<repo>= is the hashed name of the main worktree: the
+     slug of the last-but-one component of the common dir, hashed over the
+     common dir's path (=.= and =..= resolved lexically), so two
+     repositories with the same name never share one;
    - =<worktree>= is the branch of =HEAD=, =ref: refs/heads/<branch>= (it
      may contain =/=).  Two cases are per worktree directory instead,
      named after =<root>='s last component and hashed over =<root>='s full
@@ -72,14 +83,16 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
      repository (=[extensions] refStorage = reftable= in the common config,
      or the stub =HEAD= =ref: refs/heads/.invalid=, which reftable writes
      instead of the branch) gives =_wt-<name>~<hash>=;
-   - outside any repository the three are =_nogit=, the name of the
-     current directory's last component, and =_=.
+   - outside any repository the three are =_nogit=, the hashed name of
+     the current directory (its last component's slug, hashed over its
+     full physical path), and =_=.
 
    Each name (owner, repo, branch, directory name) becomes exactly one
    path component: itself when it matches =^[a-z0-9][a-z0-9._-]{0,63}$=;
    otherwise its slug, =~=, and the first 12 lower-case hex digits of
    FNV-1a 64 (offset basis =0xcbf29ce484222325=, prime =0x100000001b3=)
-   over its exact bytes (over =<root>='s path for =_detached-= and =_wt-=).
+   over its exact bytes (over a path instead for the =_local= and =_nogit=
+   names, =_detached-= and =_wt-=: always hashed, even when plain).
    The slug is the name ASCII-lowercased, every byte outside
    =[a-z0-9._-]= turned into =-=, leading =.= and =-= stripped, cut to 48
    bytes (36 after =_detached-= or =_wt-=), and =_= if nothing is left.  A
@@ -95,8 +108,8 @@ Two numbers: the record version =v= (and the schema's =x-version=) is
 | a linked worktree of it on =feature/Parser=              | =acme/widget/feature-parser~eb9f8a4eb252=   |
 | origin =ssh://host/group-a/sub/repo.git= (a subgroup), on =main= | =group-a-sub~046464b4cc65/repo/main=  |
 | origin =https://example.org/Acme/Widget=, detached =HEAD= in =/srv/src/w= | =acme~84d1d48b0b85/widget~ae3bcbd78794/_detached-w~d8647ebcdaa4= |
-| a repository with no origin in =~/src/Local.Repo=, on =topic= | =_local/local.repo~17f2393cee21/topic=  |
-| =/tmp/My Proj=, no =.git= above it                       | =_nogit/my-proj~c0571c5e0b05/_=             |
+| a repository with no origin in =/srv/src/Local.Repo=, on =topic= | =_local/local.repo~f94b9ee4bf6f/topic=  |
+| =/tmp/My Proj=, no =.git= above it                       | =_nogit/my-proj~c70d3df02cdf/_=             |
 
 *Limit: case.*  Names are taken as the url and the file system spell
 them.  On a case-insensitive disk (macOS, Windows), one forge repository
@@ -110,7 +123,10 @@ project reached through a symbolic link is named after the link's target
 (=_nogit=, =_local= and =_detached-= names), whichever name was typed.
 
 The directory is created (with parents) by =log-on=, which computes it at
-that moment; =log-where= prints the file's path.  A consumer finds the log
+that moment.  *The path is fixed at =log-on= until =log-off=*: a branch
+switch, a rebase (detached =HEAD=) or a =cd= does not move an open log.
+=log-where= prints the open log's path while logging, and otherwise the
+path =log-on= would open now.  A consumer finds the log
 by running =gforth inspect.fs -e 'log-where bye'= from the project
 directory, or by setting =GFORTH_INSPECT_LOG_DIR= for both sides.  The
 reference implementation below gives the same directory; copy it as it
@@ -130,6 +146,8 @@ contents are bytes throughout; nothing here runs git.
 import os
 
 SAFE = b"abcdefghijklmnopqrstuvwxyz0123456789._-"
+ROOM = 4352          # inspect.fs's path buffers
+LIMIT = ROOM - 13    # a log dir, with room for /stacks.jsonl
 
 
 def fnv1a64(data):
@@ -225,21 +243,37 @@ def env_value(raw):
     return raw.strip(WS)
 
 
+def trusted(value, home):
+    """A .env is committed and cloned: no ".." segment, and absolute only under $HOME."""
+    if b".." in value.split(b"/"):
+        return False
+    if value.startswith(b"/"):
+        if not home:
+            return False
+        top = home.rstrip(b"/")
+        return value == top or value.startswith(top + b"/")
+    return True
+
+
 def dotenv(root, home):
-    """<root>/.env's value as a path: ~ and ~/ from $HOME, relative to root."""
+    """<root>/.env's value as a path: ~ and ~/ from $HOME, relative to root;
+    b"" when there is none, it is refused (outside $HOME) or too long (both
+    with one line on stderr)."""
     raw = b""
     for line in read(root + b"/.env").split(b"\n"):
         found = env_line(line)
         if found is not None:
             raw = found
     value = env_value(raw)
-    if not value:
+    if not value or not trusted(value, home):
         return b""
     if value == b"~":
-        return home
-    if value.startswith(b"~/"):
-        return home + value[1:]
-    return value if value.startswith(b"/") else root + b"/" + value
+        path = home
+    elif value.startswith(b"~/"):
+        path = home + value[1:]
+    else:
+        path = value if value.startswith(b"/") else root + b"/" + value
+    return path if len(path) <= LIMIT else b""
 
 
 def git_dir(root):
@@ -258,14 +292,20 @@ def common_dir(gitdir):
     return common if common.startswith(b"/") else gitdir + b"/" + common
 
 
-def main_name(common):
-    """Basename of the common dir's parent, with . and .. resolved lexically."""
+def normalize(path):
+    """path with "", "." and ".." segments resolved lexically ("" for /)."""
     parts = []
-    for part in common.split(b"/"):
+    for part in path.split(b"/"):
         if part == b"..":
             parts = parts[:-1]
         elif part not in (b"", b"."):
             parts.append(part)
+    return b"".join(b"/" + part for part in parts)
+
+
+def main_name(common):
+    """Basename of the common dir's parent, with . and .. resolved lexically."""
+    parts = normalize(common).split(b"/")[1:]
     return parts[-2] if len(parts) >= 2 else b""
 
 
@@ -323,7 +363,7 @@ def branch(head):
 def components(root, has_git):
     """[owner, repo, worktree], each already one safe path component."""
     if not has_git:
-        return [b"_nogit", enc(basename(root)), b"_"]
+        return [b"_nogit", hashed(b"", basename(root), 48, key=root), b"_"]
     gitdir = git_dir(root)
     common = common_dir(gitdir)
     config = read(common + b"/config")
@@ -333,7 +373,7 @@ def components(root, has_git):
         owner, repo = pair
         parts = [b"_" if owner is None else enc(owner), enc(repo)]
     else:
-        parts = [b"_local", enc(main_name(common))]
+        parts = [b"_local", hashed(b"", main_name(common), 48, key=normalize(common))]
     name = None if reftable(config) else branch(read(gitdir + b"/HEAD"))
     if reftable(config) or name == b".invalid":  # reftable: HEAD is a stub
         parts.append(hashed(b"_wt-", basename(root), 36, key=root))
@@ -351,13 +391,14 @@ def log_dir(environ=os.environb, cwd=None):
     state = environ.get(b"XDG_STATE_HOME") or environ.get(b"HOME", b"") + b"/.local/state"
     base = state + b"/gforth-inspect"
     cwd = os.getcwdb() if cwd is None else cwd
-    if not cwd:
+    if not cwd or len(cwd) + 64 > ROOM:
         return base
     root, has_git = find_root(cwd)
     override = dotenv(root, environ.get(b"HOME", b""))
     if override:
         return override
-    return b"/".join([base] + components(root, has_git))
+    derived = b"/".join([base] + components(root, has_git))
+    return derived if len(derived) <= LIMIT else base
 #+end_src
 
 Append-only. One complete object per line, UTF-8, terminated by a newline;
@@ -495,4 +536,4 @@ follows the same path, in one commit:
 | 2026-11-21 | records are written in decimal whatever =BASE= is (18ebe2d wrote =t= and the cells in the current BASE) | PATCH (values only) | #38 | 0.1.0 | none needed |
 | 2026-11-22 | =dbg= of a DEFER or DOES> word after =dbg-fix=; the log is unchanged | none (words only) | #39 | 0.1.1 | none needed |
 | 2026-11-22 | =WORDS.org= ships with each release; a notice on stderr when gforth is not 0.7.3; the log is unchanged | none (words only) | #45 | 0.2.0 | none needed |
-| 2026-11-22 | the default log dir is per project: =<base>/<owner>/<repo>/<worktree>/= from the nearest =.git= of the current directory (=get-dir=, never =$PWD=; each worktree its own; detached and reftable worktrees by their path), a =GFORTH_INSPECT_LOG_DIR== line in the project's =.env= opts out (relative to the project root), =<base>= alone when the current directory cannot be read; =GFORTH_INSPECT_LOG_DIR= still wins; records unchanged; the load fails on gforth < 0.7.3, >= 1.0 or with cells under 8 bytes | PATCH (location; no schema change) |  | 0.3.0 | run =gforth inspect.fs -e 'log-where bye'= in the project directory, or set =GFORTH_INSPECT_LOG_DIR= |
+| 2026-11-22 | the default log dir is per project: =<base>/<owner>/<repo>/<worktree>/= from the nearest =.git= of the current directory (=get-dir=, never =$PWD=; each worktree its own; =_local=, =_nogit=, detached and reftable names hashed over their path), a =GFORTH_INSPECT_LOG_DIR== line in the project's =.env= opts out (relative to the project root; absolute only under =$HOME=, no =..=), =<base>= alone when the current directory cannot be read; =GFORTH_INSPECT_LOG_DIR= still wins; the path is fixed from =log-on= to =log-off= and =log-where= prints it; records unchanged; the load fails on gforth < 0.7.3, >= 1.0 or with cells under 8 bytes | PATCH (location; no schema change) |  | 0.3.0 | run =gforth inspect.fs -e 'log-where bye'= in the project directory, or set =GFORTH_INSPECT_LOG_DIR= |

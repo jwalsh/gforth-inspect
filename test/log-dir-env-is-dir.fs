@@ -7,6 +7,7 @@
 \ test: env FX=$TMP/fx
 s" mkdir -p $FX/envdir/.git $FX/envdir/.env" fx-sh
 s" printf 'ref: refs/heads/main\n' > $FX/envdir/.git/HEAD" fx-sh
+s\" printf '[remote \"origin\"]\\n\\turl = git@host:acme/envdir.git\\n' > $FX/envdir/.git/config" fx-sh
 s" envdir" fx set-dir throw
 : rounds ( n -- ) 0 ?DO log-paths LOOP ;
 300 rounds

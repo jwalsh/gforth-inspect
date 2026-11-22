@@ -130,7 +130,7 @@ def dotenv_lines(draw):
     lead = draw(blanks) + draw(st.sampled_from([b"", b"export ", b"export\t", b"exported "]))
     key = draw(st.sampled_from([b"GFORTH_INSPECT_LOG_DIR", b"GFORTH_INSPECT_LOG_DIRX", b"OTHER"]))
     value = draw(st.sampled_from([b"", b"~", b"~/", b"~/shared", b"~x", b"logs", b"a b", b"/abs/dir",
-                                  b"rel/#x", b"#hash", b"a~b/c"]))
+                                  b"rel/#x", b"#hash", b"a~b/c", b"../up", b"a/../b", b"~/..", b"/tmp/collect"]))
     quote = draw(st.sampled_from([b"", b"", b'"', b"'"]))
     comment = draw(st.sampled_from([b"", b" # note", b"\t#x", b"#tail"]))
     end = draw(st.sampled_from([b"\n", b"\r\n", b""]))
@@ -265,6 +265,15 @@ def test_reference_owner_keeps_earlier_segments(prefix_a, prefix_b, owner, repo)
 
 # --- P1, P3, P4 on inspect.fs ---------------------------------------------------
 
+# one basename, different parents: no origin (_local) and no repository (_nogit)
+SAME_NAMES = [
+    Fixture("main", "scratch", "m", None, b"ref: refs/heads/main\n", None, 0),
+    Fixture("main", "scratch", "m", None, b"ref: refs/heads/main\n", None, 0),
+    Fixture("nogit", "proj", "m", None, None, None, 0),
+    Fixture("nogit", "proj", "m", None, None, None, 0),
+]
+
+
 # fixed batches the calibration relies on: each planted fault is caught on
 # one of them whatever Hypothesis draws
 TRICKY = [
@@ -286,6 +295,7 @@ TRICKY = [
     Fixture("linked-rel", "rt2", "rtm", b'[remote "origin"]\n\turl = git@h:acme/rt.git\n',
             b"ref: refs/heads/.invalid\n", None, 0),
     Fixture("main", "e2", "m", None, b"ref: refs/heads/main\n", b"  export GFORTH_INSPECT_LOG_DIR = logs # c\n", 1),
+    *SAME_NAMES,
     Fixture("main", "s1", "m", b'[remote "origin"]\n\turl = ssh://host/group-a/sub/repo.git\n',
             b"ref: refs/heads/main\n", None, 0),
     Fixture("main", "s2", "m", b'[remote "origin"]\n\turl = ssh://host/group-b/sub/repo.git\n',
@@ -378,6 +388,7 @@ CWD_TRIO = [
 # the harness split log-where's output on LF (a harness bug, not the rule)
 @example([Fixture("main", "\nx", "m", b"[core]\n", b"ref: refs/heads/main\n",
                   b" GFORTH_INSPECT_LOG_DIR=a~b/c\t#x\n", 1)], 1, "gforth-fast")
+@example(SAME_NAMES, None, "gforth")
 @example(CWD_TRIO, 1, "gforth")
 @example(CWD_TRIO, 2, "gforth-fast")
 @example(CWD_TRIO, None, "gforth-itc")
@@ -404,6 +415,8 @@ def test_reference_matches_goldens():
     assert ref.enc(b"feature/Parser") == b"feature-parser~eb9f8a4eb252"
     assert ref.enc(b"Acme") == b"acme~84d1d48b0b85"
     assert ref.enc(b"My Proj") == b"my-proj~c0571c5e0b05"
+    assert ref.hashed(b"", b"My Proj", 48, key=b"/tmp/My Proj") == b"my-proj~c70d3df02cdf"
+    assert ref.hashed(b"", b"Local.Repo", 48, key=b"/srv/src/Local.Repo/.git") == b"local.repo~f94b9ee4bf6f"
     assert ref.hashed(b"_detached-", b"w", 36, key=b"/srv/src/w") == b"_detached-w~d8647ebcdaa4"
     assert ref.fnv1a64(b"a") == 0xaf63dc4c8601ec8c  # the published FNV-1a 64 vector
     assert ref.owner_repo(b"ssh://git@git.example.org:2222/team/tools.git") == (b"team", b"tools")

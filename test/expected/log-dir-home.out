@@ -1,7 +1,7 @@
 ## stdout
 
-$TMP/home/.local/state/gforth-inspect/OWNER/REPO/WORKTREE/stacks.jsonl
+$TMP/home/.local/state/gforth-inspect/golden/checkout/main/stacks.jsonl
 ## stderr
-## log home/.local/state/gforth-inspect/OWNER/REPO/WORKTREE/stacks.jsonl
+## log home/.local/state/gforth-inspect/golden/checkout/main/stacks.jsonl
 {"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
 ## exit 0

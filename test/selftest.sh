@@ -24,4 +24,17 @@ if EXPECTED=$exp test/run.sh -e gforth test/selftest/pass.fs > "$exp/log" 2>&1; 
 else
   echo "selftest: corrupted golden fails as it must"
 fi
+# The checkout's own .env must not reach the goldens (run.sh runs every
+# test in a fixture checkout under its temp dir): a copy of the tree with
+# a .env opt-out still passes, and nothing appears where that .env points.
+copy=$exp/checkout
+mkdir -p "$copy"
+git ls-files -z | tar --null -T - -cf - | (cd "$copy" && tar xf -)
+printf 'GFORTH_INSPECT_LOG_DIR=logs-from-dotenv\n' > "$copy/.env"
+if (cd "$copy" && test/run.sh -e gforth test/version.fs test/log-records.fs test/log-dir-home.fs) > "$exp/log" 2>&1 \
+   && [ ! -e "$copy/logs-from-dotenv" ]; then
+  echo "selftest: a .env in the checkout does not move the goldens' logs"
+else
+  echo "selftest: a .env in the checkout reached the goldens"; tail -5 "$exp/log"; bad=1
+fi
 exit $bad

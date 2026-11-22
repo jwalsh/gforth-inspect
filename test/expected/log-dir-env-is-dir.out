@@ -1,14 +1,14 @@
 ## stdout
-<base>/_local/envdir/main
+<base>/acme/envdir/main
 data   <1> 1 
 float  <0> 
 return <R:39> top first
   ... interpreter (rs-full on to see it)
-input  test/log-dir-env-is-dir.fs:16 >in=31
+input  test/log-dir-env-is-dir.fs:17 >in=31
 s" r1" log-id log-on 1 .stacks drop log-off
                                ^
 ## stderr
-## log state/gforth-inspect/_local/envdir/main/stacks.jsonl
+## log state/gforth-inspect/acme/envdir/main/stacks.jsonl
 {"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
 {"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
 {"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
@@ -30,5 +30,5 @@ s" r1" log-id log-on 1 .stacks drop log-off
 {"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
 {"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
 {"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
-{"v":1,"event":"snapshot","t":T,"id":"r1","where":null,"src":null,"data":[1],"float":[],"rs":[],"input":{"file":"test/log-dir-env-is-dir.fs","line":16,"in":31,"text":"s\" r1\" log-id log-on 1 .stacks drop log-off"}}
+{"v":1,"event":"snapshot","t":T,"id":"r1","where":null,"src":null,"data":[1],"float":[],"rs":[],"input":{"file":"test/log-dir-env-is-dir.fs","line":17,"in":31,"text":"s\" r1\" log-id log-on 1 .stacks drop log-off"}}
 ## exit 0

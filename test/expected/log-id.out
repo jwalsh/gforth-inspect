@@ -44,7 +44,7 @@ return <R:40> top first
 input  test/log-id.fs:7 >in=30
 s" step-1" log-id  .stacks  kk
                               ^
-## log state/gforth-inspect/OWNER/REPO/WORKTREE/stacks.jsonl
+## log state/gforth-inspect/golden/checkout/main/stacks.jsonl
 {"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"test/log-id.fs","line":6,"in":7,"text":".stacks"}}
 {"v":1,"event":"snapshot","t":T,"id":"step-1","where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"test/log-id.fs","line":7,"in":27,"text":"s\" step-1\" log-id  .stacks  kk"}}

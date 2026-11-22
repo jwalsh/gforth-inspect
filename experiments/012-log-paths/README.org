@@ -152,3 +152,24 @@ driver printed one log dir per line, and a root named LF with a relative
 P1 red).  That was also the one-off P1 red under 012-fnv-prime.  The driver
 now NUL-terminates; the case is pinned.
 
+** 2026-11-22 second /code-review (694ed99): three important findings, four nits
+
+- =_local= and =_nogit= named by a directory's name alone: two scratch
+  repositories without origin, or two non-git =proj= directories, shared a
+  log.  Both are now hashed over a path (the common git dir, the cwd), like
+  =_detached-= and =_wt-=.  P5 and P3 fixtures =SAME_NAMES=; plant
+  012-name-only-local (P4 P3 P5).
+- run.sh ran every golden in the checkout, so its =.git= and =.env= decided
+  where they logged.  Goldens now run in a fixture checkout under =$WORK=
+  (selftest: a =.env= planted in a copy of the tree changes nothing; red
+  on the old run.sh, which exited 2).
+- =log-where= while logging names the open file, fixed at =log-on=
+  (golden: HEAD rewritten after =log-on=).
+- nits: consumer docs show encoded components and point to =log-where=;
+  BASE saved and decimal for the load, restored at its end and on a
+  dependency throw (golden under =hex=); the fit check reserves 13 bytes
+  for =/stacks.jsonl= and a too-long =.env= value warns; a =.env= value
+  with =..= or absolute outside =$HOME= is refused with a warning.
+
+The three new goldens were red on the inspect.fs before the change.
+

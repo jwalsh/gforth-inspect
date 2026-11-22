@@ -26,10 +26,19 @@ create base-buf 4096 allot  variable base#
     .log-dir ;
 
 
-\ for a component hashed over a temp path (_detached-, _wt-): the hash
-\ differs per run, so its 12 hex digits print as HASH
-: .log-dir-for-hash ( dir-a dir-u -- )
-    0 log-dir# !  (log-dir-for)  log-dir# @ 12 - log-dir# !  (.log-dir) ." HASH" cr ;
+\ for components hashed over a temp path (_local, _nogit, _detached-, _wt-):
+\ those hashes differ per run, so every ~ and 12 hex digits print as ~HASH
+: hex-digit? ( c -- f ) dup [char] 0 [char] 9 1+ within swap [char] a [char] f 1+ within or ;
+: hash-at? ( c-addr u -- f ) \ ~ and 12 hex digits start here
+    dup 13 < IF 2drop false EXIT THEN  over c@ [char] ~ <> IF 2drop false EXIT THEN
+    drop 13 1 DO dup i + c@ hex-digit? 0= IF drop false UNLOOP EXIT THEN LOOP drop true ;
+: .hashes-masked ( c-addr u -- )
+    BEGIN dup WHILE 2dup hash-at? IF ." ~HASH" 13 /string ELSE over c@ emit 1 /string THEN REPEAT 2drop ;
+: .log-dir-hashed ( -- ) \ .log-dir with path hashes masked
+    0 base# !  s" XDG_STATE_HOME" getenv base-buf base# buf+  s" /gforth-inspect" base-buf base# buf+
+    log-dir log-dir# @  base-buf base# @ s" <base>" .prefixed  s" HOME" getenv s" ~" .prefixed
+    .hashes-masked cr ;
+: .log-dir-for-hash ( dir-a dir-u -- ) 0 log-dir# !  (log-dir-for)  .log-dir-hashed ;
 
 create first-dir 4400 allot  variable first#
 : distinct-dirs ( dir1-a dir1-u dir2-a dir2-u -- ) \ their log dirs differ

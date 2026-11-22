@@ -18,10 +18,15 @@ The reasoning behind each rule is in [COLLABORATION.org](../docs/COLLABORATION.o
   directory per project and worktree under
   `${XDG_STATE_HOME:-~/.local/state}/gforth-inspect/`: `<owner>/<repo>/<branch>`,
   where `<repo>` is the last path segment of origin's url and `<owner>`
-  everything before it (`group/sub` for a GitLab subgroup). Run
-  `gforth inspect.fs -e 'log-where bye'` in the project to see where, or
+  everything before it. Each is encoded as one path component per
+  `stacks-log.org`, "Files": `group/sub` becomes `group-sub~<12 hex>` and
+  branch `feat/x` becomes `feat-x~<12 hex>`, so don't build the path by
+  hand. Run `gforth inspect.fs -e 'log-where bye'` in the project to see
+  where (in a REPL that is logging, `log-where` prints the open file), or
   put `GFORTH_INSPECT_LOG_DIR=~/.local/state/gforth-inspect/shared` in each
-  worktree's `.env` to share one log. The rule: `stacks-log.org`, "Files".
+  worktree's `.env` to share one log; a `.env` value must be relative, `~/…`
+  or under `$HOME` (a cloned `.env` is not trusted further). The rule:
+  `stacks-log.org`, "Files".
   The project is found from gforth's own current directory, not `$PWD`.
   On a case-insensitive disk, a repository cloned with differently-cased
   urls gets a second log (a split, never a merge); set

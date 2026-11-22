@@ -9,4 +9,4 @@ s" b/wt" fx set-dir throw
 log-where .log-dir
 log-on log-off
 s" mkdir -p $FX/plain/Not-A-Repo" fx-sh
-s" plain/Not-A-Repo" fx set-dir throw  log-paths .log-dir
+s" plain/Not-A-Repo" fx set-dir throw  log-paths .log-dir-hashed
