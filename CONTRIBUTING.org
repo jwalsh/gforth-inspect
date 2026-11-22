@@ -14,6 +14,7 @@ so developer notes do not go there.
 | =contract/=                       | =stacks-log.schema.json= (the source of truth) and its prose          |
 | =test/=                           | golden-file tests, run by =gmake test= in all three engines          |
 | =pbt/=                            | property tests (Python + Hypothesis), run by =gmake -C pbt check=   |
+| =corpus/=                         | recorded logs for consumer authors                                 |
 | =experiments/NNN-slug/=           | one hypothesis each, with its gate and a dated log                 |
 | =.meta/=                          | findings meant for the next project                                |
 | =scripts/=                        | repo tooling (=privacy-scan.sh=)                                   |

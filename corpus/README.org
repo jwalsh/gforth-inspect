@@ -1,0 +1,186 @@
+#+TITLE: Consumer corpus: recorded stacks.jsonl logs
+#+STARTUP: showall
+#+OPTIONS: toc:nil
+
+Fixed inputs and expected outputs for anyone writing a reader of the
+stacks log: an Emacs dashboard, a =tail -F | jq= pane, an MCP reader, a
+mock HTTP server.  Test against these files and you do not need gforth.
+
+Each scenario is three files:
+
+| file                  | what                                                                                  |
+|-----------------------+---------------------------------------------------------------------------------------|
+| =NN-slug.fs=          | the gforth 0.7.3 program, loaded after =inspect.fs=; its comment says what it does    |
+| =NN-slug.jsonl=       | the log it wrote, byte for byte, except that every ="t"= is =0=                      |
+| =NN-slug.expect.json= | what the three frozen reference consumers produce from that =.jsonl=                 |
+
+The record format is the contract ([[file:../CONSUMERS.org][CONSUMERS.org]]; the schema and its
+prose are =contract/stacks-log.schema.json= and =contract/stacks-log.org=).
+=PROVENANCE= names the =inspect.fs= and schema blobs the recordings came
+from.  These files show what one producer actually wrote. They do not
+replace the schema.
+
+* Scenarios
+
+| scenario                       | exercises                                                                                                                               |
+|--------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------|
+| =01-empty-stacks=              | =data=, =float=, =rs= all =[]=                                                                                                          |
+| =02-dotstacks-interpreter=     | =.stacks= at the interpreter: =where= / =src= null, =rs= empty                                                                         |
+| =03-deep-data-stack=           | 300 cells, bottom first                                                                                                                 |
+| =04-floats=                    | =-0.0=; =+inf=, =-inf=, NaN as =null=; ±DBL_MAX, smallest normal, a subnormal, the smallest subnormal; 17 significant digits             |
+| =05-full-range-cells=          | 0, ±1, the largest and smallest 64-bit cell, logged while =BASE= is hex (=data= is decimal anyway)                                     |
+| =06-tilde3-in-definition=      | =~~~= inside a word: =where= is the word, =src= is =file:line=                                                                         |
+| =07-tilde2-after-all-tilde2=   | plain =~~= after =all-~~=, inside a word (=where= filled) and at the prompt (null)                                                    |
+| =08-nested-rs-full=            | =~~~= two calls deep with =rs-full on= (the whole return stack, down to =boot=) and off (the caller only)                               |
+| =09-log-id=                    | =id= set, set to a string with quotes, then cleared (the key disappears)                                                                |
+| =10-input-escapes=             | =input.text= with =\"=, =\\=, a tab, =\u0001=, =\u001b=, and a raw DEL (0x7f, which JSON does not require escaping)                    |
+| =11-utf8=                      | multi-byte UTF-8 (2, 3 and 4 bytes) passed through; an invalid byte (0xff) becomes U+FFFD                                              |
+| =12-long-line=                 | a 2000-byte source line in =input.text=                                                                                                 |
+| =13-empty-line=                | =input.text= is =""= and =input.in= is 0                                                                                                |
+| =14-snapshots-in-a-row=        | three snapshots from one line, =log-off=, =log-on=: a second =hello= mid-log                                                            |
+| =15-error-partial=             | the program aborts (exit 1); the log just stops, with no closing record                                                                 |
+| =16-two-producers=             | *best-effort contract*: two gforths on one log, paced line by line; records overwrite each other (issue #17) and the last line is not JSON |
+
+Things the recordings show that a reader has to cope with:
+
+- A float is written by gforth's =fs.=, which pads the mantissa with a
+  space: ="float":[1.5000000000000000E0 ,-2.2500000000000000E0 ]=.  That is
+  legal JSON whitespace; a hand-rolled parser must allow it.
+- An integer can need all 64 bits (=05=).  A reader that turns every
+  number into a double loses the low bits.
+- A log can hold several =hello= records (=14=). Only the newest counts.
+- Nothing marks the end of a log (=15=).  A crashed producer and a paused
+  one look the same.
+- =16= is not a promise.  The contract is written for one producer per
+  log; today the second producer's writes land on top of the first's.  A
+  fix for #17 will change this recording, and that is expected.
+
+* What =expect.json= holds
+
+#+begin_src json
+{
+  "producer_exit": 0,
+  "jq":              {"exit": 0, "lines": ["{\"e\":\"hello\",...}", "..."]},
+  "checker":         {"exit": 0, "output": {"event": "snapshot", "data": [...], "...": "..."}},
+  "mock_get_stacks": {"status": 200, "body": "<the last line of the .jsonl, as served>"}
+}
+#+end_src
+
+- =jq= is =jq -c -f pbt/consumers/stacks.jq NN-slug.jsonl= (the one-liner
+  =jq -c '{e:.event,w:.where,d:.data,f:.float}'=): its exit status and its
+  stdout lines.  Its stderr is left out: the message names a position and
+  differs between jq versions.  The lines are jq-1.7.1's (see
+  =PROVENANCE=), which keeps a number's digits as written.  Older jq
+  (1.6) turns every number into a double, so its lines differ for
+  =05= (64-bit cells) and in how floats are spelt.
+- =checker= is =python3 pbt/consumers/checker.py NN-slug.jsonl schema.json=,
+  which expects contract 1.1 and refuses (exit 1) when the stream is not
+  one it will read.  =output= is its JSON result.  Compare it as a JSON
+  value, not as text.
+- =mock_get_stacks= is =GET /stacks= against =pbt/consumers/mock_server.py=
+  serving the =.jsonl=: the status, and the body as text.
+- =producer_exit= is gforth's exit status.  It is non-zero only in =15=.
+
+None of these is written by hand.  =record.py= runs the consumers in
+=pbt/consumers/= against the recorded file.
+
+* Using the corpus
+
+The paths below are relative to the repository root.
+
+** From Emacs
+
+Read a file the way a dashboard reads the live log: split on newlines,
+parse each line, render the last one.
+
+#+begin_src emacs-lisp
+(with-temp-buffer
+  (insert-file-contents "corpus/04-floats.jsonl")
+  (let* ((lines (split-string (buffer-string) "\n" t))
+         (last-record (condition-case nil
+                          (json-parse-string (car (last lines)) :null-object nil)
+                        (json-parse-error 'unparsable))))
+    (if (hash-table-p last-record)
+        (list (gethash "data" last-record) (gethash "float" last-record))
+      last-record)))
+;; => ([] [-0.0 0.0 nil nil nil 1.7976931348623157e+308 ...])
+#+end_src
+
+=16-two-producers.jsonl= returns =unparsable=. That is the case your
+dashboard must not crash on.  To test a dashboard against every scenario,
+loop over =(directory-files "corpus" t "^[0-9][0-9]-.*\\.jsonl$")= and
+compare what it renders with the =checker= output in the matching
+=.expect.json=.
+
+** From a tmux pane
+
+A live view is =tail -F= piped into jq.  =-n +1= starts from the first
+line, and =--unbuffered= makes jq print each line as it arrives:
+
+#+begin_src sh
+tail -n +1 -F corpus/09-log-id.jsonl | jq --unbuffered -c -f pbt/consumers/stacks.jq
+#+end_src
+
+To see a pane update as a producer writes, replay a recording into a
+scratch log with a delay, and point the pane at the scratch log:
+
+#+begin_src sh
+replay=$(mktemp -d)
+: > "$replay/stacks.jsonl"
+# in the watching pane:
+tail -n +1 -F "$replay/stacks.jsonl" | jq --unbuffered -c -f pbt/consumers/stacks.jq
+# in another shell (not in the watching pane):
+while IFS= read -r line; do
+  printf '%s\n' "$line" >> "$replay/stacks.jsonl"; sleep 0.5
+done < corpus/14-snapshots-in-a-row.jsonl
+#+end_src
+
+Then the pane prints exactly the =jq.lines= in
+=14-snapshots-in-a-row.expect.json=.  A reader that picks its file from
+=GFORTH_INSPECT_LOG_DIR= can be pointed at the same scratch directory:
+=GFORTH_INSPECT_LOG_DIR="$replay"=.
+
+** From an MCP or HTTP reader
+
+Serve a corpus file as the log.  The mock server reads the file on every
+request, so it behaves like =tail -1= on a live log:
+
+#+begin_src sh
+python3 pbt/consumers/mock_server.py corpus/09-log-id.jsonl   # prints PORT <n>
+curl -s http://127.0.0.1:<n>/stacks
+#+end_src
+
+The body equals =jq -j .mock_get_stacks.body corpus/09-log-id.expect.json=.
+An MCP reader, or any reader of its own, takes a log path: give it
+=corpus/NN-slug.jsonl= directly, or copy the file to
+=<dir>/stacks.jsonl= and set =GFORTH_INSPECT_LOG_DIR=<dir>=.  Its answer
+for "the current stacks" should match =checker.output=.  For
+=15-error-partial= the answer is the last snapshot, and for
+=16-two-producers= it should say that the log is damaged, not guess.
+
+* Regenerating
+
+#+begin_src sh
+gmake -C corpus record      # re-record every .jsonl, .expect.json and PROVENANCE
+gmake -C corpus check       # a fresh recording equals the committed files
+gmake -C corpus engines     # gforth-fast and gforth-itc record the same logs
+gmake -C corpus calibrate   # check and record go red on planted faults
+gmake -C corpus gate        # check, engines, calibrate
+#+end_src
+
+=record= and =check= print the =inspect.fs= blob they used.  The producer
+is chosen as =pbt/gforth_run.py= chooses it: =INSPECT_FS=, else
+=INSPECT_REF=, else the =harden= ref.  Each run gets a fresh temp
+directory as its working directory and =HOME=, with =inspect.fs= and the
+scenario loaded by relative name, so =input.file= is ="NN-slug.fs"=.
+=record= refuses to write if any output contains the home directory or a
+temp path.  Every =t= is set to =0= after the run.  No other field
+varies between runs: =check= is a second run, diffed against the first.
+Consumers must not rely on =t=.
+
+The recordings change only when the producer changes: a new =inspect.fs=
+or schema.  So a diff in =corpus/= is a contract question.  Before you
+commit one, sort it by the table in [[file:../RELEASING.org][RELEASING.org]] ("Stable API, and
+what bumps what") and follow its checklist.  A change that would alter a
+reference consumer's output here (the =jq=, =checker= or
+=mock_get_stacks= values) is the kind that table calls MAJOR.
