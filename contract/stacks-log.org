@@ -135,7 +135,7 @@ is (=log_dir()= reads =os.environb=; the property tests check
 
 #+name: log-dir-reference
 #+begin_src python
-"""Where gforth-inspect 0.3.1, the current release, writes stacks.jsonl (stacks-log.org, "Files").
+"""Where gforth-inspect 0.3.0 to 0.3.1 (this release) writes stacks.jsonl (stacks-log.org, "Files").
 
 log_dir(environ, cwd) returns the directory, as bytes, that inspect.fs
 would use for the given environment (os.environb by default) and current
