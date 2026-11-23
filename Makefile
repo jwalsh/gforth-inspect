@@ -98,6 +98,8 @@ verify: ## The CONTRIBUTING.org baseline: privacy, guides, test, pbt check + cal
 	scripts/privacy-scan.sh
 	bash scripts/check-guides.sh --calibrate
 	bash scripts/check-guides.sh
+	bash scripts/check-current-version.sh --calibrate
+	bash scripts/check-current-version.sh
 	$(MAKE) test
 	$(PBT_ENV) $(MAKE) -C pbt check
 	$(PBT_ENV) $(MAKE) -C pbt calibrate
