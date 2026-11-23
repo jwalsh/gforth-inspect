@@ -397,3 +397,45 @@ blobs are now 0c494fbd693a and b37befc7b00d. The first run measured
 recorded. No cell depends on the name: =matrix.py= writes every
 non-contract directory as =legacy=, and V0 never writes to the contract
 path either way. The matrix was not re-run.
+
+** 2026-11-22 code review, and a re-run on the rewritten history
+
+Agent. =/code-review high= of the branch found 5 important and 5 minor
+faults in =harness/=. All are fixed in 3f5f2ac:
+- =h2_upgrade.py= staged the prose assets from =origin/harden= and from
+  commits no longer in the history, so a re-run staged 0/6. Every asset
+  now comes from =pbt/fixtures/refs/=, with harden's head pinned as
+  6fe7632 (PR #13's head: V5's =inspect.fs= and schema blobs, and all six
+  assets). =make_openapi.py= reads the schema there too; the regenerated
+  =openapi-stacks.json= is byte-identical.
+- Step 3 ran the first code block of issues #1, #2, #3 and #17 as fetched
+  at run time, with =sh -c=. It now runs reviewed copies in
+  =reproducers/=.
+- A live session could lose its first prompt to a race between
+  =new-session= and =pipe-pane=. The shell now waits on =read= until the
+  pipe is attached.
+- Calibration plant (a) counted any =NO= as caught. It now requires the
+  same cells to match unplanted and to observe =accept= when planted.
+- A failed producer run was not checked in =append_logs=, h2, x10 or
+  calibrate. It now raises (=producer.run_checked=), as =record_base=
+  does. So does a failed =gh release list=, which h2 read as "0
+  releases".
+- Minor: =xstreams.tsv= follows =--tag=; every V0–V5 blob is checked at
+  load, not only V5's; a missing =jsonschema= stops the run instead of
+  reading as valid; the mock has a 30 s deadline for its PORT line, and
+  a connection error is a =crash:= verdict; consumers are refused unless
+  their blobs are the pinned ones.
+
+Re-run at 3f5f2ac from the pins, without Vc (so without the follower),
+into a scratch dir; the committed outputs were not replaced:
+- =calibrate.py=: a–d red as expected; (a) matches unplanted.
+- =matrix.py --only x,n0=: of the 2126 cells comparable with
+  =matrix.tsv= (no Vc, no follower), all 2126 have the same predicted,
+  observed and match. Two differ only in a timestamp =t= quoted in the
+  text. =xstreams.tsv= is the same apart from that timestamp.
+- =h2_upgrade.py=: steps 0, 1-staged, 2, 3 and 4 are as recorded in all 13
+  transitions without Vc. Step 1 now runs in the 6 transitions whose B
+  announces 0.1.0, and step 5 runs in all 13: v0.1.0 to v0.3.0 were
+  released after the first run. A download of v0.1.0 cannot say which of
+  the five 0.1.0 blobs it is (#33). =h2.tsv= keeps the first run.
+- Live sessions were not re-run.
