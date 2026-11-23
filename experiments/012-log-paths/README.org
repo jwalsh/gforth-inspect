@@ -67,7 +67,7 @@ Mutation table (=pbt/calibrate/012-*.sh=, 25 examples each, no shrinking):
 32-bit truncation also broke P3 on that run: the component shows the top
 48 of 64 bits, of which only 16 then carry hash, so collisions can come
 within a batch.  Not reliable at 25 examples: P4 only on the rerun below,
-P4 P3 again under =gmake release-check= at 1447510.
+P4 P3 again under =gmake release-check= at 165c572.
 
 ** 2026-11-22 owner = every segment before the repo (coordinator's spec fix)
 
@@ -115,7 +115,7 @@ red on it too.  =test_004='s default-location run now starts in
 =<tmp>/proj= (=_004_helpers.py=), so its documented default is
 =state/gforth-inspect/_nogit/proj/_/stacks.jsonl=.
 
-** 2026-11-22 /code-review of 4397a90: four important findings, five nits
+** 2026-11-22 /code-review of 517c0b8: four important findings, five nits
 
 All in the rule; the Forth matched the reference.  Fixed in this PR, the
 reference and stacks-log.org Files with it:
@@ -146,13 +146,13 @@ split on LF.  New plants:
 The fd-leak golden was red on the old =(file!)= (=ulimit-files 64=), the
 detached and reftable pair asserts red on the name-only hash.
 
-=gmake release-check= at 1bf9764 then found a second harness bug: the P4
+=gmake release-check= at af5257f then found a second harness bug: the P4
 driver printed one log dir per line, and a root named LF with a relative
 =.env= value puts LF inside a log dir, so every later line shifted (P4 and
 P1 red).  That was also the one-off P1 red under 012-fnv-prime.  The driver
 now NUL-terminates; the case is pinned.
 
-** 2026-11-22 second /code-review (694ed99): three important findings, four nits
+** 2026-11-22 second /code-review (877ef45): three important findings, four nits
 
 - =_local= and =_nogit= named by a directory's name alone: two scratch
   repositories without origin, or two non-git =proj= directories, shared a

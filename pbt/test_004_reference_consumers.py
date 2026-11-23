@@ -1,8 +1,8 @@
 """004 reference-consumers: do the frozen consumers read harden's records as
-they read 18ebe2d's?  See experiments/004-reference-consumers/README.org.
+they read b1c162e's?  See experiments/004-reference-consumers/README.org.
 
 The same generated programs run under both sides (_004_helpers: old is
-18ebe2d, new is the runner's selection).  Each run's log goes to the three
+b1c162e, new is the runner's selection).  Each run's log goes to the three
 consumers in pbt/consumers/, and their outputs are compared field by field.
 Every difference gets one class:
 
@@ -517,7 +517,7 @@ def test_zz_volume():
 def test_version_stop():
     """The checker as it is today (expects contract 1.1) refuses a producer
     that announces no contract, and accepts one announcing 1.1.  Expected:
-    18ebe2d refused, fc283da accepted.  The differential above runs with
+    b1c162e refused, c0cab02 accepted.  The differential above runs with
     the stop bypassed, so this asymmetry is not counted as a difference."""
     messages = {}
     for side in ("old", "new"):
@@ -534,7 +534,7 @@ def test_version_stop():
 # --- default location (gate 4, the moved-log plant) -----------------------
 
 DEFAULT_PROGRAM = "log-on 1 2 .stacks log-off"
-OLD_DEFAULT = "state/course-repo/stacks.jsonl"         # 18ebe2d, where today's consumers look
+OLD_DEFAULT = "state/course-repo/stacks.jsonl"         # b1c162e, where today's consumers look
 
 
 def _contract_default() -> str:
@@ -560,7 +560,7 @@ def _jq_on(raw: bytes) -> list[dict]:
 def test_default_location_old_precondition():
     written = [path for path in helpers.run_default_location("old", DEFAULT_PROGRAM)
                if path.startswith("state/")]
-    assert written == [OLD_DEFAULT], f"18ebe2d wrote {written}"
+    assert written == [OLD_DEFAULT], f"b1c162e wrote {written}"
 
 
 def test_default_location_contract():
@@ -575,14 +575,14 @@ def test_default_location_contract():
 
 
 @pytest.mark.xfail(strict=True, raises=DefaultLocationBreak,
-                   reason="breaking default-location: harden 9b92746 moved the default from "
+                   reason="breaking default-location: harden 90bab36 moved the default from "
                           "course-repo/ to gforth-inspect/ (004 verdict); strict, so restoring "
                           "the old default turns this XPASS and red")
 def test_default_location_reference_consumer():
     old_written = helpers.run_default_location("old", DEFAULT_PROGRAM)
     new_written = helpers.run_default_location("new", DEFAULT_PROGRAM)
     if not new_written.get(OLD_DEFAULT):
-        raise DefaultLocationBreak(f"breaking default-location: {OLD_DEFAULT} (18ebe2d's default, "
+        raise DefaultLocationBreak(f"breaking default-location: {OLD_DEFAULT} (b1c162e's default, "
                                    f"where today's consumers look) is empty; new wrote {list(new_written)}")
     old_jq, new_jq = _jq_on(old_written[OLD_DEFAULT]), _jq_on(new_written[OLD_DEFAULT])
     assert _same(old_jq, new_jq)

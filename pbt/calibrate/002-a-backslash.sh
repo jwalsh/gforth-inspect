@@ -1,13 +1,14 @@
 #!/bin/sh
 # 002 (a): plant "json-str does not escape \" and require the ascii class
 # to go red on every engine with a JSON or text failure.  Exit 0 only then.
+. "$(dirname "$0")/ref-show.lib"
 set -eu
 pbt=$(cd "$(dirname "$0")/.." && pwd)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-git -C "$pbt" show "${INSPECT_REF:-harden}:env/inspect.fs" > "$tmp/clean.fs"
+ref_show "${INSPECT_REF:-HEAD}" env/inspect.fs > "$tmp/clean.fs"
 # the first -e is json-chars from inspect 0.1.0, the second json-str
-# from harden@18ebe2d; one of them has to match (checked below)
+# from harden@b1c162e; one of them has to match (checked below)
 sed -e 's/r@ \[char\] " = r@ \[char\] \\ = or IF r@ jesc 1/r@ [char] " = IF r@ jesc 1/' \
     -e 's/ over \[char\] \\ = or IF \[char\] \\ emit THEN/ IF [char] \\ emit THEN/' \
     "$tmp/clean.fs" > "$tmp/inspect.fs"

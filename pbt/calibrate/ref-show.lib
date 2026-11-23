@@ -1,0 +1,7 @@
+# sourced by calibrate/*.sh (not itself a calibration: gmake globs *.sh)
+# ref_show REF PATH: PATH at REF, from fixtures/refs/REF/ when that commit is
+# no longer in the history (2026-11-22 scrub), else from git
+ref_show() {
+    _fixture="$(cd "$(dirname "$0")/.." && pwd)/fixtures/refs/$1/$(basename "$2")"
+    if [ -f "$_fixture" ]; then cat "$_fixture"; else git -C "$(dirname "$0")" show "$1:$2"; fi
+}

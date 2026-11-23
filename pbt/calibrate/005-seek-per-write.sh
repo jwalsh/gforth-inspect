@@ -1,22 +1,23 @@
 #!/bin/sh
-# 005 calibration: test_concurrent_producers on unfixed harden's inspect.fs (0842eda)
+# 005 calibration: test_concurrent_producers on unfixed harden's inspect.fs (10a0da4)
 # (the fault is the one in issue #17, already there) must go red on every
 # engine with a parse failure or a lost record; on a copy with the proposed
 # seek-before-write fix it must go green.  --runxfail lifts the #17 xfail so
 # the red is visible.  Exit 0 only if all of that holds.
+. "$(dirname "$0")/ref-show.lib"
 set -f  # test ids hold [...]; never let the shell glob them
 name="005 no seek per write"
 pbt_dir=$(cd "$(dirname "$0")/.." && pwd)
-# the unfixed harden, pinned: the `harden` name carries the #17 fix since 079de9c
+# the unfixed harden, pinned: the `harden` name carries the #17 fix since c1a6a3a
 # its own variable, not INSPECT_REF: gmake verify sets INSPECT_REF=HEAD (the fixed
 # producer), and this calibration is about the unfixed one, so it never follows it
-ref=${CALIBRATE_005_REF:-0842eda}
+ref=${CALIBRATE_005_REF:-10a0da4}
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 uv_run="uv run --no-project --with hypothesis --with jsonschema --with pytest"
 cd "$pbt_dir" || exit 1
 
-git show "$ref:env/inspect.fs" > "$work/unpatched.fs" || exit 1
+ref_show "$ref" env/inspect.fs > "$work/unpatched.fs" || exit 1
 # the same patch the tests use (_005_helpers.patched), so calibration covers it
 $uv_run python -c 'import sys, _005_helpers as helpers
 sys.stdout.buffer.write(helpers.patched(open(sys.argv[1], "rb").read()))' \

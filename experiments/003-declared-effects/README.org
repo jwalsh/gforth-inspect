@@ -43,11 +43,11 @@ Out of scope: words that need a sandbox to run (file words, =system=,
 
 * Log
 
-** 2026-11-21 first full sweep (commit 7e456e8, model 5e3eede, gforth 0.7.3)
+** 2026-11-21 first full sweep (commit 9058c5d, model 5e3eede, gforth 0.7.3)
 
 Run: =gmake -C pbt check= (default profile, 20 inputs per word) and
 =gmake -C pbt check PROFILE=ci= (200 inputs per word), both on the
-committed tree 7e456e8, seed =EFFECTS_SEED=3=. Both 5 passed. Wall time of
+committed tree 9058c5d, seed =EFFECTS_SEED=3=. Both 5 passed. Wall time of
 the sweep: 32.8 s default, 52.9 s ci (whole =check=: 37 s and 54 s). Most of
 the default time is the two hangers waiting out their 3 s timeout.
 =gmake -C pbt calibrate=: red as expected, on exactly =dup= (34.7 s).
@@ -155,7 +155,7 @@ held, 27 of 30, mostly alternatives and the end-struct synthesis.
 
 - The ci profile first failed: 200 calls of =hold= =xhold= =#= =#s= =<<#=
   without =<#= overflow the shared hold area and gforth exits (exit 2).
-  The harness now runs =<#= before every call (commit 7e456e8). Shared
+  The harness now runs =<#= before every call (commit 9058c5d). Shared
   interpreter state, not the stacks, is what leaks between calls.
 - =assertn ( n -- )= with n above =assert-level= runs the compilation
   semantics of =(= and skips input to the next =)=, so it eats the next

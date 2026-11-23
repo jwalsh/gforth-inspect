@@ -95,7 +95,7 @@ experiment 004:
   =input.text=. That is a PATCH. Examples are #1 (17 digits, =-0.0=) and the
   0.1.0 escaping. A consumer that relied on the wrong value was relying on
   a bug. The change log still records the fix.
-- *The first stable tag binds.* 18ebe2d was an import, and v0.1.0 and
+- *The first stable tag binds.* b1c162e was an import, and v0.1.0 and
   later prereleases promise nothing stable. So moving the default log
   directory to =.../gforth-inspect/= breaks no released promise. Until the
   first stable tag the table is applied as a discipline, recorded in the

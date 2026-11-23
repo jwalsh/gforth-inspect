@@ -108,7 +108,7 @@ class Case:
 
 # --- the two text oracles ------------------------------------------------
 # "legacy": the experiment's pre-registered oracle, which is what json-str
-#   did at harden@18ebe2d: bytes < 0x20 become a space, every other byte is
+#   did at harden@b1c162e: bytes < 0x20 become a space, every other byte is
 #   copied raw (so non-UTF-8 source gives a non-UTF-8 record).
 # "contract": contract/stacks-log.org from inspect 0.1.0 on: control
 #   characters are escaped (so they decode back to themselves) and each byte

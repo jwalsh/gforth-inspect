@@ -1,0 +1,307 @@
+\ inspect.fs -- see all of gforth 0.7.3's stacks from inside gforth
+\
+\   .rs       return stack, top first, with word+offset for return addresses;
+\             stops at the interpreter unless rs-full is on
+\   .input    current input line, file:line, and a caret at >IN
+\   .stacks   .s  f.s  .rs  .input
+\   fclearstack  empty the float stack (missing from 0.7.3)
+\   log-on / log-off  JSON records for the Emacs dashboard (resources/stacks-log.org)
+\   ~~~       like ~~ (file:line to stderr) but prints .stacks; the return
+\             stack is taken at the ~~~ itself, not inside the printer
+\   .cs       IMMEDIATE: decode the compile-time control-flow stack
+\   all-~~    make plain ~~ print .stacks (via the printdebugdata hook)
+\   dbg-fix   make stock dbg work in gforth/gforth-fast (it is ITC-only),
+\             including n (nest) into colon words
+\   dbg+      dbg-fix, and print .s f.s and return words at every step
+\
+\ Works in gforth, gforth-fast and gforth-itc 0.7.3.
+
+\ ~~ (debugs.fs) and dbg (debug.fs) are already in the 0.7.3 image;
+\ REQUIRE-ing them again would redefine half the system.
+
+\ --- naming addresses ------------------------------------------------
+
+: colon-xt? ( addr -- f )
+    \ is addr the code field of a colon definition with a real header?
+    dup aligned over <> IF drop false EXIT THEN
+    dup in-dictionary? 0= IF drop false EXIT THEN
+    dup @ docol: <> IF drop false EXIT THEN
+    dup >head-noprim dup ['] ??? >head-noprim = IF 2drop false EXIT THEN
+    name>int = ;
+
+: enclosing ( addr -- xt | 0 )
+    \ the colon definition whose threaded code contains addr; scans back
+    \ at most 2048 cells for a code field holding docol:
+    dup in-dictionary? 0= IF drop 0 EXIT THEN
+    dup aligned over <> IF drop 0 EXIT THEN
+    2048 0 DO
+        cell - dup forthstart u< IF drop 0 UNLOOP EXIT THEN
+        dup colon-xt? IF UNLOOP EXIT THEN
+    LOOP drop 0 ;
+
+: .where ( addr -- )
+    \ print name+offset if addr is inside a colon definition
+    dup enclosing ?dup IF
+        dup >head-noprim .name ." +" - 0 .r
+    ELSE drop THEN ;
+
+: stack-region? ( x -- f )
+    dup sp0 @ 4096 cells - sp0 @ 1+ within
+    over rp0 @ 4096 cells - rp0 @ 1+ within or
+    over fp0 @ 4096 floats - fp0 @ 1+ within or
+    swap lp@ 4096 cells - lp@ 4096 cells + within or ;
+
+\ --- return stack ----------------------------------------------------
+
+variable rs-full  rs-full off
+
+: interp-frame? ( addr -- f )
+    \ a return into gforth's text interpreter or its exception frames
+    enclosing dup 0= IF EXIT THEN
+    dup ['] interpret1 = over ['] interpret = or over ['] handler-intro, = or
+    over ['] (quit) = or swap ['] quit = or ;
+\ rs-full on   list the whole return stack, interpreter frames included
+
+: .rs-from ( a-addr -- )
+    \ print return-stack cells from a-addr (top) up to rp0; unless rs-full,
+    \ stop at the text interpreter (interpret1): below it is gforth's own
+    rp0 @ over - cell / 0 max ." <R:" 0 .r ." > top first" cr
+    rp0 @ swap ?DO
+        rs-full @ 0= i @ interp-frame? and IF
+            ."   ... interpreter (rs-full on to see it)" cr UNLOOP EXIT THEN
+        2 spaces i @ dup hex. decimal
+        dup enclosing IF ." = " .where
+        ELSE dup stack-region? IF drop ." (stack pointer)"
+        ELSE ." = " . THEN THEN cr
+    cell +LOOP ;
+
+: .rs ( -- ) \ return stack of the caller of .rs
+    rp@ cell+ .rs-from ;
+
+\ --- input stream ----------------------------------------------------
+
+: .input ( -- )
+    sourcefilename type ." :" sourceline# 0 .r
+    ."  >in=" >in @ 0 .r cr
+    source type cr
+    >in @ source nip min spaces ." ^" cr ;
+
+\ --- structured log: resources/stacks-log.org (contract v1) -----------
+\   log-on    ( -- )  append JSON records to $XDG_STATE_HOME/course-repo/stacks.jsonl
+\   log-off   ( -- )  stop and close
+\ While on, .stacks, ~~~ and (after all-~~) ~~ also write a snapshot record.
+
+create log-dir 256 allot   create log-path 256 allot   create log-cmd 512 allot
+: log-paths ( -- )
+    s" XDG_STATE_HOME" getenv dup IF log-dir place ELSE
+        2drop s" HOME" getenv log-dir place s" /.local/state" log-dir +place THEN
+    s" /course-repo" log-dir +place
+    log-dir count log-path place  s" /stacks.jsonl" log-path +place ;
+log-paths
+
+variable logging  logging off   variable log-fid  0 log-fid !
+variable snap-file  variable snap-line  variable snap-xt  variable snap-rp
+variable n#  variable first?
+
+: q ( -- ) [char] " emit ;
+: jc ( -- ) [char] , emit ;  \ a JSON comma
+: jkey ( c-addr u -- ) q type q [char] : emit ;
+: json-str ( c-addr u -- )
+    q bounds ?DO
+        i c@ dup [char] " = over [char] \ = or IF [char] \ emit THEN
+        dup bl < IF drop bl THEN emit
+    LOOP q ;
+: json-f ( r -- ) fdup fdup f- f0= IF fs. ELSE fdrop ." null" THEN ;
+: sep ( -- ) first? @ IF first? off ELSE jc THEN ;
+
+: json-data ( -- )
+    [char] [ emit  depth n# !  first? on
+    n# @ 0 ?DO sep n# @ 1- i - pick 0 .r LOOP  [char] ] emit ;
+: json-float ( -- )
+    [char] [ emit  fdepth n# !  first? on
+    n# @ 0 ?DO sep n# @ 1- i - fpick json-f LOOP  [char] ] emit ;
+: json-rs ( a-addr -- )
+    [char] [ emit  first? on
+    rp0 @ swap ?DO
+        rs-full @ 0= i @ interp-frame? and IF LEAVE THEN
+        sep i @ dup enclosing ?dup IF
+            [char] { emit  s" word" jkey dup >head-noprim name>string json-str
+            jc s" off" jkey - 0 .r [char] } emit
+        ELSE dup stack-region? IF drop s" sp" json-str ELSE 0 .r THEN THEN
+    cell +LOOP  [char] ] emit ;
+: json-input ( -- )
+    [char] { emit  s" file" jkey sourcefilename json-str
+    jc s" line" jkey sourceline# 0 .r
+    jc s" in" jkey >in @ 0 .r
+    jc s" text" jkey source json-str  [char] } emit ;
+: json-head ( c-addr u -- )
+    [char] { emit  s" v" jkey 1 0 .r  jc s" event" jkey json-str
+    jc s" t" jkey utime 1000000 um/mod nip 0 .r ;
+
+: (snapshot) ( -- )
+    s" snapshot" json-head
+    jc s" where" jkey snap-xt @ ?dup IF >head-noprim name>string json-str ELSE ." null" THEN
+    jc s" src" jkey snap-xt @ IF q snap-file @ snap-line @ .sourcepos q ELSE ." null" THEN
+    jc s" data" jkey json-data
+    jc s" float" jkey json-float
+    jc s" rs" jkey snap-rp @ json-rs
+    jc s" input" jkey json-input  [char] } emit cr ;
+: (hello) ( -- )
+    s" hello" json-head  jc s" gforth" jkey version-string json-str  [char] } emit cr ;
+
+: log-write ( xt -- ) log-fid @ outfile-execute  log-fid @ flush-file throw ;
+: log-snapshot ( -- ) logging @ IF ['] (snapshot) log-write THEN ;
+
+: log-on ( -- )
+    logging @ IF EXIT THEN
+    s" mkdir -p '" log-cmd place  log-dir count log-cmd +place  s" '" log-cmd +place
+    log-cmd count system
+    log-path count r/w open-file IF drop log-path count r/w create-file throw THEN
+    >r r@ file-size throw r@ reposition-file throw r> log-fid !
+    logging on  ['] (hello) log-write ;
+: log-off ( -- )
+    logging @ 0= IF EXIT THEN  logging off  log-fid @ close-file throw ;
+: log-where ( -- ) cr log-path count type cr ;
+
+\ --- everything ------------------------------------------------------
+
+: .stacks-from ( rp -- )
+    >r ." data   " .s cr
+    ." float  " f.s cr
+    ." return " r> .rs-from
+    ." input  " .input ;
+
+: .stacks ( -- )
+    rp@ cell+ snap-rp !  snap-rp @ .stacks-from
+    0 snap-xt !  log-snapshot ;
+
+[undefined] fclearstack [IF]
+: fclearstack ( F: r1 .. rn -- ) \ gforth 0.7.3 has clearstack but no float twin
+    fdepth 0 ?DO fdrop LOOP ;
+[THEN]
+
+: .~~~ ( nfile nline xt -- )
+    cr -rot .sourcepos ."  in " >head-noprim .name cr ;
+
+: (~~~) ( nfile nline xt rp -- )
+    snap-rp !  snap-xt !  snap-line !  snap-file !
+    snap-file @ snap-line @ snap-xt @ ['] .~~~ stderr outfile-execute
+    snap-rp @ ['] .stacks-from stderr outfile-execute
+    log-snapshot ;
+
+: ~~~ ( compilation: -- ; run-time: -- ) \ ~~ with all stacks
+    compile-sourcepos latestxt postpone literal
+    postpone rp@ postpone (~~~) ; immediate compile-only
+
+: past-debugline ( a-addr -- a-addr' )
+    \ skip ~~'s own printer frames (outfile-execute, .debugline-stderr):
+    \ start just above the .debugline-stderr return; unchanged if absent
+    rp0 @ over ?DO
+        i @ enclosing ['] .debugline-stderr = IF drop i cell+ UNLOOP EXIT THEN
+    cell +LOOP ;
+
+: ~~-stacks ( -- )
+    cr rp@ cell+ past-debugline snap-rp !  snap-rp @ .stacks-from
+    0 snap-xt !  log-snapshot ;
+
+: all-~~ ( -- )
+    \ plain ~~ now prints all stacks; the return stack starts at the word
+    \ that contains the ~~, not inside ~~'s printer
+    ['] ~~-stacks IS printdebugdata ;
+
+\ --- compile-time control-flow stack ---------------------------------
+
+: .cs-type ( n -- )
+    CASE
+        0 OF ." colon-sys" ENDOF
+        1 OF ." orig (live)" ENDOF
+        2 OF ." orig (dead)" ENDOF
+        3 OF ." dest" ENDOF
+        4 OF ." do-dest" ENDOF
+        5 OF ." scope" ENDOF
+        ." ?" dup .
+    ENDCASE ;
+
+: .cs ( -- ) \ IMMEDIATE; use inside a definition
+    \ walk the data stack from the top in 3-cell items (locals addr type)
+    \ until the colon-sys (type 0); addresses are relative to `here'
+    cr ." CS: here=" here hex. decimal
+    depth 0 ?DO
+        i pick dup 1 6 within 0= IF
+            0= IF ."  | colon-sys" THEN LEAVE
+        THEN
+        cr 2 spaces .cs-type space
+        i 1+ pick dup hex. decimal
+        here swap - cell / ."  (" 0 .r ."  cells back)"
+    3 +LOOP cr ; immediate
+
+\ --- dbg: show all stacks at every step -------------------------------
+
+: dbg-stacks ( -- )
+    cr ." D: " .s ."  F: " f.s ." R: " rp0 @ rp@ cell+ - cell / 0 .r
+    ."  cells:" 0
+    rp0 @ rp@ cell+ ?DO i @ enclosing ?dup IF
+            space >head-noprim .name 1+ dup 6 = IF ." ..." LEAVE THEN
+        THEN
+    cell +LOOP drop ;
+
+: patch-colon ( xt-new xt-old -- )
+    \ overwrite the start of xt-old's body with "call xt-new ; exit"
+    >body here >r dp ! compile, postpone exit r> dp ! ;
+
+
+\ --- dbg on direct-threaded engines ----------------------------------
+\ Stock 0.7.3 dbg is ITC-only (debug.fs: "!!! dependency: ITC"): set-bp
+\ stores the xt of BREAKER into one threaded-code cell.  In gforth and
+\ gforth-fast a threaded-code cell is a code address, so the first step
+\ jumps into data and dies with "Address alignment exception".  dbg-fix
+\ replaces the breakpoint with the two-cell sequence COMPILE, produces for
+\ a colon call (call <body>), which is valid threaded code in every
+\ engine, saving both cells of both breakpoints before writing any.
+
+create bp2 0 , 0 ,
+create dt2 4 cells allot
+create bp-code 2 cells allot
+
+: breaker2 ( R:ret -- )  r> 2 cells - dbg-ip !  DebugLoop @ jump ;
+
+\ the threaded code of bp-template starts with exactly "call <breaker2>"
+\ (interpretive COMPILE, followed by rolling back DP breaks the next
+\ definition in the direct-threaded engines, so copy it from a real one)
+: bp-template ( -- )  breaker2 ;
+' bp-template >body bp-code 2 cells move
+
+: save-bp ( addr slot -- )
+    2dup cells bp2 + !  2* cells dt2 + 2 cells move ;
+
+: set-bp2 ( 0 n | 0 n n -- )
+    0. bp2 2!
+    ?dup IF 0 save-bp ?dup IF 1 save-bp drop THEN THEN
+    bp2 @       ?dup IF bp-code swap 2 cells move THEN
+    bp2 cell+ @ ?dup IF bp-code swap 2 cells move THEN ;
+
+: restore-bp2 ( -- )
+    bp2 cell+ @ ?dup IF dt2 2 cells + swap 2 cells move THEN
+    bp2 @       ?dup IF dt2 swap 2 cells move THEN ;
+
+: nestXT+ ( x -- true | body false )
+    \ the n (nest) key.  Stock nestXT treats the threaded cell as an xt and
+    \ runs xt-see on it; in direct-threaded engines that cell is engine code,
+    \ so xt-see shells out to gdb and dies (even nesting a colon word).
+    \ Here a colon call is the cell `call`'s code address followed by the
+    \ target body; anything else (primitive, literal) steps instead.
+    dup ['] call @ = IF drop ['] call THEN
+    dup ['] call = over colon-xt? or 0= IF
+        drop cr ." (not a colon definition: stepped over)" true EXIT THEN
+    nestXT-checkSpecial
+    DebugMode c-pass ! C-Output off  xt-see  C-Output on
+    c-pass @ DebugMode = dup IF cr ." Cannot debug!!" THEN ;
+
+: dbg-fix ( -- )
+    ['] set-bp2 ['] set-bp patch-colon
+    ['] restore-bp2 ['] restore-bp patch-colon
+    ['] nestXT+ ['] nestXT patch-colon ;
+
+: dbg+ ( -- )
+    \ dbg that works in every engine and shows D: F: R: at each step
+    dbg-fix ['] dbg-stacks ['] d.s patch-colon ;

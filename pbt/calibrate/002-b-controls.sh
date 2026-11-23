@@ -1,16 +1,17 @@
 #!/bin/sh
 # 002 (b): plant "json-str leaves control bytes raw" (0.1.0: the \u00XX
-# branch emits the byte; 18ebe2d: no mapping to a space) and require the
+# branch emits the byte; b1c162e: no mapping to a space) and require the
 # controls class to go red on every engine with json.loads rejecting a
 # control character, while the ascii class stays green (the fault must
 # be what turned it red).  Exit 0 only then.
+. "$(dirname "$0")/ref-show.lib"
 set -eu
 pbt=$(cd "$(dirname "$0")/.." && pwd)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-git -C "$pbt" show "${INSPECT_REF:-harden}:env/inspect.fs" > "$tmp/clean.fs"
+ref_show "${INSPECT_REF:-HEAD}" env/inspect.fs > "$tmp/clean.fs"
 # the first -e is json-chars from inspect 0.1.0, the second json-str
-# from harden@18ebe2d; one of them has to match (checked below)
+# from harden@b1c162e; one of them has to match (checked below)
 sed -e 's/ELSE r@ bl < IF \[char\] u jesc r@ \.hex4 1/ELSE r@ bl < IF r@ emit 1/' \
     -e 's/dup bl < IF drop bl THEN //' \
     "$tmp/clean.fs" > "$tmp/inspect.fs"

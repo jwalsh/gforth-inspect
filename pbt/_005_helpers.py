@@ -8,7 +8,7 @@ launcher, built on gforth_run.inspect_source() and the same isolation:
     inspect.fs loaded by relative name (no temp path reaches a record)
   - HOME is that temp dir too: gforth 0.7.3 writes .gforth-history there
   - XDG_STATE_HOME and GFORTH_INSPECT_LOG_DIR point at one shared temp dir;
-    18ebe2d logs to $XDG_STATE_HOME/course-repo/, harden to
+    b1c162e logs to $XDG_STATE_HOME/course-repo/, harden to
     $GFORTH_INSPECT_LOG_DIR, so both are set
 
 Pacing.  gforth 0.7.3 on a pipe reads stdin one line at a time and
@@ -20,7 +20,7 @@ called flush-file.  The launcher then polls the log for the record's
 marker before it sends the next line.  The schedule is therefore fixed by
 the generated steps, never by timing, and Hypothesis can shrink it.
 
-Identity.  18ebe2d has no log-id, so every snapshot carries its identity
+Identity.  b1c162e has no log-id, so every snapshot carries its identity
 on the data stack: [MARK, producer, sequence].  On an inspect.fs that has
 log-id the producer also tags its snapshots "p<producer>", and the check
 asserts the tag agrees with the data.
@@ -44,9 +44,9 @@ import jsonschema
 
 import gforth_run
 
-OLD_REF = "18ebe2d"   # the copy the course runs today
-HARDEN_REF = "0842eda"  # harden unfixed, blob a7e5c141af51 (same blob as 6af19f0, where 005 started)
-FIXED_REF = "079de9c"   # harden with the #17 rework: whole record in a buffer, one seek + one write-file
+OLD_REF = "b1c162e"   # the copy the course runs today
+HARDEN_REF = "10a0da4"  # harden unfixed, blob a7e5c141af51 (same blob as 8deb780, where 005 started)
+FIXED_REF = "c1a6a3a"   # harden with the #17 rework: whole record in a buffer, one seek + one write-file
 MARK = 5005
 SELECTORS = ("INSPECT_FS", "INSPECT_REF", "SCHEMA_JSON")
 
@@ -158,7 +158,7 @@ def patched(source: bytes) -> bytes:
 
 
 def patchable(source: bytes) -> bool:
-    """True if `patched` applies: harden's log-write shape, not 18ebe2d's one-liner."""
+    """True if `patched` applies: harden's log-write shape, not b1c162e's one-liner."""
     lines = source.split(b"\n")
     span = definition_span(lines, "log-write")
     return bool(span) and sum(lines[index] == FIX_FROM.encode() for index in range(*span)) == 1
@@ -177,7 +177,7 @@ def has_log_id(source: bytes) -> bool:
 
 
 def schema_for(ref: str | None) -> dict:
-    """contract/stacks-log.schema.json at `ref` (18ebe2d has its own, v1)."""
+    """contract/stacks-log.schema.json at `ref` (b1c162e has its own, v1)."""
     with source_env(ref=ref):
         return gforth_run.schema()
 

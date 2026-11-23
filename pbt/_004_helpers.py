@@ -1,9 +1,9 @@
 """Helpers for experiment 004.  gforth_run.py is shared and is not edited.
 
 Two sides are compared:
-  old  inspect.fs at OLD_REF (18ebe2d, the copy the course runs today)
+  old  inspect.fs at OLD_REF (b1c162e, the copy the course runs today)
   new  INSPECT_FS if set (a planted copy), else INSPECT_REF if set, else
-       NEW_REF (fc283da, harden's head when 004 ran; pinned, not the
+       NEW_REF (c0cab02, harden's head when 004 ran; pinned, not the
        moving `harden` name)
 
 gforth_run reads its environment on every call, so a side is selected by
@@ -20,8 +20,8 @@ from pathlib import Path
 
 import gforth_run
 
-OLD_REF = "18ebe2d"
-NEW_REF = "fc283da"
+OLD_REF = "b1c162e"
+NEW_REF = "c0cab02"
 SELECTORS = ("INSPECT_FS", "INSPECT_REF", "SCHEMA_JSON")
 
 

@@ -8,7 +8,7 @@ the line, and input.in == >IN just past .stacks.
 
 Two text oracles (see _002_helpers): "legacy" is the pre-registered one
 (bytes < 0x20 become a space, the rest raw), which is what json-str did at
-harden@18ebe2d; "contract" is contract/stacks-log.org from inspect 0.1.0
+harden@b1c162e; "contract" is contract/stacks-log.org from inspect 0.1.0
 (controls escaped, each invalid UTF-8 byte -> U+FFFD).  The hello record
 says which producer is attached, and the oracle follows it.
 

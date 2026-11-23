@@ -12,8 +12,8 @@ exactly once, with one hello per producer.
   test_concurrent_producers  the runner's inspect.fs (INSPECT_REF /
                              INSPECT_FS, default harden).  Strict xfail
                              citing #17 while its log-on and log-write are
-                             those of a pinned unfixed ref (18ebe2d,
-                             0842eda), a plain test once either changes
+                             those of a pinned unfixed ref (b1c162e,
+                             10a0da4), a plain test once either changes
   test_patched_copy          the runner's inspect.fs with the proposed fix
                              applied in a temp copy: must pass
   test_paced_tally           report only: totals per pinned ref
@@ -128,7 +128,7 @@ def engine_params(xfail: bool):
 def test_concurrent_producers(engine, apply_seed):
     validator = schema_validator()
 
-    # the regression case: the shrunk failure on 18ebe2d and on unfixed harden (6af19f0 = 0842eda)
+    # the regression case: the shrunk failure on b1c162e and on unfixed harden (8deb780 = 10a0da4)
     @apply_seed
     @settings(max_examples=GATE_EXAMPLES[engine] * SCALE, database=None)
     @example(schedule=(2, [(0, 1), (1, 1), (0, 1)]))
@@ -144,7 +144,7 @@ def test_patched_copy(engine, apply_seed):
         pytest.skip("the inspect.fs under test changed its write path; "
                     "test_concurrent_producers runs on it as a plain test")
     if not helpers.patchable(SOURCE):
-        pytest.skip("the fixture patches harden's log-write shape; this is 18ebe2d's one-liner")
+        pytest.skip("the fixture patches harden's log-write shape; this is b1c162e's one-liner")
     source = helpers.patched(SOURCE)
     provenance = f"{PROVENANCE} +seek-per-write"
     PROVENANCES["patched (under test)"] = provenance
@@ -167,7 +167,7 @@ def pinned_sides():
     old, old_prov = helpers.current_source(helpers.OLD_REF)
     harden, harden_prov = helpers.current_source(helpers.HARDEN_REF)
     fixed, fixed_prov = helpers.current_source(helpers.FIXED_REF)
-    sides = [("18ebe2d", old, old_prov, helpers.OLD_REF),
+    sides = [("b1c162e", old, old_prov, helpers.OLD_REF),
              ("harden", harden, harden_prov, helpers.HARDEN_REF),
              ("fixed", fixed, fixed_prov, helpers.FIXED_REF)]
     if helpers.patchable(harden):
@@ -176,7 +176,7 @@ def pinned_sides():
     return sides
 
 
-SIDES = ("18ebe2d", "harden", "patched", "fixed")
+SIDES = ("b1c162e", "harden", "patched", "fixed")
 REPORTS: dict = defaultdict(helpers.Tally)
 REPORT_RUNS: dict = defaultdict(int)
 

@@ -3,14 +3,15 @@
 # A plant edits a temp copy of inspect.fs (and the schema) at NEW_REF, runs
 # test_004_reference_consumers.py against it, and exits 0 only if the test
 # went red AND the output carries the expected classification.
+. "$(dirname "$0")/ref-show.lib"
 set -u
-NEW_REF=fc283da
+NEW_REF=c0cab02
 calibrate_dir=$(cd "$(dirname "$0")" && pwd)
 pbt_dir=$(dirname "$calibrate_dir")
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-git -C "$pbt_dir" show "$NEW_REF:env/inspect.fs" > "$tmp/orig.fs" || exit 2
-git -C "$pbt_dir" show "$NEW_REF:contract/stacks-log.schema.json" > "$tmp/orig.json" || exit 2
+ref_show "$NEW_REF" env/inspect.fs > "$tmp/orig.fs" || exit 2
+ref_show "$NEW_REF" contract/stacks-log.schema.json > "$tmp/orig.json" || exit 2
 cp "$tmp/orig.json" "$tmp/schema.json"
 
 # plant_fs SED-SCRIPT: the planted inspect.fs; refuse a plant that changed nothing

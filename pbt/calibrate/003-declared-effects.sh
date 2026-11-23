@@ -3,12 +3,13 @@
 # dup's declared effect becomes ( x -- ).  The sweep must go red, and the only
 # unclassified disagreement must be dup.  Exit 0 only in that case.
 # Run from pbt/ (gmake -C pbt calibrate does).
+. "$(dirname "$0")/ref-show.lib"
 set -u
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 ref=${MODEL_REF:-model}
 git rev-parse --verify -q "$ref" >/dev/null || ref=origin/model
-git show "$ref:model/data/words.json" | python3 -I -c '
+ref_show "$ref" model/data/words.json | python3 -I -c '
 import json, sys
 model = json.load(sys.stdin)
 planted = 0

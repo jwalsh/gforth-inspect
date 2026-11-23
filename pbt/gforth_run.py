@@ -29,6 +29,9 @@ def _git(*args: str) -> str:
     ).stdout
 
 
+FIXTURE_REFS = Path(__file__).resolve().parent / "fixtures" / "refs"
+
+
 def inspect_source() -> tuple[Path, str]:
     """(path to inspect.fs, provenance string for run logs)."""
     explicit = os.environ.get("INSPECT_FS")
@@ -40,6 +43,11 @@ def inspect_source() -> tuple[Path, str]:
         return path, f"file:{path.name} blob:{blob[:12]}"
     refs = [os.environ["INSPECT_REF"]] if "INSPECT_REF" in os.environ else ["harden", "origin/harden"]
     for ref in refs:
+        fixture = FIXTURE_REFS / ref / "inspect.fs"
+        if fixture.exists():
+            # a pinned commit that is no longer in the history (2026-11-22 scrub)
+            blob = _git("hash-object", str(fixture)).strip()
+            return fixture, f"ref:{ref}@fixture blob:{blob[:12]}"
         try:
             blob = _git("rev-parse", f"{ref}:env/inspect.fs").strip()
         except subprocess.CalledProcessError:
@@ -116,6 +124,9 @@ def schema() -> dict:
     if explicit:
         return json.loads(Path(explicit).read_text())
     for ref in [os.environ.get("INSPECT_REF", "harden"), "origin/harden"]:
+        fixture = FIXTURE_REFS / ref / "stacks-log.schema.json"
+        if fixture.exists():
+            return json.loads(fixture.read_text())
         try:
             return json.loads(_git("show", f"{ref}:contract/stacks-log.schema.json"))
         except subprocess.CalledProcessError:

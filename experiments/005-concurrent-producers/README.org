@@ -13,7 +13,7 @@ obligation 1 in CONSUMERS.org: append-only, one complete object per line.
 
 * Prediction (written before the first run)
 
-Refuted on 18ebe2d and on harden's head. =log-on= seeks to the end once,
+Refuted on b1c162e and on harden's head. =log-on= seeks to the end once,
 and every later write goes to that file descriptor's stale offset, so a
 second producer's records are overwritten and a fragment is left behind
 (#17). It holds on any inspect.fs that seeks to the end before each record
@@ -32,7 +32,7 @@ reports how often a race was even possible.
    sleeping. Run at least 200 schedules on =gforth=, and 50 each on
    =gforth-fast= and =gforth-itc=.
 2. *Result.* Report per ref: lines that fail to parse, records lost,
-   records duplicated. Refs: =18ebe2d=, harden's head (pinned by hash), and
+   records duplicated. Refs: =b1c162e=, harden's head (pinned by hash), and
    a patched copy of harden with the seek-before-write fix. That copy is a
    test fixture made by sed in a temp dir, not a change to =env/=.
 3. *Also uncoordinated.* Run 50 schedules where the producers really do
@@ -51,11 +51,11 @@ reports how often a race was even possible.
 ** 2026-11-21 setup: refs, pacing, decision on the xfail
 
 Provenance, pinned at the start:
-- =ref:18ebe2d@18ebe2d blob:76d34db7cd61=
-- =ref:6af19f0@6af19f0 blob:a7e5c141af51= (harden's head, local).  During
-  the run the =harden= name moved to =0842eda=, a release-check change; the
+- =ref:b1c162e@b1c162e blob:76d34db7cd61=
+- =ref:8deb780@8deb780 blob:a7e5c141af51= (harden's head, local).  During
+  the run the =harden= name moved to =10a0da4=, a release-check change; the
   inspect.fs blob is the same, =a7e5c141af51=.
-- patched: =6af19f0 blob:a7e5c141af51 +seek-per-write=, made in a temp dir
+- patched: =8deb780 blob:a7e5c141af51 +seek-per-write=, made in a temp dir
   by the sed in =pbt/_005_helpers.py= (=FIX_SED=).  It changes one line of
   =log-write=, before =base @ >r decimal=:
   =log-fid @ file-size throw log-fid @ reposition-file throw=.
@@ -69,7 +69,7 @@ TTY no history prompt is involved, but gforth still writes
 =.gforth-history= to =$HOME=, so each producer gets its own temp =HOME=.
 No FIFO or =key= tricks were needed.  After the ACK the launcher polls the
 log for the record's marker (data stack =[5005, producer, seq]=, since
-18ebe2d has no =log-id=; on harden the =id= tag =p<producer>= is also
+b1c162e has no =log-id=; on harden the =id= tag =p<producer>= is also
 checked).  A hello is awaited as the last line of the file: counting hellos
 does not work on an unfixed ref, where an earlier hello may be overwritten.
 
@@ -95,7 +95,7 @@ entry says:
   =log-write=: a fix in another shape (a helper word, an append-mode open in
   =log-on=) would have stayed xfail and gone XPASS.  It is now xfail(strict)
   only while =log-on= and =log-write= are word for word those of a pinned
-  unfixed ref (18ebe2d or 6af19f0).  Any change to either word makes the
+  unfixed ref (b1c162e or 8deb780).  Any change to either word makes the
   test plain, which then has to pass; edits elsewhere in inspect.fs keep
   the xfail.  Same intent as the coordinator's decision, a sturdier test.
 - The fix has one definition, =patched()= in =pbt/_005_helpers.py=; the
@@ -104,10 +104,10 @@ entry says:
 
 ** 2026-11-21 results and verdict
 
-Run: =gmake -C pbt check SEED=5005= on 5e19064, default profile, which
+Run: =gmake -C pbt check SEED=5005= on 11db636, default profile, which
 already runs the gate's 200 / 50 / 50 schedules per engine (=PROFILE=ci=
 runs five times that).  Pacing made the run reproducible: with the same
-seed, 18ebe2d and 6af19f0 got the same schedules and gave almost the same
+seed, b1c162e and 8deb780 got the same schedules and gave almost the same
 counts.
 
 Paced, per ref (schedules; lines that do not parse; records lost;
@@ -115,12 +115,12 @@ records duplicated; hellos left of those written):
 
 | ref      | engine      | sched | parse | lost | dup | hellos  |
 |----------+-------------+-------+-------+------+-----+---------|
-| 18ebe2d  | gforth      |   200 |   159 |  699 |   0 | 454/627 |
-| 18ebe2d  | gforth-fast |    50 |    44 |  189 |   0 | 120/157 |
-| 18ebe2d  | gforth-itc  |    50 |    44 |  189 |   0 | 120/157 |
-| 6af19f0  | gforth      |   200 |   160 |  699 |   0 | 454/627 |
-| 6af19f0  | gforth-fast |    50 |    44 |  189 |   0 | 120/157 |
-| 6af19f0  | gforth-itc  |    50 |    44 |  189 |   0 | 120/157 |
+| b1c162e  | gforth      |   200 |   159 |  699 |   0 | 454/627 |
+| b1c162e  | gforth-fast |    50 |    44 |  189 |   0 | 120/157 |
+| b1c162e  | gforth-itc  |    50 |    44 |  189 |   0 | 120/157 |
+| 8deb780  | gforth      |   200 |   160 |  699 |   0 | 454/627 |
+| 8deb780  | gforth-fast |    50 |    44 |  189 |   0 | 120/157 |
+| 8deb780  | gforth-itc  |    50 |    44 |  189 |   0 | 120/157 |
 | patched  | gforth      |   200 |     0 |    0 |   0 | 627/627 |
 | patched  | gforth-fast |    50 |     0 |    0 |   0 | 157/157 |
 | patched  | gforth-itc  |    50 |     0 |    0 |   0 | 157/157 |
@@ -137,8 +137,8 @@ all released at once on =gforth=:
 
 | ref     | lines | parse | lost  | hellos |
 |---------+-------+-------+-------+--------|
-| 18ebe2d |  7466 |   173 |  9348 | 70/159 |
-| 6af19f0 |  6652 |   203 | 10184 | 62/159 |
+| b1c162e |  7466 |   173 |  9348 | 70/159 |
+| 8deb780 |  6652 |   203 | 10184 | 62/159 |
 | patched | 11884 |   622 |  5423 | 114/159 |
 
 The fix roughly halves the loss but does not stop it.  Reading log-write,
@@ -153,7 +153,7 @@ Verdict per gate item:
 1. Interleavings: met.  Hypothesis-generated schedules of 2 to 4
    producers, driven line by line with an ACK and a poll of the log, no
    sleeps; 200 / 50 / 50 per engine on every ref.
-2. Result: hypothesis refuted on 18ebe2d and on 6af19f0, as predicted (the
+2. Result: hypothesis refuted on b1c162e and on 8deb780, as predicted (the
    counts are above); it holds on the patched copy under pacing.
 3. Uncoordinated: reported above.  This part of the prediction is
    refuted: it said the fixed producer would hold "in practice" with N up
@@ -166,25 +166,25 @@ Verdict per gate item:
    #17 while the write path is that of a pinned unfixed ref; when the fix
    lands on harden the test becomes a plain one and has to pass.
 
-** 2026-11-21 harden moved to 079de9c: pins, and the reworked fix
+** 2026-11-21 harden moved to c1a6a3a: pins, and the reworked fix
 
-The =harden= name now points at =079de9c= (blob =af95cdf354af=), which
+The =harden= name now points at =c1a6a3a= (blob =af95cdf354af=), which
 carries the #17 rework: the whole record is built in a buffer, then one
 seek and one =write-file= of the whole line.  "harden's head, unpatched"
-in the gate now means the pinned =0842eda= (blob =a7e5c141af51=, the same
-inspect.fs as =6af19f0= where 005 started).  It is pinned in code as
+in the gate now means the pinned =10a0da4= (blob =a7e5c141af51=, the same
+inspect.fs as =8deb780= where 005 started).  It is pinned in code as
 =HARDEN_REF= in =pbt/_005_helpers.py=, and the calibration defaults to it.
-The moving =harden= name no longer stands for "unfixed".  =079de9c= is
+The moving =harden= name no longer stands for "unfixed".  =c1a6a3a= is
 pinned as =FIXED_REF= and is a fourth side in the reports.
 
-The ref-aware xfail treats =079de9c= as fixed: its =log-write= differs
+The ref-aware xfail treats =c1a6a3a= as fixed: its =log-write= differs
 from both pinned unfixed refs, so =test_concurrent_producers= runs as a
 plain test, and it passes on 201 / 51 / 51 schedules with every count at
 0.  =test_patched_copy= skips, because the write path changed.
 
 Run: =gmake -C pbt check SEED=5005= gave 98 passed, 3 skipped and 1
 xfailed (the xfail is not one of 005's); =gmake -C pbt calibrate= was red
-as expected on all 14 scripts.  Paced, =079de9c= matches the seek-only
+as expected on all 14 scripts.  Paced, =c1a6a3a= matches the seek-only
 patch: 0 parse failures, 0 lost and 0 duplicated on every engine.
 
 Uncoordinated, 50 runs, seed 5005.  The schedules are the same for every
@@ -193,10 +193,10 @@ side, so every side was asked for 16571 snapshots and 159 hellos.  The
 
 | ref                    | lines | parse | lost  | hellos  | kept            |
 |------------------------+-------+-------+-------+---------+-----------------|
-| 18ebe2d                |  7505 |   135 |  9264 |  63/159 |  7307 (44.1%)   |
-| 0842eda unfixed        |  6528 |   179 | 10278 |  56/159 |  6293 (38.0%)   |
-| 0842eda + seek-only    | 11902 |   557 |  5337 | 111/159 | 11234 (67.8%)   |
-| 079de9c buffer + write | 14658 |   212 |  2270 | 145/159 | 14301 (86.3%)   |
+| b1c162e                |  7505 |   135 |  9264 |  63/159 |  7307 (44.1%)   |
+| 10a0da4 unfixed        |  6528 |   179 | 10278 |  56/159 |  6293 (38.0%)   |
+| 10a0da4 + seek-only    | 11902 |   557 |  5337 | 111/159 | 11234 (67.8%)   |
+| c1a6a3a buffer + write | 14658 |   212 |  2270 | 145/159 | 14301 (86.3%)   |
 
 Buffering the record narrows the window (14 % lost, against 32 % for
 seek-only), but a seek and a write are still two system calls, and true

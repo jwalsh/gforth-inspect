@@ -55,7 +55,7 @@ D = Downstream (course session), H (D) = H via D.
 
 | open | blocker                                                                                                 | owner |
 |------+---------------------------------------------------------------------------------------------------------+-------|
-| D-25 | absolute paths in the history of =lldb=, =model=, =harden=, and a private repo name in =main='s history (=experiment-process.org= before f42d211): rewrite history, or leave those refs unpublished | H     |
+| D-25 | absolute paths in the history of =lldb=, =model=, =harden=, and a private repo name in =main='s history (=experiment-process.org= before 2ebb0d5): rewrite history, or leave those refs unpublished | H     |
 | #13  | the =harden= PR: has the Makefile standard (D-22), the issue #17 concurrent-producer fix, its own review (D-16); needs a local =gmake verify= on its head (D-40)                                | H     |
 
 | re   | kind  | claim                                                                                   |
@@ -67,4 +67,4 @@ D = Downstream (course session), H (D) = H via D.
 | D-30 | how   | plugin version = release version                                                        |
 | D-39 | why   | =.meta/= is not rendered                                                                |
 | D-39 | how   | English prose stays only where an ablation verdict is =carries=                          |
-| D-39 | check | ablation of =.meta/= at 344b88b, 2026-11-22, run by the www.wal.sh session (STYLE.org v0.4.0; (private)): 1 prose unit cut, 7 unclear rows split |
+| D-39 | check | ablation of =.meta/= at b9708c6, 2026-11-22, run by the www.wal.sh session (STYLE.org v0.4.0; (private)): 1 prose unit cut, 7 unclear rows split |

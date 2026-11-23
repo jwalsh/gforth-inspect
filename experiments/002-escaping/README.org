@@ -63,14 +63,14 @@ gforth 0.7.3, included file, all three engines.
 
 ** 2026-11-21 the ref moved under the experiment
 
-=harden= went 18ebe2d -> cda47e2 -> ea4ae27 -> 9b92746 while the tests
-were being written.  inspect 0.1.0 (6238b09) rewrote =json-str= and
+=harden= went b1c162e -> d56cb72 -> 69aec29 -> 90bab36 while the tests
+were being written.  inspect 0.1.0 (9528a4c) rewrote =json-str= and
 =contract/stacks-log.org= now says: control characters are escaped
 (=\n \t \r \b \f=, else =\u00XX=), and bytes that are not valid UTF-8
 become U+FFFD.  The pre-registered text oracle ("bytes below 0x20 mapped
-to a space", the rest raw) is what 18ebe2d does.  Neither the gate nor the
+to a space", the rest raw) is what b1c162e does.  Neither the gate nor the
 prediction is edited.  The tests carry both oracles and pick one from the
-hello record (0.1.0 added an =inspect= key): =legacy= for 18ebe2d, which
+hello record (0.1.0 added an =inspect= key): =legacy= for b1c162e, which
 answers the hypothesis as written, and =contract= for the head of
 =harden=.  Each is logged below with its provenance.
 
@@ -82,8 +82,8 @@ U+2029 (valid UTF-8, legal in JSON).  Same isolation, same
 
 ** 2026-11-21 run: head of harden, contract oracle -- green
 
-- commit dc98fb9, =PYTEST_ADDOPTS=--hypothesis-seed=20261121 gmake -C pbt check PROFILE=ci=
-- inspect.fs =ref:harden@9b92746 blob:1264ab7e38c0= (inspect 0.1.0)
+- commit aaf31cb, =PYTEST_ADDOPTS=--hypothesis-seed=20261121 gmake -C pbt check PROFILE=ci=
+- inspect.fs =ref:harden@90bab36 blob:1264ab7e38c0= (inspect 0.1.0)
 - wall 672 s; 24 passed
 - examples (Hypothesis, generate phase, all passing): every class 1000 on
   =gforth=, 200 on =gforth-fast=, 200 on =gforth-itc=; census 1000/200/200.
@@ -98,10 +98,10 @@ U+2029 (valid UTF-8, legal in JSON).  Same isolation, same
 
   (fast and itc get the same draws: same seed, same strategy.)
 
-** 2026-11-21 run: 18ebe2d, pre-registered oracle -- refuted for invalid bytes
+** 2026-11-21 run: b1c162e, pre-registered oracle -- refuted for invalid bytes
 
-- commit dc98fb9, =INSPECT_REF=18ebe2d PYTEST_ADDOPTS=--hypothesis-seed=20261121 gmake -C pbt check PROFILE=ci=
-- inspect.fs =ref:18ebe2d@18ebe2d blob:76d34db7cd61=
+- commit aaf31cb, =INSPECT_REF=b1c162e PYTEST_ADDOPTS=--hypothesis-seed=20261121 gmake -C pbt check PROFILE=ci=
+- inspect.fs =ref:b1c162e@b1c162e blob:76d34db7cd61=
 - wall 632 s; 3 failed (=test_escaping_invalid_*=, one per engine), 21 passed
 - examples: ascii, controls, utf8, long 1000/200/200 all passing; invalid
   failed on the first example in every engine and shrank to the same case.
@@ -112,23 +112,23 @@ U+2029 (valid UTF-8, legal in JSON).  Same isolation, same
   fault.
 - shrunk case, all engines: =.stacks \ <0x80>=
   #+begin_example
-  git show 18ebe2d:env/inspect.fs > inspect.fs && printf 'log-on\012.stacks \134 \200\012log-off\012bye\012' > case.fs && XDG_STATE_HOME=st GFORTH_INSPECT_LOG_DIR=st/gforth-inspect gforth inspect.fs case.fs >/dev/null && cat st/*/stacks.jsonl
+  git show b1c162e:env/inspect.fs > inspect.fs && printf 'log-on\012.stacks \134 \200\012log-off\012bye\012' > case.fs && XDG_STATE_HOME=st GFORTH_INSPECT_LOG_DIR=st/gforth-inspect gforth inspect.fs case.fs >/dev/null && cat st/*/stacks.jsonl
   #+end_example
   The snapshot line ends =..."text":".stacks \\ <0x80>"}}=, not UTF-8.
 - Not marked xfail: the same tests pass at the head of =harden=, so
   =xfail(strict=True)= would go red there.  The failure stays reproducible
-  with =INSPECT_REF=18ebe2d=.
+  with =INSPECT_REF=b1c162e=.
 
 ** 2026-11-21 calibration
 
 =gmake -C pbt calibrate= (default profile), with =INSPECT_REF= at the head
-of =harden= and again at =18ebe2d=; both seds are in each script, and a
+of =harden= and again at =b1c162e=; both seds are in each script, and a
 script fails if neither matched.
 
 - (a) =002-a-backslash.sh=, =\= not escaped: =test_escaping_ascii_*= red on
   all three engines, =[json] Invalid \escape=.  Exit 0.
 - (b) =002-b-controls.sh=, control bytes raw (0.1.0: the =\u00XX= branch
-  emits the byte; 18ebe2d: the map to a space removed):
+  emits the byte; b1c162e: the map to a space removed):
   =test_escaping_controls_*= red on all three engines with =Invalid control
   character=, and =test_escaping_ascii_*= green on all three, so the fault
   is what turned them red.  Exit 0.
@@ -141,14 +141,14 @@ that path yet.
 
 1. *Volume*: met.  1000 examples per class on =gforth=, 200 per class on
    =gforth-fast= and =gforth-itc=, in both runs.  No engine differed.
-2. *Result*: per class above.  At 18ebe2d the hypothesis holds for ASCII,
+2. *Result*: per class above.  At b1c162e the hypothesis holds for ASCII,
    controls, valid UTF-8 and long lines and is refuted for invalid bytes,
    as predicted; reproducer above.  At the head of =harden= (0.1.0) every
    class passes against the contract's oracle.
 3. *Calibration*: met.  (a) and (b) go red on every engine, for the
    expected reason, against both inspector versions.
 
-Contract findings.  18ebe2d broke the "UTF-8" line of the contract for
+Contract findings.  b1c162e broke the "UTF-8" line of the contract for
 non-UTF-8 source; 0.1.0 fixes that by replacing each invalid byte with one
 U+FFFD (per byte, not Unicode's maximal-subpart rule, so =E2 82= gives two;
 the contract could say "each byte").  Two gaps remain.  The replacement is
@@ -161,10 +161,10 @@ should say that =in= is a byte offset into the UTF-8 (raw) source line.
 
 ** 2026-11-21 recheck: harden moved again
 
-- commit c31f161, =PYTEST_ADDOPTS=--hypothesis-seed=20261121 gmake -C pbt check= (default profile)
-- inspect.fs =ref:harden@fc283da blob:a7e5c141af51= (contract 1.1: =log-id=,
+- commit 703ade1, =PYTEST_ADDOPTS=--hypothesis-seed=20261121 gmake -C pbt check= (default profile)
+- inspect.fs =ref:harden@c0cab02 blob:a7e5c141af51= (contract 1.1: =log-id=,
   =contract= in hello, ~~ where/src; =json-chars= unchanged)
 - wall 98 s; 24 passed; 100 examples per class on =gforth=, 20 on the others.
-- =gmake -C pbt calibrate= on c31f161: (a) and (b) red as expected at the
-  head of =harden= and at =18ebe2d=.
+- =gmake -C pbt calibrate= on 703ade1: (a) and (b) red as expected at the
+  head of =harden= and at =b1c162e=.
 - The new =id= key goes through =json-str= too but is not generated here.

@@ -15,17 +15,17 @@ every record it wrote.
 | evidence, 2026-11-21                                                                                       | rule |
 |------------------------------------------------------------------------------------------------------------+------|
 | 25 decisions in one evening ([[file:decisions.org][decisions.org]]), most landing mid-run                                                  | RD-4 |
-| =harden= moved six times: 18ebe2d, cda47e2, ea4ae27, 9b92746, fc283da, 1b2aee9                               | RD-1 |
-| 002 was written against 18ebe2d's escaping                                                                 | RD-1 |
+| =harden= moved six times: b1c162e, d56cb72, 69aec29, 90bab36, c0cab02, a3c8236                               | RD-1 |
+| 002 was written against b1c162e's escaping                                                                 | RD-1 |
 | =json-str= was rewritten on =harden= before 002's first run                                                      | RD-1 |
 | 002 kept its pre-registered gate and shipped two oracles, chosen by the =hello= record                         | E-5  |
-| 004 briefed against 9b92746, first run on fc283da, which had added a contract version stop               | RD-4 |
+| 004 briefed against 90bab36, first run on c0cab02, which had added a contract version stop               | RD-4 |
 | 001's float verdict depended on which blob the default ref named that minute                             | RD-1 |
 | "v0.1.0 is the first release" replaced within the hour by "v0.5.0 is the first tag" ([[file:decisions.org][D-19]])                   | RD-4 |
 | every near-miss came from the default =INSPECT_REF=harden=; =gforth_run.py= prints provenance on every run    | RD-1, RD-2 |
 | agents checked [[file:../docs/RELEASING.org][RELEASING.org]] and [[file:../contract/CONSUMERS.org][CONSUMERS.org]], not the Operator's memory; a decision only in a message reached one agent | RD-4 |
 | 004 used a message format CONSUMERS.org had already revised; caught by reading the file, not the brief   | RD-4 |
-| pinning before (18ebe2d) and after (the fix) made #1's fix evidence                                      | RD-1 |
+| pinning before (b1c162e) and after (the fix) made #1's fix evidence                                      | RD-1 |
 | "breaking any reference consumer is MAJOR" vs "the checker stops on a MINOR mismatch": same source, minutes apart; reconciled by D-12 | RD-5 |
 | without a decisions log, rules sat in five documents and a memory file                                   | RD-4 |
 | coordination traffic grew with the number of rules, not with the work                                    |      |

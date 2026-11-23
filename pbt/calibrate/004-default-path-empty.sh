@@ -2,7 +2,7 @@
 # 004 plant: move the default log dir, so the documented default path is empty.
 # Planted on the inspect.fs under test (INSPECT_FS, else INSPECT_REF, else
 # HEAD), not on 004.lib's NEW_REF: since 0.3.0 the default is per project
-# (contract/stacks-log.org, "Files") and fc283da's shared default would be
+# (contract/stacks-log.org, "Files") and c0cab02's shared default would be
 # red without any plant.
 . "$(dirname "$0")/004.lib"
 if [ -n "${INSPECT_FS:-}" ]; then cp "$INSPECT_FS" "$tmp/orig.fs"

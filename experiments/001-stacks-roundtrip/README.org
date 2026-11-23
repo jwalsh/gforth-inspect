@@ -78,10 +78,10 @@ and =dbg=.
 - =where= / =src= are not asserted (issue #2: =~~= under =all-~~= logs them
   as null by design). The summary counts what was observed per path.
 
-** 2026-11-21 BEFORE: =INSPECT_REF=18ebe2d=, seed 1121, PROFILE=ci
+** 2026-11-21 BEFORE: =INSPECT_REF=b1c162e=, seed 1121, PROFILE=ci
 
-Command: =INSPECT_REF=18ebe2d PBT_SEED=1121 gmake -C pbt check PROFILE=ci=
-on commit 55490ba. Provenance line: =ref:18ebe2d@18ebe2d blob:76d34db7cd61=.
+Command: =INSPECT_REF=b1c162e PBT_SEED=1121 gmake -C pbt check PROFILE=ci=
+on commit bbe529f. Provenance line: =ref:b1c162e@b1c162e blob:76d34db7cd61=.
 Wall time 2146.7 s (35m46s) for 45 tests; result 18 failed, 27 passed.
 
 | test                         | per (path, engine)                          | result                    |
@@ -134,7 +134,7 @@ Notes:
 - P1 held in 48 456 batched cases per path (5384 x 9 pairs / 3 paths x 3),
   P2 data and schema likewise; no engine difference anywhere.
 
-Calibration (=INSPECT_REF=18ebe2d gmake -C pbt calibrate=, 3m38s), each with
+Calibration (=INSPECT_REF=b1c162e gmake -C pbt calibrate=, 3m38s), each with
 a clean-copy control run that must pass first:
 - (a) =.stacks= leaves =0= on the data stack: red on exactly
   =test_p1_noninterference[dotstacks-*]= (3), message =P1 data stack
@@ -149,15 +149,15 @@ Verdict, before: P1 holds; P2 data holds; P2 schema holds; P2 float
 refuted on every path and engine (sign, precision and non-finite all
 present). The prediction held, and the DBL_MAX overflow was not predicted.
 
-** 2026-11-22 AFTER: =INSPECT_REF=6238b09=, seed 1121, PROFILE=ci
+** 2026-11-22 AFTER: =INSPECT_REF=9528a4c=, seed 1121, PROFILE=ci
 
-=6238b09= is the harden head that contains the json-f fix (17 significant
+=9528a4c= is the harden head that contains the json-f fix (17 significant
 digits, -0 kept, NaN and infinities null); =git log harden -- env/inspect.fs=
-shows it as the first change after =18ebe2d=. Same committed tests (55490ba),
+shows it as the first change after =b1c162e=. Same committed tests (bbe529f),
 same seed.
 
-Command: =INSPECT_REF=6238b09 PBT_SEED=1121 gmake -C pbt check PROFILE=ci=.
-Provenance line: =ref:6238b09@6238b09 blob:1264ab7e38c0=.
+Command: =INSPECT_REF=9528a4c PBT_SEED=1121 gmake -C pbt check PROFILE=ci=.
+Provenance line: =ref:9528a4c@9528a4c blob:1264ab7e38c0=.
 Wall time 2206.4 s (36m45s); result 45 passed, 0 failed.
 
 | test                      | per (path, engine)                         | result            |
@@ -175,15 +175,15 @@ null on =dotstacks= and =tilde2all=, set on =tilde3= (issue #2, not asserted).
 
 Calibration rerun on the committed tree (the first calibration above
 overlapped an edit to the test file, so it is superseded by this one):
-=INSPECT_REF=18ebe2d gmake -C pbt calibrate= (308 s) and
-=INSPECT_REF=6238b09 gmake -C pbt calibrate= (162 s). On both refs each
+=INSPECT_REF=b1c162e gmake -C pbt calibrate= (308 s) and
+=INSPECT_REF=9528a4c gmake -C pbt calibrate= (162 s). On both refs each
 fault went red on exactly the expected tests, with the expected message,
 after a clean-copy control passed: (a) 3 x =test_p1_noninterference[dotstacks-*]=,
 (b) 3 x =test_p1_noninterference[tilde3-*]=, (c) 9 x =test_p2_data[*]=.
 
 ** 2026-11-22 Verdict
 
-| gate item      | before (18ebe2d)                                            | after (6238b09)          |
+| gate item      | before (b1c162e)                                            | after (9528a4c)          |
 |----------------+-------------------------------------------------------------+--------------------------|
 | 1. Volume      | held: 1000 examples (5384 cases) per pair for P1, P2 data,   | held: 1000 per pair for  |
 |                | P2 schema; P2 float stopped at its first failure (26)        | all four properties      |
@@ -195,8 +195,8 @@ after a clean-copy control passed: (a) 3 x =test_p1_noninterference[dotstacks-*]
 |                | (15 digits, matches #1's Expected clause)                   |                          |
 | 4. Calibration | held: (a), (b), (c) each red as expected                    | held                     |
 
-The hypothesis is refuted for =18ebe2d= exactly where the prediction said
-(P2 on floats) and holds for =6238b09=. Unpredicted: DBL_MAX overflowing to
+The hypothesis is refuted for =b1c162e= exactly where the prediction said
+(P2 on floats) and holds for =9528a4c=. Unpredicted: DBL_MAX overflowing to
 inf, and the greatest subnormal / least normal collapsing to one literal.
 Nothing differed between engines or between paths in either run, so the
 three ways =snap-rp= is stored did not matter to the data or float fields.
