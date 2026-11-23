@@ -116,10 +116,10 @@ ignores them, =pattern= included.
 
 * Log
 
-** 2026-11-21 gate committed (ebab4ec), then the twins
+** 2026-11-21 gate committed (18eb6d4), then the twins
 
-The gate went in at ebab4ec, before any twin code. The twins and the
-differential followed in one commit (48f7552): =pbt/consumers/bb/checker.clj=,
+The gate went in at 18eb6d4, before any twin code. The twins and the
+differential followed in one commit (2adda5a): =pbt/consumers/bb/checker.clj=,
 =mock_server.clj=, the harness-only =driver.clj=,
 =pbt/test_007_bb_consumers.py= and =pbt/calibrate/007-*.sh=. Nothing outside
 babashka is used: cheshire only in the driver's own I/O and in plant (a),
@@ -234,13 +234,13 @@ never the original.
 
 ** 2026-11-21 verdict
 
-On the final tree (53ef701 plus docs), =gmake -C pbt check= (default
+On the final tree (7f617d9 plus docs), =gmake -C pbt check= (default
 profile, random seed): 87 passed, 1 xfailed (005's strict xfail), 363 s
 for the whole suite. 007 itself took about 80 s.
 1. Corpus: *held*. 16 of 16 scenarios, read from =origin/main= (#22): the
    bb checker equals the Python checker and =expect.json=, and the bb
    server equals both.
-2. Planted breaks: *held*. The six 004 plants on harden 079de9c, every
+2. Planted breaks: *held*. The six 004 plants on harden c1a6a3a, every
    prefix, with the stop on and off, give equal outputs. That includes
    =KeyError: 'data'= on rename-data, and =unreadable: No such file or
    directory= on the moved default path. The contract-1.2 stop gives equal
