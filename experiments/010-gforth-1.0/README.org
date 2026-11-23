@@ -1,0 +1,496 @@
+#+TITLE: 010 gforth-1.0: v0.1.1 against gforth 1.0.0 and 1.0.1
+#+DATE: 2026-11-22
+#+STARTUP: showall
+
+A compatibility finding, not a port.  The project supports gforth 0.7.3
+only (CONTRIBUTING.org, "gforth 0.7.3 only"); this experiment says what
+happens when a user loads the released inspector into gforth 1.0 anyway.
+Nothing under =env/= or =contract/= changes here.  The load-time notice
+for a non-0.7.3 gforth belongs to v0.2.0, not to this branch.
+
+* Hypothesis
+
+v0.1.1 (=env/inspect.fs= blob =82860519a7d3=) loads on gforth 1.0.x, and
+the log it writes there is valid against contract 1.1 and begins with
+={"v":1,= (I-1, D-38), but =dbg-fix= / =dbg+= and the return-stack words
+(=.rs=, =rs-full=, the =rs= field) fail, because they walk 0.7.3's
+threaded code, headers and debugger internals.
+
+* Prediction (written before the first run)
+
+The hypothesis is the suggested one; the prediction below is what I
+expect to measure, and it already disagrees with the first clause.
+
+1. *Load: refuted.*  inspect.fs uses about two dozen 0.7.3 internals
+   with no =[defined]= guard (=>head-noprim=, =threaded>name=, =look=,
+   =interpret1=, =handler-intro,=, =.debugline-stderr=, =loadfilename#>str=,
+   =compile-sourcepos=, and debug.fs's =DebugLoop=, =dbg-ip=, =c-pass=,
+   =DebugMode=, =NestXT=, =nestXT-checkSpecial=, =(_debug)=, =Leave-D=,
+   =set-bp=, =restore-bp=, =d.s=).  At least one of them is gone or renamed
+   in 1.0, so the load stops with "Undefined word" at the first one, and
+   every public word defined after that line is missing.  I expect the
+   first stop inside =colon-xt?= (line 39, =>head-noprim=), which would
+   leave only =inspect-version= defined.  Redefinition warnings are
+   likely too, since 1.0 has many more words in its image.
+2. *Words:* whatever is defined before the stopping line works;
+   everything after it is "Undefined word".  If the load gets further
+   than predicted, =.stacks= prints data and float stacks correctly but
+   names no return addresses, and =dbg-fix= crashes or patches the wrong
+   cells.
+3. *Goldens:* every one of the 36 tests fails in every 1.0 engine, at
+   least on the load error in stderr; none passes by accident.
+4. *Property tests:* =pbt/gforth_run.py= runs whatever =gforth= is first
+   on =PATH=, so it can be pointed at 1.0 without editing it.  The smoke
+   step has no hello record, so =gmake -C pbt check= fails.
+5. *Log:* if =log-on= is never defined there is no log to validate.  If it
+   is, every line validates and starts with ={"v":1,=, and =hello.gforth=
+   is ="1.0.0"= / ="1.0.1"=: the JSON writer uses only standard words
+   (=emit=, =type=, =.r=, =fs.=, =pick=, =fpick=).
+6. *Engines:* 1.0 builds =gforth=, =gforth-fast= and =gforth-itc= (and
+   =gforth-ditc=); the load result is the same in each.
+
+* Gate
+
+1. *Provenance.*  For each tarball: its SHA-256, and what it was checked
+   against (a published checksum, a signature, or none found: recorded
+   either way).  The build route (macOS from source, or the
+   =forthy42/gforth= image) and each binary's =version-string=.  The
+   inspector is =v0.1.1:env/inspect.fs=, blob =82860519a7d3=.
+2. *Isolation (E-10).*  Every gforth run gets its own temp dir as cwd,
+   =HOME= and =XDG_STATE_HOME=, with =GFORTH_INSPECT_LOG_DIR= inside it, and
+   loads files by relative name.  After the runs the real
+   =~/.local/state/gforth-inspect/stacks.jsonl= has the same size and
+   mtime as before them (#46).
+3. *Calibration.*  The probe harness runs first on stock gforth 0.7.3,
+   where every public word must come out "works" in all three engines;
+   a harness that cannot say "works" there cannot say "fails" on 1.0.
+4. *Measurements*, for 1.0.0 and 1.0.1 and each engine the build
+   provides:
+   - load: =gforth inspect.fs -e bye=, its exit status, every warning,
+     redefinition and error;
+   - each public word (=.stacks .rs .input .cs ~~~ all-~~ dbg-fix dbg+
+     log-on log-off log-where log-id fclearstack inspect-version rs-full
+     contract-version=), each in its own process: works, errors, or wrong
+     output (wrong = differs from 0.7.3's output of the same probe,
+     after masking addresses and paths);
+   - =test/run.sh= with the 1.0 binaries first on =PATH=: pass/fail per
+     test and engine;
+   - =gmake -C pbt check= with the root Makefile's =PBT_ENV=, the 1.0
+     binaries first on =PATH=;
+   - every =stacks.jsonl= written: =test/validate.py= against the schema,
+     the I-1 prefix, and =hello.gforth=;
+   - for each failure, the 0.7.3 internal behind it and a one-line
+     reproducer that runs on plain gforth 1.0, without inspect.fs.
+5. *Verdict.*  The hypothesis holds if the load is free of errors in
+   every 1.0 engine, the log validates and keeps I-1, and =dbg-fix=,
+   =dbg+= and =.rs= fail.  Otherwise it is refuted, and the Log says which
+   clause failed.
+
+* Log
+
+** 2026-11-22 provenance: where 1.0.0 and 1.0.1 came from
+
+The URLs in the brief, =forth/gforth/gforth-1.0.0.tar.xz= and
+=gforth-1.0.1.tar.xz= at the top of the download directory, no longer
+hold them: the top level now carries =gforth-1.0.2.tar.xz= (a later point
+release, not tested here), =gforth-1.0.0.tar.xz= answers 404, and
+=gforth-1.0.1.tar.xz= has moved to =old/=.  Both releases are under
+=forth/gforth/Snapshots/1.0.0/= and =Snapshots/1.0.1/=, each with three
+detached signatures: =.asc= (armoured OpenPGP), =.sig= (binary OpenPGP)
+and =.s2o= (a net2o signature).  No checksum file is published, and the
+announcement on the gforth list gives none.
+
+Each tarball went into its own new empty directory.
+
+| tarball             | SHA-256                                                          | bytes   |
+|---------------------+------------------------------------------------------------------+---------|
+| gforth-1.0.0.tar.xz | 79c880b68a4a9aa817b7067c21b79acd5b07149fad78f3f630320db410886fa6 | 4840516 |
+| gforth-1.0.1.tar.xz | d7cb2a1d0d0d9e4d895bce0739179ba97037a9da790fea536afcdc91f6d93d00 | 4845192 |
+
+Verification: =gpg --verify= of both =.asc= and both =.sig= says "Good
+signature", EdDSA key =04880DE6ECB06FC8EE9C3AF43B64AEC1E0B7BDE0=, in a
+throw-away =GNUPGHOME=.  The key was fetched by that fingerprint from
+keyserver.ubuntu.com (keys.openpgp.org has no copy); its uid names a
+gforth maintainer.  It is not in the GNU keyring (=gnu-keyring.gpg=), and
+the fingerprint was not confirmed through a second channel, so this
+proves the four files agree with one key, not that the key is the
+project's.  All four signatures are dated 2026-11-02: 1.0.0 (released
+2026-10-25) was signed a week after its release.  The =.s2o= files were
+not checked (no net2o here).  The =old/= copy of 1.0.1 is byte-identical
+to the =Snapshots/= one.
+
+Build route: macOS (arm64, Darwin 24) from source, into a private prefix
+in the session's scratch dir, =nice -n 19 gmake -j2=.  Two obstacles:
+- =configure= refuses clang outright ("Clang has a long unfixed bug that
+  makes it unsuitable to compile Gforth"), so Apple's =cc= is out;
+- Homebrew's gcc 16.1.0 cannot compile =#include <stdio.h>= against the
+  installed SDKs (15.2 and older): its fixincluded =_stdio.h= includes
+  =_bounds.h=, which only newer SDKs have.  A one-file shim directory,
+  passed as =CC="gcc-16 -idirafter <shim>"=, defines the nine
+  bounds-safety macros =_stdio.h= uses as empty (they are no-ops without
+  =-fbounds-safety=).  The shim touches only that system header; no
+  gforth source is changed.
+
+** 2026-11-22 calibration on 0.7.3 (gate 3)
+
+=probe.sh= (one process per probe, E-10 isolation; inspector from
+=ref:v0.1.1 blob:82860519a7d3=) on stock Homebrew 0.7.3, all three
+engines: 16 of 16 probes exit 0 with the expected output, and the masked
+outputs are byte-identical across =gforth=, =gforth-fast= and
+=gforth-itc=.  Two probes were fixed before this run, both harness bugs:
+=cs.fs= looped for ever on =0 UNTIL= (now =-1 UNTIL=), and =dbg-nest.fs=
+pressed =n= on a literal (now Enter, then =n= on =sq=).
+
+=internals.sh= lists 197 distinct system words that inspect.fs names
+(comments, strings and its own definitions removed); all 197 are found
+by =find-name= in all of 0.7.3's engines, so the tokenizer drops nothing
+0.7.3 lacks.
+
+The real =~/.local/state/gforth-inspect/stacks.jsonl= before any run:
+2600 bytes, mtime 1795358250 (gate 2 baseline).
+
+** 2026-11-22 builds, and a libcc wrapper that is not about the inspector
+
+Both builds finished (=gmake -j2=, nice 19) and gave =gforth=,
+=gforth-fast=, =gforth-itc= and =gforth-ditc=, each reporting
+=version-string= =1.0.0= / =1.0.1=.  =gmake install= stops in
+=install-libcc= on the two X11 wrappers (=libgfx=, =libgfxrandr=: no X11
+headers), after the other libcc wrappers are installed; =gmake -k install=
+completes everything else.
+
+On this install every start of every engine prints two =dlopen(...)=
+errors to stderr, for =libgflibc.so= and =libgfpthread.so=: the first
+entry on 1.0's libcc search path is =$HOME/.cache/gforth/arm64/libcc-tmp/.libs/=,
+which a fresh HOME does not have, and =engine/support.c= prints
+=dlerror()= on each miss before the next entry (the installed
+=libcc-named/=) succeeds.  That would fail every golden on stderr alone,
+for a reason that has nothing to do with inspect.fs.  So every run below
+goes through a four-line wrapper per engine that sets =libccnameddir= to a
+directory whose =.libs= links to the installed =libcc-named/=; with it,
+start-up is silent and creates nothing in HOME.  Whether a packaged 1.0
+(Homebrew, Debian) shows the same noise was not checked.
+
+** 2026-11-22 results: load, words, internals
+
+Runs: =probe.sh= on 1.0.0 and 1.0.1, four engines each, inspector
+=ref:v0.1.1 blob:82860519a7d3=; =internals.sh= per engine.  Summaries
+are committed as =results/probes.tsv= (=summarize.sh=, verdict per run,
+engine and probe against 0.7.3's output) and =results/internals.tsv=.
+
+*Load: refuted, in all eight engine builds.*  =gforth inspect.fs -e bye=
+exits 1:
+
+#+begin_example
+inspect.fs:40:5: warning: name>int is obsolete
+inspect.fs:56:26: warning: .name is obsolete
+inspect.fs:73:13: error: Undefined word
+    dup ['] >>>interpret1<<< = over ['] interpret = or over ['] handler-intro, = or
+#+end_example
+
+gforth stops processing the command line at that error (0.7.3 does
+too; checked with a one-line =xyzzy= file), so a program named after
+inspect.fs never runs: all 16 public-word probes
+(and json-parts) end with the same error and exit 1, no log is written,
+and the probe's own output never appears.  Only =colon-xt?=, =enclosing=,
+=.where=, =stack-region?= and =inspect-version= get defined, and
+=inspect-version= is never reachable from the command line.  The
+prediction named the wrong first stop (line 39, =>head-noprim=):
+=>head-noprim= still exists in 1.0, it just means something else (below).
+
+*Internals.*  Of the 197 system words inspect.fs names, 181 are found in
+1.0.x's image and 16 are not (identical in 1.0.0 and 1.0.1, and in every
+engine).  13 of the 16 are debug.fs internals that 1.0 keeps in the
+=see-voc= wordlist (=also see-voc= finds them); three are gone:
+=interpret1=, =handler-intro,= and =.debugline-stderr=.
+
+*Diagnostic second layer.*  To see what fails after the load error,
+=shim-1.0.fs= is loaded first: =also see-voc=, and the three missing
+names defined as empty words that never appear on a return stack.  It
+is not a port and makes nothing correct; it only lets names resolve.
+Shimmed, the load completes with warnings (=name>int= and =.name=
+obsolete, five times; ="0." is a double-cell integer= twice;
+=redefined .stacks=, since 1.0's =status-line.fs= has its own).  Then,
+the same in 1.0.0 and 1.0.1 and in all four engines unless noted:
+- works: =inspect-version=, =contract-version=, =.input=, =fclearstack=
+  (1.0 has its own, so the =[undefined]= guard keeps it), =log-off=,
+  =log-where=, =log-id=, =log-on= and its hello record;
+- errors, "Invalid memory address", then exit 139 (SIGSEGV): every word
+  that walks the return stack, which is =.stacks=, =.rs=, =rs-full=, =~~~=,
+  =all-~~= =~~= and every snapshot record.  The crash is in =colon-xt?=:
+  1.0's =>head-noprim= returns its argument (an nt is the xt now), so on
+  an arbitrary cell it hands =name>int= a non-header and dies;
+- errors, "Cannot allocate memory" in =patch-colon=: =dbg-fix=, =dbg+=, in
+  =gforth=, =gforth-fast= and =gforth-ditc=.  Rolling =dp= back into an
+  existing body and =compile,=-ing there trips 1.0's peephole bitmap;
+- wrong: =dbg-fix= / =dbg+= in =gforth-itc= patch without error, but =dbg t=
+  prints "(not a colon definition: stepped over)" and just runs =t=: no
+  step is shown, because =colon-xt?= tests =xt @ docol: == and in 1.0 a
+  colon word's code field cell is not =docol:= (=>code-address= is);
+- wrong: =.cs= prints its header and no items: 1.0's control-flow stack
+  items are tagged with addresses, not 0.7.3's small integers 0 to 5.
+
+The JSON writer itself is unchanged: =json-data=, =json-float= and
+=json-input= on 1.0.x print byte-for-byte what they print on 0.7.3
+(=json-parts=), including =-0.0=, =1e300= and 17-digit floats.
+
+** 2026-11-22 the log, and the goldens
+
+Correction to the entry above: its "works" list named =log-off=,
+=log-where= and =log-id= before any probe had used them without a
+snapshot (the =log= probe dies at its first =.stacks=).  The new
+=log-plain= probe (=log-on=, =log-id=, =log-where=, =log-off=, =log-on=
+=log-off=, no snapshot) now does: unshimmed it fails like every probe
+(exit 1, the load error); shimmed it works in all eight engine builds, and
+writes two hello records.
+
+*Log (gate 4, I-1).*  Unshimmed, 1.0.x writes no log at all: =log-on= is
+never defined.  Shimmed, 24 =stacks.jsonl= files were written (=log=,
+=log-tilde=, =log-plain= × 4 engines × 2 versions), 32 lines, every one a
+hello record and every one the same apart from =t=:
+={"v":1,"event":"hello","t":T,"gforth":"1.0.0","inspect":"0.1.1","contract":"1.1"}=
+(="1.0.1"= for 1.0.1).  All 32 validate against
+=contract/stacks-log.schema.json= (=test/validate.py=, jsonschema and the
+built-in validator), all begin with ={"v":1,= (I-1, D-38), and
+=test/consumer.py 1.1= accepts every file.  =hello.gforth= is gforth's own
+=version-string=, so a consumer can see a 1.0 producer for what it is.
+No snapshot record was ever written on 1.0: every path to one walks the
+return stack and crashes first, so whether a 1.0 snapshot would validate
+is not measured.  The parts that do not walk the return stack print
+exactly what 0.7.3 prints (=json-parts=).
+
+*Goldens.*  =test/run.sh -e "gforth gforth-fast gforth-itc gforth-ditc"=
+with the wrapped 1.0 engines first on =PATH= (it runs =env/inspect.fs=,
+the same blob =82860519a7d3=): 0 of 148 cases pass on 1.0.0, 0 of 148 on
+1.0.1 (37 tests × 4 engines; =idle= skipped).  144 fail with "exit status
+1, want 0" and a diff that starts at the load error; the other 4 are
+=demo= (=noinspect=, it loads =env/brk.fs=), which dies with "Invalid
+memory address" and exit 139 at its first =brk=: =call-c= on a raw
+=lib-sym= address no longer works.  Control, same tree, stock 0.7.3: 111
+of 111 pass.  Per case: =results/goldens.tsv=.
+
+The runner would not have caught 1.0's redefinitions: it looks for
+=^redefined =, 0.7.3's format, and 1.0 writes =file:line:col: warning:
+redefined .stacks=.  That only matters once the load gets past line 73.
+
+*Isolation.*  Probes, goldens and reproducers all ran with their own
+temp dir as cwd, =HOME= and =XDG_STATE_HOME=; =probe.sh= found no stray
+=stacks.jsonl= outside the run's own =GFORTH_INSPECT_LOG_DIR=.
+
+** 2026-11-22 property tests: how they were pointed at 1.0
+
+=gmake -C pbt check= cannot be pointed at 1.0 by =PATH= alone.
+=pbt/gforth_run.py= runs whichever =gforth= / =gforth-fast= / =gforth-itc=
+its environment's =PATH= finds, but =uv run= puts the base interpreter's
+directory ahead of the caller's =PATH=, and Homebrew's python lives in
+=/opt/homebrew/bin=, beside Homebrew's gforth 0.7.3.  The first attempt
+therefore ran 0.7.3 under a 1.0 label (its smoke record said
+="gforth":"0.7.3"=) and was stopped and discarded.  =UV_PYTHON= set to the
+Cellar path did not help; uv's own 3.14.0a5 avoids the prepend but
+breaks Hypothesis (=KeyError: 'LOAD_FAST_BORROW'=).
+
+Route used: a private venv from Homebrew's python 3.14.8 with
+hypothesis 6.170.17, jsonschema 4.26.0 and pytest 9.2.0 (the versions
+=uv run --with= resolves), and the Makefile's own command line run from
+=pbt/= with the root Makefile's =PBT_ENV= (=INSPECT_FS=, =SCHEMA_JSON=,
+=INSPECT_REF=HEAD=), the wrapped 1.0 engines first on =PATH=,
+=--hypothesis-seed=10=, default profile, plus the smoke step
+(=python gforth_run.py=).  No shared =pbt/= file was changed.  A second
+mistake, also caught: the run loop exported =PATH=, so its "0.7.3
+control" inherited the 1.0 wrappers; it was stopped and rerun with a
+clean =PATH= (entry below).
+
+| run   | smoke                         | pytest                                         |
+|-------+-------------------------------+------------------------------------------------|
+| 1.0.0 | rc 1, no record               | 87 failed, 11 passed, 3 skipped, 1 xfailed (5:18) |
+| 1.0.1 | rc 1, no record               | 89 failed, 9 passed, 3 skipped, 1 xfailed (5:31)  |
+
+The tests that do not fail are the ones that never load inspect.fs or
+only report: 002's three =test_census_*=, three of 003's five (003 runs
+plain gforth, no inspector: its depth sweep still meets the agreement
+threshold on 1.0, but two of its 0.7.3-specific classifications fail),
+004's =test_zz_volume= and =test_default_location_reference_consumer=,
+005's =test_patched_copy= ×3, and 005's =test_uncoordinated_race=, which
+is evidence only and differs between the two runs (all four refs pass
+on 1.0.0, only =patched= and =fixed= on 1.0.1).  Every test that loads inspect.fs and checks a record
+fails, on the load error.  The shared =pbt/= refs (=18ebe2d=, =harden=,
+the patched copy) fail the same way: no inspect.fs version tested there
+loads on 1.0.
+
+Control, same venv route, stock 0.7.3, clean =PATH=, seed 10: smoke rc 0
+with a hello and a snapshot record; pytest 98 passed, 3 skipped, 1
+xfailed (4:36), the repository's known baseline.  So the route itself is
+sound, and the 1.0 failures are 1.0's.
+
+** 2026-11-22 results table
+
+1.0.0 and 1.0.1 gave the same verdict on every probe, golden, reproducer
+and internals row (=results/*.tsv=), so one column covers both.
+"plain" is v0.1.1 as released; "shim" is the diagnostic second layer
+(=shim-1.0.fs=, not a fix).  E = errors, W = wrong output, ok = same
+output as 0.7.3.  The 0.7.3 column is the calibration (3 engines).
+
+| word / test                         | 0.7.3 | 1.0.x plain, all 4 engines | shim gforth | shim gforth-fast | shim gforth-itc | shim gforth-ditc |
+|-------------------------------------+-------+----------------------------+-------------+------------------+-----------------+------------------|
+| load (=gforth inspect.fs -e bye=)    | ok    | E: inspect.fs:73 =interpret1=  | ok, 9 warnings | ok, 9 warnings | ok, 9 warnings | ok, 9 warnings |
+| =inspect-version=                    | ok    | E (load)                   | ok          | ok               | ok              | ok               |
+| =contract-version=                   | ok    | E (load)                   | ok          | ok               | ok              | ok               |
+| =.input=                             | ok    | E (load)                   | ok          | ok               | ok              | ok               |
+| =fclearstack=                        | ok    | E (load)                   | ok (1.0's own) | ok            | ok              | ok               |
+| =log-on= =log-id= =log-where= =log-off= | ok | E (load)                   | ok          | ok               | ok              | ok               |
+| =.stacks=                            | ok    | E (load)                   | E: SIGSEGV  | E: SIGSEGV       | E: SIGSEGV      | E: SIGSEGV       |
+| =.rs=                                | ok    | E (load)                   | E: SIGSEGV  | E: SIGSEGV       | E: SIGSEGV      | E: SIGSEGV       |
+| =rs-full=                            | ok    | E (load)                   | E: SIGSEGV  | E: SIGSEGV       | E: SIGSEGV      | E: SIGSEGV       |
+| =~~~=                                | ok    | E (load)                   | E: SIGSEGV  | E: SIGSEGV       | E: SIGSEGV      | E: SIGSEGV       |
+| =all-~~= then =~~=                   | ok    | E (load)                   | E: SIGSEGV  | E: SIGSEGV       | E: SIGSEGV      | E: SIGSEGV       |
+| snapshot record (=log=, =log-tilde=) | ok    | E (load)                   | E: SIGSEGV, hello only | E: SIGSEGV, hello only | E: SIGSEGV, hello only | E: SIGSEGV, hello only |
+| =.cs=                                | ok    | E (load)                   | W: no items | W: no items      | W: no items     | W: no items      |
+| =dbg-fix= + =dbg=                    | ok    | E (load)                   | E: patch-colon | E: patch-colon | W: no steps    | E: patch-colon   |
+| =dbg+= + =dbg=                       | ok    | E (load)                   | E: patch-colon | E: patch-colon | W: no steps    | E: patch-colon   |
+| =dbg+=, =n= into a colon word        | ok    | E (load)                   | E: patch-colon | E: patch-colon | W: no steps    | E: patch-colon   |
+| JSON writer parts (=json-parts=)     | ok    | E (load)                   | ok          | ok               | ok              | ok               |
+| goldens, 37 tests                   | 37/37 | 0/37 each                  | not run     | not run          | not run         | not run          |
+| =pbt= check, 102 collected            | 98 pass, 3 skip, 1 xfail | 87 (1.0.0) / 89 (1.0.1) fail, all engines | not run | | | |
+| log lines: schema, I-1, consumer    | ok    | no log                     | 32/32 hello lines ok, no snapshot | | | |
+
+The nine shimmed load warnings: =name>int is obsolete= (1), =.name is
+obsolete= (4), ="0." is a double-cell integer= (2), =redefined .stacks=
+with its "original location" line (2).
+
+** 2026-11-22 the breaks, with reproducers
+
+Each reproducer runs on plain gforth 1.0.x, without inspect.fs
+(=repro.sh=; outputs on 0.7.3, 1.0.0 and 1.0.1 in =results/repro.tsv=).
+=gforth= stands for any engine unless noted.
+
+| id  | 0.7.3 internal                            | what 1.0 does                                                    | hits                                    | reproducer                                                                 |
+|-----+-------------------------------------------+------------------------------------------------------------------+-----------------------------------------+----------------------------------------------------------------------------|
+| R1  | =interpret1=                               | gone (=interpret=, =interpret2=)                                    | load stops at inspect.fs:73             | =gforth -e "' interpret1 drop bye"= → Undefined word                       |
+| R2  | =handler-intro,=                           | gone                                                             | same line, after R1                     | =gforth -e "' handler-intro, drop bye"= → Undefined word                    |
+| R3  | =.debugline-stderr=                        | gone (=.debugline-directed=)                                       | =past-debugline=, =~~-where=              | =gforth -e "' .debugline-stderr drop bye"= → Undefined word                 |
+| R4  | debug.fs internals in =forth=              | moved to the =see-voc= wordlist (13 words)                         | everything from line 425 on             | =gforth -e 's" DebugLoop" find-name 0<> . bye'= → =0= (0.7.3: =-1=)          |
+| R5  | =>head-noprim= finds the header before an xt | an nt is the xt: =>head-noprim= returns its argument              | =colon-xt?= → =name>int= on a non-header: SIGSEGV in every return-stack walk | =gforth -e ": t ; ' t >head-noprim ' t = . bye"= → =-1= (0.7.3: =0=) |
+| R6  | a colon word's code field holds =docol:=    | it does not; =>code-address= still gives =docol:=                    | =colon-xt?= is false for real colon words, so =nestXT+= steps over them | =gforth -e ": t ; ' t @ docol: = . bye"= → =0= (0.7.3: =-1=) |
+| R7  | =threaded>name= of a threaded cell         | =0= in =gforth=, =gforth-fast= (direct-threaded); still found in =gforth-itc= | =instruction?= / =bp-site= (not reached: R9 stops first) | =gforth -e ": t 1+ ; ' t >body @ threaded>name 0<> . bye"= → =0= (0.7.3: =-1=) |
+| R8  | stock =dbg= runs (and crashes) everywhere | refuses outside ITC: "Only works on gforth-itc"                  | stock =dbg=, which =dbg-fix= patches but cannot reach | =gforth -e ": t ; dbg t bye"= → error (=gforth-itc=: runs)             |
+| R9  | =dp != back into a body, then =compile,=     | =compile,= runs the peephole optimiser, which faults outside the current definition | =patch-colon=, so =dbg-fix= and =dbg+= (not in =gforth-itc=) | =gforth -e ": t 1 2 + ; ' t >body here >r dp ! ' noop compile, r> dp ! bye"= → Invalid memory address |
+| R10 | control-flow items tagged 0 to 5           | tagged with an address                                           | =.cs= decodes nothing                     | =gforth -e ": t 1 IF [ dup . ] THEN ; bye"= → an address (0.7.3: =1=)        |
+| R11 | =.debugline ( nfile nline -- )=            | gets one cell, a view                                            | =all-~~='s =~~-line= takes one cell too many (not reached: R5 stops first) | =gforth -e ": x 2drop ; ' x is .debugline : t 7 ~~ ; t depth . bye"= → =0= (0.7.3: =1=) |
+| R12 | no =.stacks= in the image                  | =status-line.fs= defines =.stacks=                                   | =redefined .stacks= warning              | =gforth -e 's" .stacks" find-name 0<> . bye'= → =-1= (0.7.3: =0=)            |
+| R13 | =name>int=, =.name=                          | obsolete: a warning at every use                                 | five load warnings                      | =gforth -e ": t ['] dup >name name>int drop ; bye"= → warning             |
+| R14 | =0.= is quiet                               | warns that =0.= is a double                                        | two load warnings (=set-bp2=, =restore-bp2=) | =gforth -e ": t 0. 2drop ; bye"= → warning                              |
+| R15 | =call-c= on a =lib-sym= address (=env/brk.fs=) | crashes                                                       | the =demo= golden (=noinspect=, not inspect.fs) | =gforth -e 's" env/brk.fs" included brk bye'= → Invalid memory address |
+
+Not the inspector's: on macOS, a 1.0 install prints two =dlopen= errors
+at every start with a fresh HOME (entry above, "builds"); and
+=test/run.sh= checks for =^redefined =, which 1.0's warning format does
+not match.
+
+** 2026-11-22 verdict
+
+Against the gate:
+1. Provenance: met.  SHA-256 of both tarballs, OpenPGP signatures good
+   on a key fetched by its fingerprint, no published checksum, build
+   route macOS with a header shim, =version-string= 1.0.0 / 1.0.1 in
+   all four engines, inspector blob =82860519a7d3=.
+2. Isolation: met.  The real =~/.local/state/gforth-inspect/stacks.jsonl=
+   is still 2600 bytes, mtime 1795358250, after every run.  One leak
+   outside the runs themselves: building 1.0 (=gmake=, which runs the new
+   gforth with the real HOME) created =~/.cache/gforth/arm64/libcc-tmp/=;
+   it held only the build's libcc objects, did not exist before, and was
+   removed.  Building gforth 1.0 from source writes there; a later
+   builder should set HOME for the build too.
+3. Calibration: met.  18 of 18 probes "works" on 0.7.3, all three
+   engines (16 at first; =json-parts= and =log-plain= were added later and
+   run there too); goldens 111/111 and pbt 98/3/1 on 0.7.3 by the same routes.
+4. Measurements: all taken, for 1.0.0 and 1.0.1 and every engine the
+   build gives (four: =gforth-ditc= too).
+5. Hypothesis: *refuted.*  The first clause fails: v0.1.1 does not load
+   on 1.0.x in any engine, so no word is usable and no log is written.
+   The log clause is vacuous as released; under the diagnostic shim it
+   holds for what can be written (32 hello lines valid, I-1 kept,
+   consumer accepts), but no snapshot record can be written, because
+   every one walks the return stack.  The last clause holds, and goes
+   further than predicted: under the shim =dbg-fix= / =dbg+= fail in all
+   four engines (an error in three, no stepping in =gforth-itc=), and
+   the return-stack words do not just print wrong frames, they kill
+   gforth with SIGSEGV.
+
+Against the prediction: item 1 (load refuted) held, but the first stop
+was line 73 (=interpret1=), not line 39 (=>head-noprim=, which exists but
+changed meaning, R5).  Item 2 held in its "no load" branch: nothing past
+the stop is defined, and in fact nothing at all runs, because gforth (either version) drops
+the rest of the command line after an error.  Item 3 held: 0 of 37 goldens pass in every
+1.0 engine.  Item 4: the runner can be pointed at 1.0, but not by =PATH=
+through =uv run=; it fails as predicted.  Item 5: no log, as predicted for
+an unloaded =log-on=; =hello.gforth= is ="1.0.0"= / ="1.0.1"=.  Item 6:
+four engines, not three (=gforth-ditc= as predicted), same load result in
+each.
+
+For the owner's question, "does it work on 1.0": no, not at all, not
+even partly.  A 0.7.3-only notice at load (v0.2.0's plan) is the right
+size of answer; nothing here suggests a 1.0 user gets anything useful
+from v0.1.1 before that notice exists.
+
+** 2026-11-22 review: harness fixes, and a rerun that changes no verdict
+
+Rebased onto main; the hypothesis and prediction commit is now
+=3f316a2= (it was =01c5cc4= before the rebase).  =/code-review high= of
+the branch found ten faults in the harness, none in the results.  Each
+is fixed in the scripts, and everything was rerun with them on the same
+builds (0.7.3, 1.0.0, 1.0.1).  The Gate above is unchanged.
+
+- =summarize.sh= judged errors by 1.0's wording only: 0.7.3's
+  "probe.fs:3: Stack underflow" has no "error" in it.  It now also counts
+  the =>>>word<<<= line and =Backtrace:= that both versions print after
+  any error.  (Counting every =file:line:= line instead would be wrong:
+  =~~= prints "probe.fs:3: in t" to stderr on purpose.)
+- =summarize.sh= compared stdout only.  It now compares stdout, stderr
+  (warning and blank lines dropped; warnings stay in the last column)
+  and the log section, and says =nobase= when the reference has no
+  output for that probe and engine instead of comparing with nothing.
+- Gate 3 could not fail: the 0.7.3 rows were 0.7.3 against itself.
+  =calibrate.sh= plants faults in a real 0.7.3 run (an underflow in
+  stderr with exit 0, a non-zero exit, a changed stdout digit, a changed
+  =~~= line in stderr, a changed log value, a probe with no base, a real
+  underflowing probe) and checks each verdict; a warning line and an
+  unchanged copy must stay =works=.  With the fixed =summarize.sh=: all
+  nine as expected.  With the =summarize.sh= the results were first
+  made with, it goes red on four: the stderr underflow, the stderr and
+  log changes come out =works=, the missing base =wrong=.
+- =probe.sh=, =internals.sh= and =repro.sh= now run with =pipefail= and
+  stop on a bad ref or a failed =mask.pl=; =internals.sh= also stops when
+  it extracts no words.  A mistyped =INSPECT_REF= used to give an empty
+  table and exit 0.
+- Isolation now covers =XDG_CACHE_HOME=, =XDG_DATA_HOME= and
+  =XDG_CONFIG_HOME= too, in every run of all three scripts.
+- =internals.sh='s tokenizer did not strip =s\"= or =.(= and was
+  case-sensitive; =env/inspect.fs= after v0.1.1 has an =s\"=, which would
+  have broken =check.fs=.  Fixed, and a token still holding a quote is
+  skipped with a message on stderr.  v0.1.1 has neither form, so its
+  197-word list is unchanged; =INSPECT_REF=HEAD= now gives 224 words, all
+  found on 0.7.3.
+- R15 loaded the working tree's =env/brk.fs= by absolute path, so its
+  column number encoded the checkout path.  =repro.sh= now copies
+  =$INSPECT_REF:env/brk.fs= (default v0.1.1) into the run's temp dir and
+  loads it by relative name.  The R15 reproducer in the breaks table
+  above (=s" env/brk.fs" included=) works from the repository root only.
+- The committed tables had formats no script produced (per-version
+  columns, the =1.0.x+see-voc= column, =version engine ID output= rows).
+  =collect.sh= now makes all three from the runs; =internals.sh -v= is
+  the =also see-voc= pass.  The rerun was
+  =collect.sh OUT 0.7.3= 1.0.0=WRAP0 1.0.1=WRAP1=, where =WRAPn= is the
+  directory of the =libccnameddir= wrappers for that build.
+- Does =also see-voc= in =shim-1.0.fs= shadow anything?  Measured on
+  1.0.0 and 1.0.1: =see-voc= has 171 words and none of them is also in
+  =forth-wordlist=.  Seventeen of them appear as tokens in v0.1.1's
+  inspect.fs: the 13 it looks for there, and =body=, =breaker=,
+  =get-next= and =nesting=, which occur only in comments and strings.
+  So the shim changes no word inspect.fs compiles beyond the 16 names
+  it exists to resolve.
+
+Rerun against the committed tables: =probes.tsv= (343 rows, under the
+stricter comparison) and =internals.tsv= are the same, the latter
+byte for byte.  =repro.tsv= differs in R10, which prints an address and
+differs on every run, and in R15's column (=*args*:2:89= became
+=*args*:2:21=, the same "Invalid memory address"); the R15 rows are
+updated, R10's are left as first recorded.  No verdict above changes.

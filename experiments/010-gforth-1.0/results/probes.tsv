@@ -1,0 +1,343 @@
+run	engine	probe	exit	verdict	first error or warning
+0.7.3	gforth-fast	all-tilde	0	works	
+0.7.3	gforth-fast	contract-version	0	works	
+0.7.3	gforth-fast	cs	0	works	
+0.7.3	gforth-fast	dbg-fix	0	works	
+0.7.3	gforth-fast	dbg-nest	0	works	
+0.7.3	gforth-fast	dbg-plus	0	works	
+0.7.3	gforth-fast	fclearstack	0	works	
+0.7.3	gforth-fast	input	0	works	
+0.7.3	gforth-fast	inspect-version	0	works	
+0.7.3	gforth-fast	json-parts	0	works	
+0.7.3	gforth-fast	load	0	works	
+0.7.3	gforth-fast	log-plain	0	works	
+0.7.3	gforth-fast	log-tilde	0	works	
+0.7.3	gforth-fast	log	0	works	
+0.7.3	gforth-fast	rs-full	0	works	
+0.7.3	gforth-fast	rs	0	works	
+0.7.3	gforth-fast	stacks	0	works	
+0.7.3	gforth-fast	tilde3	0	works	
+0.7.3	gforth-itc	all-tilde	0	works	
+0.7.3	gforth-itc	contract-version	0	works	
+0.7.3	gforth-itc	cs	0	works	
+0.7.3	gforth-itc	dbg-fix	0	works	
+0.7.3	gforth-itc	dbg-nest	0	works	
+0.7.3	gforth-itc	dbg-plus	0	works	
+0.7.3	gforth-itc	fclearstack	0	works	
+0.7.3	gforth-itc	input	0	works	
+0.7.3	gforth-itc	inspect-version	0	works	
+0.7.3	gforth-itc	json-parts	0	works	
+0.7.3	gforth-itc	load	0	works	
+0.7.3	gforth-itc	log-plain	0	works	
+0.7.3	gforth-itc	log-tilde	0	works	
+0.7.3	gforth-itc	log	0	works	
+0.7.3	gforth-itc	rs-full	0	works	
+0.7.3	gforth-itc	rs	0	works	
+0.7.3	gforth-itc	stacks	0	works	
+0.7.3	gforth-itc	tilde3	0	works	
+0.7.3	gforth	all-tilde	0	works	
+0.7.3	gforth	contract-version	0	works	
+0.7.3	gforth	cs	0	works	
+0.7.3	gforth	dbg-fix	0	works	
+0.7.3	gforth	dbg-nest	0	works	
+0.7.3	gforth	dbg-plus	0	works	
+0.7.3	gforth	fclearstack	0	works	
+0.7.3	gforth	input	0	works	
+0.7.3	gforth	inspect-version	0	works	
+0.7.3	gforth	json-parts	0	works	
+0.7.3	gforth	load	0	works	
+0.7.3	gforth	log-plain	0	works	
+0.7.3	gforth	log-tilde	0	works	
+0.7.3	gforth	log	0	works	
+0.7.3	gforth	rs-full	0	works	
+0.7.3	gforth	rs	0	works	
+0.7.3	gforth	stacks	0	works	
+0.7.3	gforth	tilde3	0	works	
+1.0.0	gforth-ditc	all-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	contract-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	cs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	dbg-fix	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	dbg-nest	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	dbg-plus	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	fclearstack	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	input	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	log	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	rs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	stacks	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-ditc	tilde3	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	all-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	contract-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	cs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	dbg-fix	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	dbg-nest	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	dbg-plus	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	fclearstack	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	input	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	log	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	rs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	stacks	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-fast	tilde3	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	all-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	contract-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	cs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	dbg-fix	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	dbg-nest	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	dbg-plus	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	fclearstack	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	input	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	log	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	rs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	stacks	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth-itc	tilde3	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	all-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	contract-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	cs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	dbg-fix	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	dbg-nest	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	dbg-plus	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	fclearstack	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	input	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	log	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	rs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	stacks	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0	gforth	tilde3	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	all-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	contract-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	cs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	dbg-fix	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	dbg-nest	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	dbg-plus	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	fclearstack	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	input	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	log	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	rs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	stacks	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-ditc	tilde3	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	all-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	contract-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	cs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	dbg-fix	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	dbg-nest	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	dbg-plus	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	fclearstack	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	input	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	log	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	rs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	stacks	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-fast	tilde3	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	all-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	contract-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	cs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	dbg-fix	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	dbg-nest	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	dbg-plus	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	fclearstack	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	input	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	log	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	rs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	stacks	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth-itc	tilde3	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	all-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	contract-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	cs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	dbg-fix	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	dbg-nest	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	dbg-plus	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	fclearstack	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	input	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	inspect-version	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	json-parts	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	load	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	log-plain	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	log-tilde	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	log	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	rs-full	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	rs	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	stacks	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.1	gforth	tilde3	1	errors	inspect.fs:73:13: error: Undefined word
+1.0.0-shim	gforth-ditc	all-tilde	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth-ditc	contract-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-ditc	cs	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-ditc	dbg-fix	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.0-shim	gforth-ditc	dbg-nest	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.0-shim	gforth-ditc	dbg-plus	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.0-shim	gforth-ditc	fclearstack	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-ditc	input	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-ditc	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-ditc	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-ditc	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-ditc	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-ditc	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
+1.0.0-shim	gforth-ditc	log	139	errors	probe.fs:5:10: error: Invalid memory address
+1.0.0-shim	gforth-ditc	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
+1.0.0-shim	gforth-ditc	rs	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth-ditc	stacks	139	errors	probe.fs:4:20: error: Invalid memory address
+1.0.0-shim	gforth-ditc	tilde3	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth-fast	all-tilde	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth-fast	contract-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-fast	cs	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-fast	dbg-fix	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.0-shim	gforth-fast	dbg-nest	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.0-shim	gforth-fast	dbg-plus	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.0-shim	gforth-fast	fclearstack	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-fast	input	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-fast	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-fast	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-fast	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-fast	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-fast	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
+1.0.0-shim	gforth-fast	log	139	errors	probe.fs:5:10: error: Invalid memory address
+1.0.0-shim	gforth-fast	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
+1.0.0-shim	gforth-fast	rs	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth-fast	stacks	139	errors	probe.fs:4:20: error: Invalid memory address
+1.0.0-shim	gforth-fast	tilde3	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth-itc	all-tilde	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth-itc	contract-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	cs	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	dbg-fix	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	dbg-nest	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	dbg-plus	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	fclearstack	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	input	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth-itc	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
+1.0.0-shim	gforth-itc	log	139	errors	probe.fs:5:10: error: Invalid memory address
+1.0.0-shim	gforth-itc	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
+1.0.0-shim	gforth-itc	rs	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth-itc	stacks	139	errors	probe.fs:4:20: error: Invalid memory address
+1.0.0-shim	gforth-itc	tilde3	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth	all-tilde	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth	contract-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth	cs	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth	dbg-fix	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.0-shim	gforth	dbg-nest	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.0-shim	gforth	dbg-plus	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.0-shim	gforth	fclearstack	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth	input	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.0-shim	gforth	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
+1.0.0-shim	gforth	log	139	errors	probe.fs:5:10: error: Invalid memory address
+1.0.0-shim	gforth	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
+1.0.0-shim	gforth	rs	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.0-shim	gforth	stacks	139	errors	probe.fs:4:20: error: Invalid memory address
+1.0.0-shim	gforth	tilde3	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth-ditc	all-tilde	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth-ditc	contract-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-ditc	cs	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-ditc	dbg-fix	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.1-shim	gforth-ditc	dbg-nest	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.1-shim	gforth-ditc	dbg-plus	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.1-shim	gforth-ditc	fclearstack	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-ditc	input	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-ditc	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-ditc	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-ditc	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-ditc	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-ditc	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
+1.0.1-shim	gforth-ditc	log	139	errors	probe.fs:5:10: error: Invalid memory address
+1.0.1-shim	gforth-ditc	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
+1.0.1-shim	gforth-ditc	rs	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth-ditc	stacks	139	errors	probe.fs:4:20: error: Invalid memory address
+1.0.1-shim	gforth-ditc	tilde3	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth-fast	all-tilde	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth-fast	contract-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-fast	cs	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-fast	dbg-fix	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.1-shim	gforth-fast	dbg-nest	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.1-shim	gforth-fast	dbg-plus	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.1-shim	gforth-fast	fclearstack	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-fast	input	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-fast	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-fast	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-fast	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-fast	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-fast	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
+1.0.1-shim	gforth-fast	log	139	errors	probe.fs:5:10: error: Invalid memory address
+1.0.1-shim	gforth-fast	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
+1.0.1-shim	gforth-fast	rs	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth-fast	stacks	139	errors	probe.fs:4:20: error: Invalid memory address
+1.0.1-shim	gforth-fast	tilde3	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth-itc	all-tilde	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth-itc	contract-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	cs	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	dbg-fix	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	dbg-nest	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	dbg-plus	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	fclearstack	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	input	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth-itc	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
+1.0.1-shim	gforth-itc	log	139	errors	probe.fs:5:10: error: Invalid memory address
+1.0.1-shim	gforth-itc	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
+1.0.1-shim	gforth-itc	rs	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth-itc	stacks	139	errors	probe.fs:4:20: error: Invalid memory address
+1.0.1-shim	gforth-itc	tilde3	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth	all-tilde	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth	contract-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth	cs	0	wrong	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth	dbg-fix	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.1-shim	gforth	dbg-nest	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.1-shim	gforth	dbg-plus	1	errors	probe.fs:5:1: error: Cannot allocate memory
+1.0.1-shim	gforth	fclearstack	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth	input	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth	inspect-version	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth	json-parts	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth	load	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth	log-plain	0	works	inspect.fs:40:5: warning: name>int is obsolete
+1.0.1-shim	gforth	log-tilde	139	errors	probe.fs:4:15: error: Invalid memory address
+1.0.1-shim	gforth	log	139	errors	probe.fs:5:10: error: Invalid memory address
+1.0.1-shim	gforth	rs-full	139	errors	probe.fs:3:12: error: Invalid memory address
+1.0.1-shim	gforth	rs	139	errors	probe.fs:4:1: error: Invalid memory address
+1.0.1-shim	gforth	stacks	139	errors	probe.fs:4:20: error: Invalid memory address
+1.0.1-shim	gforth	tilde3	139	errors	probe.fs:4:1: error: Invalid memory address
