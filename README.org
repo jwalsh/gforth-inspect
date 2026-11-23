@@ -110,7 +110,7 @@ engine fuses into superinstructions.
 #+begin_example
 $ GFORTH_INSPECT_LOG_DIR=logs gforth inspect.fs -e 'log-on 1 2 -3 1.5e .stacks log-off bye' >/dev/null
 $ cat logs/stacks.jsonl
-{"v":1,"event":"hello","t":1795384752,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
+{"v":1,"event":"hello","t":1795384752,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
 {"v":1,"event":"snapshot","t":1795384752,"where":null,"src":null,"data":[1,2,-3],"float":[1.5000000000000000E0 ],"rs":[],"input":{"file":"*OS command line*","line":-1,"in":27,"text":"log-on 1 2 -3 1.5e .stacks log-off bye"}}
 #+end_example
 

@@ -3,5 +3,5 @@
 $TMP/home/.local/state/gforth-inspect/golden/checkout/main/stacks.jsonl
 ## stderr
 ## log home/.local/state/gforth-inspect/golden/checkout/main/stacks.jsonl
-{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.0","contract":"1.1"}
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
 ## exit 0

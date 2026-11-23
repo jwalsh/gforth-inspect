@@ -1,4 +1,4 @@
-\ gforth-inspect v0.3.0
+\ gforth-inspect v0.3.1
 \ stacks-log schema v1
 \ SPDX-License-Identifier: GPL-3.0-or-later
 \
@@ -18,7 +18,7 @@
 \             including n (nest) into colon words
 \   dbg+      dbg-fix, and print .s f.s and return words at every step
 \   log-id    ( c-addr u -- )  tag following snapshots with "id"; s" " log-id clears
-\   inspect-version  ( -- c-addr u )  "0.3.0"
+\   inspect-version  ( -- c-addr u )  "0.3.1"
 \ The hello record announces "contract":"1.1" (contract/stacks-log.org).
 \
 \ Works in gforth, gforth-fast and gforth-itc 0.7.3.  The words, their stack
@@ -52,7 +52,7 @@ version-string s" 0.7.3" compare [IF]
 \ ~~ (debugs.fs) and dbg (debug.fs) are already in the 0.7.3 image;
 \ REQUIRE-ing them again would redefine half the system.
 
-: inspect-version ( -- c-addr u ) s" 0.3.0" ;
+: inspect-version ( -- c-addr u ) s" 0.3.1" ;
 
 \ --- naming addresses ------------------------------------------------
 
