@@ -56,8 +56,9 @@ not break. It needs a 64-bit gforth 0.7.3.
 the checksums pass:
 
 #+begin_src sh
-new=$(mktemp -d) && gh release download {tag} -R {repo} -D "$new" \\
-  && (cd "$new" && shasum -a 256 -c SHA256SUMS) \\
+url=https://github.com/{repo}/releases/download/{tag} && new=$(mktemp -d) \\
+  && (cd "$new" && curl -fsSL -O "$url/inspect.fs" -O "$url/SHA256SUMS" \\
+      && shasum -a 256 -c --ignore-missing SHA256SUMS) \\
   && mkdir -p vendor && rm -rf vendor/gforth-inspect && mv "$new" vendor/gforth-inspect
 #+end_src
 
