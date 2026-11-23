@@ -30,7 +30,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-BB_REF = "0dd6d88"  # PR #28 head (exp/007-bb-consumers)
+BB_REF = "977eab0"  # exp/007-bb-consumers (PR #28)
 
 
 @dataclass

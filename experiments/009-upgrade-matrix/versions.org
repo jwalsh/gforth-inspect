@@ -9,12 +9,12 @@ not apply. Vc: counts only; its blob is in the local manifest, never here.
 
 | key | source          | inspect.fs blob | schema blob  | =hello.inspect= | =hello.contract= | =v= | honours =GFORTH_INSPECT_LOG_DIR= | release assets at source |
 |-----+-----------------+-----------------+--------------+---------------+----------------+-----+--------------------------------+--------------------------|
-| V0  | 18ebe2d         | 76d34db7cd61    | 4c620671e93d | absent        | absent         |   1 | no (legacy default dir)        | 3/6                      |
-| V1  | 6238b09         | 1264ab7e38c0    | aca3d8511c4e | 0.1.0         | absent         |   1 | yes                            | 3/6                      |
-| V2  | 0842eda         | a7e5c141af51    | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 3/6                      |
-| V3  | 7f58633         | 8ee70482686b    | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 3/6                      |
-| V4  | 7dff143         | d1d87b91d38e    | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 3/6                      |
-| V5  | 5aac06a = harden | af95cdf354af   | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 6/6 (at harden's head)   |
+| V0  | b1c162e         | 0c494fbd693a    | b37befc7b00d | absent        | absent         |   1 | no (legacy default dir)        | 3/6                      |
+| V1  | 9528a4c         | 1264ab7e38c0    | aca3d8511c4e | 0.1.0         | absent         |   1 | yes                            | 3/6                      |
+| V2  | 10a0da4         | a7e5c141af51    | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 3/6                      |
+| V3  | 7dbf040         | 8ee70482686b    | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 3/6                      |
+| V4  | d4bf1bb         | d1d87b91d38e    | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 3/6                      |
+| V5  | e645c92 = harden | af95cdf354af   | 0a84bb3b6973 | 0.1.0         | 1.1            |   1 | yes                            | 6/6 (at harden's head)   |
 | Vc  | local copy      | local only      | local only   | absent        | 1.1            |   1 | no (legacy default dir)        | n/a                      |
 | F1a | V5 + release bump | 2434a832f8e3  | 0a84bb3b6973 | 0.5.0         | 1.1            |   1 | yes                            | fixture                  |
 | F1  | V5 + release bump | b19eff2eebe0  | 0a84bb3b6973 | 1.0.0         | 1.1            |   1 | yes                            | fixture                  |
@@ -23,8 +23,8 @@ not apply. Vc: counts only; its blob is in the local manifest, never here.
 | F4  | F3, =data= → =cells= | 1b5777e57e1b | 3a97df268490 | 2.0.0       | 2.0            |   2 | yes                            | fixture                  |
 | F5  | F3, =stacks= object, =task=, events =caps= =bye= | 7014e1f250f7 | b2355d30833b | 10.0.0 | 10.0 | 10 | yes            | fixture                  |
 
-Release assets: the six of RELEASING.org's table. At 18ebe2d through
-7dff143 only =inspect.fs=, the schema and =stacks-log.org= exist;
+Release assets: the six of RELEASING.org's table. At b1c162e through
+d4bf1bb only =inspect.fs=, the schema and =stacks-log.org= exist;
 =CONSUMERS.org=, =CONSUMER-AGENTS.md= and =SKILL.md= arrive on harden later.
 V1 to V5 announce the same =hello.inspect= ="0.1.0"= for five blobs (P1).
 A "fix toward the true value" cannot be made from V5 by substitution

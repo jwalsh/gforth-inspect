@@ -22,15 +22,18 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 
-# key, commit; V5 is the release candidate on harden, pinned by its blob
+# key, commit (rewritten history); V5 is the release candidate on harden, pinned
+# by its blob. None of the six is on a branch any more: pbt/fixtures/refs/<commit>/
+# holds their inspect.fs and schema, read before asking git.
 LEDGER = [
-    ("V0", "18ebe2d"),
-    ("V1", "6238b09"),
-    ("V2", "0842eda"),
-    ("V3", "7f58633"),
-    ("V4", "7dff143"),
-    ("V5", "5aac06a"),
+    ("V0", "b1c162e"),
+    ("V1", "9528a4c"),
+    ("V2", "10a0da4"),
+    ("V3", "7dbf040"),
+    ("V4", "d4bf1bb"),
+    ("V5", "e645c92"),
 ]
+FIXTURE_REFS = REPO / "pbt" / "fixtures" / "refs"
 V5_BLOB = "af95cdf354af"
 SEQUENCE = ["V0", "V1", "V2", "V3", "V4", "V5", "F1", "F2", "F3", "F4", "F5"]
 SKIPS = [("V2", "V5"), ("Vc", "V5"), ("V5", "F4"), ("V5", "F5")]
@@ -57,6 +60,14 @@ class Producer:
 def git(*args: str) -> str:
     return subprocess.run(["git", "-C", str(REPO), *args], check=True,
                           capture_output=True, text=True).stdout
+
+
+def at_ref(commit: str, repo_path: str) -> str:
+    """repo_path at commit: the pinned fixture if there is one, else git."""
+    fixture = FIXTURE_REFS / commit / Path(repo_path).name
+    if fixture.exists():
+        return fixture.read_text()
+    return git("show", f"{commit}:{repo_path}")
 
 
 def blob_of(path: Path) -> str:
@@ -206,8 +217,8 @@ def materialize(work: Path) -> dict[str, Producer]:
                                   "gforth-inspect" if 's" /gforth-inspect"' in text else "legacy")
 
     for key, commit in LEDGER:
-        text = git("show", f"{commit}:env/inspect.fs")
-        schema_text = git("show", f"{commit}:contract/stacks-log.schema.json")
+        text = at_ref(commit, "env/inspect.fs")
+        schema_text = at_ref(commit, "contract/stacks-log.schema.json")
         inspect = "0.1.0" if 's" 0.1.0"' in text else None
         contract = "1.1" if ': contract-version ( -- c-addr u ) s" 1.1"' in text else None
         add(key, commit, text, schema_text, inspect, contract, 1)

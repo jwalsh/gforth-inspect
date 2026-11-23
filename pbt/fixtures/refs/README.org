@@ -1,3 +1,4 @@
-inspect.fs and stacks-log.schema.json at four commits the experiments pin
-(004, 005) that are no longer in this repository's history.
-=gforth_run.inspect_source= and =schema= read =<ref>/= here before asking git.
+inspect.fs and stacks-log.schema.json at commits the experiments pin
+(004, 005, 009) that are no longer in this repository's history.
+=gforth_run.inspect_source= and =schema= read =<ref>/= here before asking
+git, and so does 009's =harness/ledger.py=.

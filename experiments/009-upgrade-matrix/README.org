@@ -40,12 +40,12 @@ parsing, fails early on anything it cannot read.
 
 | key | source                 | blob         | =hello.inspect= | =hello.contract= | role                          |
 |-----+------------------------+--------------+---------------+----------------+-------------------------------|
-| V0  | 18ebe2d                | 76d34db7cd61 | none          | none           | past: course import, contract 1.0 |
-| V1  | 6238b09                | 1264ab7e38c0 | 0.1.0         | none           | past                          |
-| V2  | 31778b8 = 0842eda      | a7e5c141af51 | 0.1.0         | 1.1            | past: pre-#17                 |
-| V3  | 7f58633                | 8ee70482686b | 0.1.0         | 1.1            | past: seek-only #17           |
-| V4  | 7dff143                | d1d87b91d38e | 0.1.0         | 1.1            | past: buffered #17            |
-| V5  | 5aac06a = origin/harden | af95cdf354af | 0.1.0         | 1.1            | current: release candidate    |
+| V0  | b1c162e                | 0c494fbd693a | none          | none           | past: course import, contract 1.0 |
+| V1  | 9528a4c                | 1264ab7e38c0 | 0.1.0         | none           | past                          |
+| V2  | 3055452 = 10a0da4      | a7e5c141af51 | 0.1.0         | 1.1            | past: pre-#17                 |
+| V3  | 7dbf040                | 8ee70482686b | 0.1.0         | 1.1            | past: seek-only #17           |
+| V4  | d4bf1bb                | d1d87b91d38e | 0.1.0         | 1.1            | past: buffered #17            |
+| V5  | e645c92 = harden's head | af95cdf354af | 0.1.0         | 1.1            | current: release candidate    |
 | Vc  | course's local copy    | (hash in local manifest only) | per file | 1.1   | downstream deviation          |
 | F1  | fixture from V5        | built in temp | 0.5.0 / 1.0.0 | 1.1           | future: the release bump      |
 | F2  | fixture from V5        | built in temp | +patch        | 1.1            | future: PATCH, fix toward true value |
@@ -154,8 +154,8 @@ Coordinator. Gate freezes at the first matrix run.
 
 ** 2026-11-22 setup and calibration (gate 1)
 
-Agent. Amendment 3eafa28 (H6, I-1, X11, P12, gate 8) was pulled before
-any run. Hypothesis, Prediction and Gate are as of 3eafa28 and are not
+Agent. Amendment 315610b (H6, I-1, X11, P12, gate 8) was pulled before
+any run. Hypothesis, Prediction and Gate are as of 315610b and are not
 edited after this entry (E-5).
 
 Harness: =harness/= (stdlib, plus =jsonschema= via =uv run --no-project=,
@@ -167,7 +167,7 @@ to =env/= or =contract/= (E-6). Vc is read from the course's main worktree
 only. Its blob and path live in the local manifest outside the repo;
 here it is =local-only=. Consumers are pinned by blob: =stacks.jq=
 3b61e2d3c8bb, =checker.py= b8e9b6d6386e, =mock_server.py= 6c7ca6a10665,
-and the bb twins at PR #28's head 0dd6d88 (=checker.clj= ed86074476b5,
+and the bb twins on PR #28's branch, 977eab0 (=checker.clj= ed86074476b5,
 =mock_server.clj= 40992d834ffa). The course follower is copied to a temp
 dir and reported as counts only.
 
@@ -191,7 +191,7 @@ manifest): unchanged, see the last entry.
 ** 2026-11-22 first matrix run (gate 2, 3)
 
 Command: =uv run -q --no-project --with jsonschema python harness/matrix.py <work>=,
-code at 46edbd1, gforth 0.7.3, jq-1.7.1, bb 1.13.223. Seeds: 9009 for N=0
+code at f9f12db, gforth 0.7.3, jq-1.7.1, bb 1.13.223. Seeds: 9009 for N=0
 and the X-streams; =crc32("<run>-<slot>")= per live slot, in
 =manifest.tsv=. Outputs: =matrix.tsv= (27240 cells), =manifest.tsv=
 (1103 producer runs, keyed by xrid: ref, blob, engine, seed, cwd relative
@@ -266,7 +266,7 @@ Every mismatch, by kind:
 - P7 held. =gh release download v0.1.0= (and v1.0.0 … v10.0.0) gives
   "release not found" for 14/14 transitions. The repo is private and
   has no release. A staged dir, built as RELEASING.org's "by hand"
-  recipe, verifies =SHA256SUMS=. At 18ebe2d–7dff143 it holds only 3 of
+  recipe, verifies =SHA256SUMS=. At b1c162e–d4bf1bb it holds only 3 of
   the 6 assets.
 - P8 held, in this form: Vc differs from all 6 ledger blobs (diff lines
   vs V0..V5: 45, 263, 273, 275, 301, 308). Against V0 there are 8
@@ -277,8 +277,8 @@ Every mismatch, by kind:
   deviation rows #3 and #2. The =hello.contract= change has no issue of
   its own, and #3, the row it sits under, has an example instead of a
   reproducer. So step 3 cannot check that change. Not predicted: Vc keeps
-  18ebe2d's BASE bug (records in hex under =hex=: invalid JSON, wrong
-  cells). 6238b09 fixed it with no issue, so no deviation row can catch
+  b1c162e's BASE bug (records in hex under =hex=: invalid JSON, wrong
+  cells). 9528a4c fixed it with no issue, so no deviation row can catch
   it. #38. Also: Vc ignores =GFORTH_INSPECT_LOG_DIR=, while its own
   follower reads it first.
 - P9 held. Over the live verdict cells, keyed by (order, transition,
@@ -294,7 +294,7 @@ Every mismatch, by kind:
   other, =input.line= ≤ 0, =snapshot.id= cut at 63
   (=coverage-before.tsv=). They are closed by =corpus/17-evaluated-string=
   and =corpus/18-log-id-63=, recorded at the PROVENANCE blob
-  a7e5c141af51 with =INSPECT_REF=0842eda=. =check=, =engines= and
+  a7e5c141af51 with =INSPECT_REF=10a0da4=. =check=, =engines= and
   =calibrate= are green there. =coverage.tsv=: 55 rows × 12 versions, 0
   gaps.
 - P12 held. I-1 holds on real output of V0–V5, Vc and F1–F5 in all three
@@ -314,7 +314,7 @@ that failed as written:
 |--------------------------+-------------------+-------------------------------------------------------------------------------------------------------|
 | 0 I-1 (D-38)             | 0/14              | ran; it stops at F3→F4, F4→F5, V5→F4, V5→F5 on the unknown v, as designed                              |
 | 1 download               | 14/14             | no release (P7); staged: 6/6 assets from V4→V5 on, 3/6 before                                          |
-| 2 change log, bump       | 4/14              | V0→V1 no change-log table; V4→V5 no row for 5aac06a; F3→F4, V5→F4 the bump crashes the checker (#32)  |
+| 2 change log, bump       | 4/14              | V0→V1 no change-log table; V4→V5 no row for e645c92; F3→F4, V5→F4 the bump crashes the checker (#32)  |
 | 3 deviation reproducers  | 14/14             | #1, #2, #17 call =env/inspect.fs= (assets are flat); =<logdir>= placeholder; #17 names the old dir; #3 has no command |
 | 4 own init and tests     | 6/14              | V0→V1 no contract; 5 transitions inside 0.1.0 (P1)                                                     |
 | 5 reply                  | 14/14             | no release thread; replies kept in =h2-replies.txt=                                                    |
@@ -347,7 +347,7 @@ a CONSUMER-AGENTS.md change by PR, in D-9 order (issue first: #34).
   row), #34 (H2: no step runs as written), #35 (=GET /stacks= unversioned),
   #36 (envelope, I-1, compound: D-9 step 1), #37 (corpus check red at
   its default ref; =record.py= cannot record a producer that ignores
-  =GFORTH_INSPECT_LOG_DIR=), #38 (18ebe2d BASE bug, fixed with no issue).
+  =GFORTH_INSPECT_LOG_DIR=), #38 (b1c162e BASE bug, fixed with no issue).
 
 Real logs, after every run: the SHA256 of the real =~/.local/state/gforth-inspect/stacks.jsonl= and of the old default log are the same as before the first run (local manifest); no run wrote outside its sandbox.
 
@@ -375,3 +375,25 @@ Real logs, after every run: the SHA256 of the real =~/.local/state/gforth-inspec
 Gate: 1–9 have their outputs. The gate items that need a contract change
 (5, 6, and 8 as a consumer step) are proposals in the PR body (E-6).
 Every mismatch is a finding with an issue (gate 3).
+
+** 2026-11-22 rebased onto the rewritten history
+
+Agent. The history was rewritten for going public, and this branch was
+rebased onto main. Commit ids in this directory now name the rewritten
+commits: V0–V5 are b1c162e, 9528a4c, 10a0da4, 7dbf040, d4bf1bb, e645c92
+(also in the =source= column of =manifest.tsv=); the amendment is
+315610b, the run's code f9f12db, the bb twins 977eab0 on PR #28's branch
+(same blobs, =checker.clj= ed86074476b5, =mock_server.clj= 40992d834ffa).
+None of V0–V5 is on a branch now (harden was squash-merged in #13), so
+=ledger.py= reads =pbt/fixtures/refs/<commit>/= before asking git, as
+=gforth_run= does; V1, V3, V4 and V5 are added there.
+
+V1–V5 are byte-identical across the rewrite (blobs as in the ledger, V5
+still checked at load). V0 is not: the rewrite replaced the course's
+private directory name in two lines of =inspect.fs= (the =log-on=
+comment and the =log-dir= string) and in the schema's description. V0's
+blobs are now 0c494fbd693a and b37befc7b00d. The first run measured
+76d34db7cd61 and 4c620671e93d, and =manifest.tsv= keeps those as
+recorded. No cell depends on the name: =matrix.py= writes every
+non-contract directory as =legacy=, and V0 never writes to the contract
+path either way. The matrix was not re-run.
