@@ -430,3 +430,67 @@ For the owner's question, "does it work on 1.0": no, not at all, not
 even partly.  A 0.7.3-only notice at load (v0.2.0's plan) is the right
 size of answer; nothing here suggests a 1.0 user gets anything useful
 from v0.1.1 before that notice exists.
+
+** 2026-11-22 review: harness fixes, and a rerun that changes no verdict
+
+Rebased onto main; the hypothesis and prediction commit is now
+=3f316a2= (it was =01c5cc4= before the rebase).  =/code-review high= of
+the branch found ten faults in the harness, none in the results.  Each
+is fixed in the scripts, and everything was rerun with them on the same
+builds (0.7.3, 1.0.0, 1.0.1).  The Gate above is unchanged.
+
+- =summarize.sh= judged errors by 1.0's wording only: 0.7.3's
+  "probe.fs:3: Stack underflow" has no "error" in it.  It now also counts
+  the =>>>word<<<= line and =Backtrace:= that both versions print after
+  any error.  (Counting every =file:line:= line instead would be wrong:
+  =~~= prints "probe.fs:3: in t" to stderr on purpose.)
+- =summarize.sh= compared stdout only.  It now compares stdout, stderr
+  (warning and blank lines dropped; warnings stay in the last column)
+  and the log section, and says =nobase= when the reference has no
+  output for that probe and engine instead of comparing with nothing.
+- Gate 3 could not fail: the 0.7.3 rows were 0.7.3 against itself.
+  =calibrate.sh= plants faults in a real 0.7.3 run (an underflow in
+  stderr with exit 0, a non-zero exit, a changed stdout digit, a changed
+  =~~= line in stderr, a changed log value, a probe with no base, a real
+  underflowing probe) and checks each verdict; a warning line and an
+  unchanged copy must stay =works=.  With the fixed =summarize.sh=: all
+  nine as expected.  With the =summarize.sh= the results were first
+  made with, it goes red on four: the stderr underflow, the stderr and
+  log changes come out =works=, the missing base =wrong=.
+- =probe.sh=, =internals.sh= and =repro.sh= now run with =pipefail= and
+  stop on a bad ref or a failed =mask.pl=; =internals.sh= also stops when
+  it extracts no words.  A mistyped =INSPECT_REF= used to give an empty
+  table and exit 0.
+- Isolation now covers =XDG_CACHE_HOME=, =XDG_DATA_HOME= and
+  =XDG_CONFIG_HOME= too, in every run of all three scripts.
+- =internals.sh='s tokenizer did not strip =s\"= or =.(= and was
+  case-sensitive; =env/inspect.fs= after v0.1.1 has an =s\"=, which would
+  have broken =check.fs=.  Fixed, and a token still holding a quote is
+  skipped with a message on stderr.  v0.1.1 has neither form, so its
+  197-word list is unchanged; =INSPECT_REF=HEAD= now gives 224 words, all
+  found on 0.7.3.
+- R15 loaded the working tree's =env/brk.fs= by absolute path, so its
+  column number encoded the checkout path.  =repro.sh= now copies
+  =$INSPECT_REF:env/brk.fs= (default v0.1.1) into the run's temp dir and
+  loads it by relative name.  The R15 reproducer in the breaks table
+  above (=s" env/brk.fs" included=) works from the repository root only.
+- The committed tables had formats no script produced (per-version
+  columns, the =1.0.x+see-voc= column, =version engine ID output= rows).
+  =collect.sh= now makes all three from the runs; =internals.sh -v= is
+  the =also see-voc= pass.  The rerun was
+  =collect.sh OUT 0.7.3= 1.0.0=WRAP0 1.0.1=WRAP1=, where =WRAPn= is the
+  directory of the =libccnameddir= wrappers for that build.
+- Does =also see-voc= in =shim-1.0.fs= shadow anything?  Measured on
+  1.0.0 and 1.0.1: =see-voc= has 171 words and none of them is also in
+  =forth-wordlist=.  Seventeen of them appear as tokens in v0.1.1's
+  inspect.fs: the 13 it looks for there, and =body=, =breaker=,
+  =get-next= and =nesting=, which occur only in comments and strings.
+  So the shim changes no word inspect.fs compiles beyond the 16 names
+  it exists to resolve.
+
+Rerun against the committed tables: =probes.tsv= (343 rows, under the
+stricter comparison) and =internals.tsv= are the same, the latter
+byte for byte.  =repro.tsv= differs in R10, which prints an address and
+differs on every run, and in R15's column (=*args*:2:89= became
+=*args*:2:21=, the same "Invalid memory address"); the R15 rows are
+updated, R10's are left as first recorded.  No verdict above changes.
