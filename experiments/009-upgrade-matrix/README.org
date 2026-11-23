@@ -404,7 +404,8 @@ Agent. =/code-review high= of the branch found 5 important and 5 minor
 faults in =harness/=. All are fixed in 3f5f2ac:
 - =h2_upgrade.py= staged the prose assets from =origin/harden= and from
   commits no longer in the history, so a re-run staged 0/6. Every asset
-  now comes from =pbt/fixtures/refs/=, with harden's head pinned as
+  now comes from =pbt/fixtures/refs/= (prose as =<name>.txt=, out of the
+  guide check's reach), with harden's head pinned as
   6fe7632 (PR #13's head: V5's =inspect.fs= and schema blobs, and all six
   assets). =make_openapi.py= reads the schema there too; the regenerated
   =openapi-stacks.json= is byte-identical.

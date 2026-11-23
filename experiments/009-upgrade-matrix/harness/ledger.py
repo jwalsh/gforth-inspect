@@ -69,11 +69,14 @@ def at_ref(commit: str, repo_path: str) -> str:
     """repo_path at commit, from its pinned fixture dir when there is one, else from git.
 
     A pinned dir holds every asset the commit had: a file missing from it is
-    missing at the commit (FileNotFoundError), never looked up in git.
+    missing at the commit (FileNotFoundError), never looked up in git. Prose
+    (.org, .md) is kept as <name>.txt, so the guide check does not read a
+    frozen copy as a live guide.
     """
     pinned = FIXTURE_REFS / commit
     if pinned.is_dir():
-        return (pinned / Path(repo_path).name).read_text()
+        name = Path(repo_path).name
+        return (pinned / (name + ".txt" if name.endswith((".org", ".md")) else name)).read_text()
     return git("show", f"{commit}:{repo_path}")
 
 
