@@ -33,8 +33,9 @@ The schema carries =x-version= (equal to =v=) and =x-contract= (equal to
 writes an old and a new version side by side.
 
 Contract versions are not release versions. inspect 0.3.1, the current
-release, announces contract 1.1, as every release since 0.1.0 has. A PATCH release changes neither number, and a release may
-change no contract at all.
+release, announces contract 1.1, as every release since 0.1.0 has. A PATCH
+release changes neither number, and a release may change no contract at
+all.
 
 * Producer obligations
 
