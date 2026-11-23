@@ -5,3 +5,5 @@ __pycache__/
 .hypothesis/
 dist/
 tmp/
+.clj-kondo/.cache/
+.lsp/.cache/
