@@ -6,7 +6,7 @@
 # or in the log.  The OS clears $TMPDIR; nothing here deletes anything.
 #
 # inspect.fs comes from INSPECT_FS, else env/inspect.fs in this checkout,
-# else `git show REF:env/inspect.fs` for REF = ${INSPECT_REF:-harden}, then
+# else `git show REF:env/inspect.fs` for REF = ${INSPECT_REF:-HEAD}, then
 # origin/REF (a fresh clone has only the remote branch).
 set -euo pipefail
 
@@ -18,7 +18,7 @@ if [ -n "${INSPECT_FS:-}" ]; then
     cp "$INSPECT_FS" "$box/inspect.fs"
 else
     top=$(git -C "$here" rev-parse --show-toplevel)
-    ref=${INSPECT_REF:-harden}
+    ref=${INSPECT_REF:-HEAD}
     if [ -f "$top/env/inspect.fs" ]; then
         cp "$top/env/inspect.fs" "$box/inspect.fs"
     elif git -C "$top" show "$ref:env/inspect.fs" > "$box/inspect.fs" 2>/dev/null; then

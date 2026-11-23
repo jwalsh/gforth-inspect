@@ -41,13 +41,14 @@ if not install or not usage or install.start() > usage.start():
 section = f"""* Install
 
 #+begin_src sh
-new=$(mktemp -d) && gh release download {tag} -R {repo} -D "$new"
-(cd "$new" && shasum -a 256 -c SHA256SUMS) && mkdir -p forth-env && cp "$new"/* forth-env/
-gforth forth-env/inspect.fs
+curl -fsSLO https://github.com/{repo}/releases/download/{tag}/inspect.fs
+gforth inspect.fs
 #+end_src
 
-=inspect-version type= prints {tag[1:]}. Within one MAJOR version the words
-and the log format do not break. It needs a 64-bit gforth 0.7.3.
+To check the download, fetch =SHA256SUMS= the same way and run
+=shasum -a 256 -c --ignore-missing SHA256SUMS=. =inspect-version type=
+prints {tag[1:]}. Within one MAJOR version the words and the log format do
+not break. It needs a 64-bit gforth 0.7.3.
 
 ** As a dependency of your project
 
