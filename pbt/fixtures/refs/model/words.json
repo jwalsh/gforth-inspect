@@ -1,6 +1,6 @@
 {
  "gforth": "0.7.3",
- "share": "/opt/homebrew/Cellar/gforth/0.7.3_3/share/gforth/0.7.3",
+ "share": "$GFORTH/share/gforth/0.7.3",
  "files": [
   "kernel/main.fs",
   "kernel/aliases.fs",
@@ -67,7 +67,7 @@
   "libcc.fs",
   "mkdir.fs",
   "struct0x.fs",
-  "/opt/homebrew/Cellar/gforth/0.7.3_3/share/gforth/site-forth/siteinit.fs"
+  "$GFORTH/share/gforth/site-forth/siteinit.fs"
  ],
  "missing_includes": [
   [
@@ -79,22 +79,22 @@
  "skipped_by_undef_words": [
   [
    "(type)",
-   "/opt/homebrew/Cellar/gforth/0.7.3_3/share/gforth/0.7.3/kernel/io.fs",
+   "$GFORTH/share/gforth/0.7.3/kernel/io.fs",
    49
   ],
   [
    "(emit)",
-   "/opt/homebrew/Cellar/gforth/0.7.3_3/share/gforth/0.7.3/kernel/io.fs",
+   "$GFORTH/share/gforth/0.7.3/kernel/io.fs",
    59
   ],
   [
    "(key)",
-   "/opt/homebrew/Cellar/gforth/0.7.3_3/share/gforth/0.7.3/kernel/io.fs",
+   "$GFORTH/share/gforth/0.7.3/kernel/io.fs",
    67
   ],
   [
    "(key?)",
-   "/opt/homebrew/Cellar/gforth/0.7.3_3/share/gforth/0.7.3/kernel/io.fs",
+   "$GFORTH/share/gforth/0.7.3/kernel/io.fs",
    79
   ]
  ],
