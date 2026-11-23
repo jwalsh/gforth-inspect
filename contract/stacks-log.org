@@ -135,7 +135,7 @@ is (=log_dir()= reads =os.environb=; the property tests check
 
 #+name: log-dir-reference
 #+begin_src python
-"""Where gforth-inspect 0.3.0 to 0.3.1 (this release) writes stacks.jsonl (stacks-log.org, "Files").
+"""Where gforth-inspect writes stacks.jsonl, since 0.3.0 (stacks-log.org, "Files").
 
 log_dir(environ, cwd) returns the directory, as bytes, that inspect.fs
 would use for the given environment (os.environb by default) and current
@@ -442,7 +442,7 @@ schema, so older producers still validate; the consumer rule below decides
 whether a consumer reads the stream.
 
 #+begin_src json
-{"v":1,"event":"hello","t":1763740800,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"hello","t":1763740800,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
 #+end_src
 
 *Consumer rule (1.1).*  A consumer built for contract =M.N= reads a stream

@@ -93,7 +93,7 @@ test-lldb: ## lldb/check.sh; skipped where debugserver cannot attach
 	  lldb/check.sh; \
 	else echo "SKIP test-lldb: debugserver cannot launch here (sandbox?)"; fi
 
-verify: ## The CONTRIBUTING.org baseline: privacy, guides, test, pbt check + calibrate
+verify: ## The CONTRIBUTING.org baseline: privacy, guides, versions in the docs, test, pbt check + calibrate
 	scripts/privacy-scan.sh --calibrate
 	scripts/privacy-scan.sh
 	bash scripts/check-guides.sh --calibrate
