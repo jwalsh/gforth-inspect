@@ -2,11 +2,12 @@
 # repro.sh -- the one-line reproducers of the 1.0 breaks, without inspect.fs
 #
 #   repro.sh [-b BINDIR] [-e ENGINE]
+#   INSPECT_REF   ref that R15's env/brk.fs comes from (default v0.1.1)
 #
-# Each line runs plain ENGINE in a fresh temp dir (cwd, HOME and
-# XDG_STATE_HOME) and prints "ID | first line of output".  Run it once on
+# Each line runs plain ENGINE in a fresh temp dir (cwd, HOME and every
+# XDG_*_HOME) and prints "ID | first line of output".  Run it once on
 # 0.7.3 and once on 1.0.x and compare.
-set -u
+set -u -o pipefail
 bindir="" engine=gforth
 while getopts "b:e:" opt; do
   case $opt in b) bindir=$OPTARG ;; e) engine=$OPTARG ;; *) exit 2 ;; esac
@@ -14,11 +15,15 @@ done
 [ -n "$bindir" ] && PATH="$bindir:$PATH"
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
+ref=${INSPECT_REF:-v0.1.1}
+brk=$(git -C "$root" show "$ref:env/brk.fs") || exit 1
 
 run() { # id forth-source
   local id=$1 src=$2 tmp out
   tmp=$(mktemp -d "${TMPDIR:-/tmp}/gfi010.XXXXXX")
-  out=$(cd "$tmp" && HOME="$tmp" XDG_STATE_HOME="$tmp" \
+  printf '%s\n' "$brk" > "$tmp/brk.fs"   # loaded by relative name (R15)
+  out=$(cd "$tmp" && HOME="$tmp" XDG_STATE_HOME="$tmp" XDG_CACHE_HOME="$tmp" \
+        XDG_DATA_HOME="$tmp" XDG_CONFIG_HOME="$tmp" \
         perl -e 'alarm shift; exec @ARGV' 10 "$engine" -e "$src" </dev/null 2>&1)
   rm -rf "$tmp"
   # the first error or warning line if there is one, else the first line
@@ -40,4 +45,4 @@ run R11 ": x 2drop ; ' x is .debugline : t 7 ~~ ; t depth . bye"
 run R12 "s\" .stacks\" find-name 0<> . bye"
 run R13 ": t ['] dup >name name>int drop ; bye"
 run R14 ": t 0. 2drop ; bye"
-run R15 "s\" $root/env/brk.fs\" included brk .( returned) bye"
+run R15 "s\" brk.fs\" included brk .( returned) bye"
