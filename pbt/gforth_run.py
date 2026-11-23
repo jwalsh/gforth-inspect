@@ -4,9 +4,11 @@ Every call gets its own XDG_STATE_HOME, so stacks.jsonl is per run and the
 user's ~/.local/state is never touched.  Nothing here types into a tmux pane.
 
 inspect.fs comes from, in order:
-  INSPECT_FS     a path (use this to test a working copy or a planted fault)
-  INSPECT_REF    a git ref, default `harden` then `origin/harden`;
-                 `git show REF:env/inspect.fs` is cached by blob id
+  INSPECT_FS     a path (use this to test a planted fault)
+  INSPECT_REF    a git ref; `git show REF:env/inspect.fs` is cached by blob id
+  otherwise      env/inspect.fs of the checkout this file is in, so each
+                 worktree tests its own tree, uncommitted edits included
+The schema follows the same choice (SCHEMA_JSON overrides it).
 """
 
 from __future__ import annotations
@@ -41,24 +43,28 @@ def inspect_source() -> tuple[Path, str]:
         # logs, and the blob id matches the ref form's, so the two compare
         blob = _git("hash-object", str(path)).strip()
         return path, f"file:{path.name} blob:{blob[:12]}"
-    refs = [os.environ["INSPECT_REF"]] if "INSPECT_REF" in os.environ else ["harden", "origin/harden"]
-    for ref in refs:
-        fixture = FIXTURE_REFS / ref / "inspect.fs"
-        if fixture.exists():
-            # a pinned commit that is no longer in the history (2026-11-22 scrub)
-            blob = _git("hash-object", str(fixture)).strip()
-            return fixture, f"ref:{ref}@fixture blob:{blob[:12]}"
-        try:
-            blob = _git("rev-parse", f"{ref}:env/inspect.fs").strip()
-        except subprocess.CalledProcessError:
-            continue
-        CACHE.mkdir(parents=True, exist_ok=True)
-        path = CACHE / f"inspect-{blob[:12]}.fs"
+    ref = os.environ.get("INSPECT_REF")
+    if not ref:
+        path = REPO / "env" / "inspect.fs"
         if not path.exists():
-            path.write_text(_git("show", f"{ref}:env/inspect.fs"))
-        commit = _git("rev-parse", "--short", ref).strip()
-        return path, f"ref:{ref}@{commit} blob:{blob[:12]}"
-    raise RuntimeError(f"no env/inspect.fs at any of {refs}; set INSPECT_FS or INSPECT_REF")
+            raise RuntimeError("no env/inspect.fs in this checkout; set INSPECT_FS or INSPECT_REF")
+        blob = _git("hash-object", str(path)).strip()
+        return path, f"worktree:env/inspect.fs blob:{blob[:12]}"
+    fixture = FIXTURE_REFS / ref / "inspect.fs"
+    if fixture.exists():
+        # a pinned commit that is no longer in the history (2026-11-22 scrub)
+        blob = _git("hash-object", str(fixture)).strip()
+        return fixture, f"ref:{ref}@fixture blob:{blob[:12]}"
+    try:
+        blob = _git("rev-parse", f"{ref}:env/inspect.fs").strip()
+    except subprocess.CalledProcessError:
+        raise RuntimeError(f"no env/inspect.fs at {ref}; set INSPECT_FS or another INSPECT_REF") from None
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path = CACHE / f"inspect-{blob[:12]}.fs"
+    if not path.exists():
+        path.write_text(_git("show", f"{ref}:env/inspect.fs"))
+    commit = _git("rev-parse", "--short", ref).strip()
+    return path, f"ref:{ref}@{commit} blob:{blob[:12]}"
 
 
 @dataclass
@@ -123,15 +129,16 @@ def schema() -> dict:
     explicit = os.environ.get("SCHEMA_JSON")
     if explicit:
         return json.loads(Path(explicit).read_text())
-    for ref in [os.environ.get("INSPECT_REF", "harden"), "origin/harden"]:
-        fixture = FIXTURE_REFS / ref / "stacks-log.schema.json"
-        if fixture.exists():
-            return json.loads(fixture.read_text())
-        try:
-            return json.loads(_git("show", f"{ref}:contract/stacks-log.schema.json"))
-        except subprocess.CalledProcessError:
-            continue
-    raise RuntimeError("no contract/stacks-log.schema.json; set SCHEMA_JSON")
+    ref = os.environ.get("INSPECT_REF")
+    if not ref:
+        return json.loads((REPO / "contract" / "stacks-log.schema.json").read_text())
+    fixture = FIXTURE_REFS / ref / "stacks-log.schema.json"
+    if fixture.exists():
+        return json.loads(fixture.read_text())
+    try:
+        return json.loads(_git("show", f"{ref}:contract/stacks-log.schema.json"))
+    except subprocess.CalledProcessError:
+        raise RuntimeError(f"no contract/stacks-log.schema.json at {ref}; set SCHEMA_JSON") from None
 
 
 if __name__ == "__main__":

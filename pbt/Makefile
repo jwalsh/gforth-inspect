@@ -1,5 +1,5 @@
 # pbt/ -- property tests over env/inspect.fs.  gmake -C pbt check
-# inspect.fs and the schema come from INSPECT_REF (default: harden); see gforth_run.py.
+# inspect.fs and the schema come from this checkout unless INSPECT_FS or INSPECT_REF is set; see gforth_run.py.
 
 UV_RUN := uv run --no-project --with hypothesis --with jsonschema --with pytest
 PROFILE ?= default

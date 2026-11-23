@@ -134,11 +134,9 @@ names a particular downstream project.
    numbers to retire their local patches (see below).
 
 CI (=.github/workflows/verify.yml=, a macOS runner with gforth 0.7.3 from
-Homebrew) runs on every pull request and every push to =main=. Once the
-root Makefile has a =verify= target, CI runs =gmake verify=, against the
-tree's own =env/inspect.fs= and schema. Until then it runs the privacy scan,
-the guide check and the =pbt/= checks, and =pbt/= tests harden's
-=inspect.fs=. CI does not yet run the =PROFILE=ci= long run, scan the
+Homebrew) runs on every pull request and every push to =main=. It runs
+=gmake verify= against the tree's own =env/inspect.fs= and schema, which is
+also what =pbt/= and =corpus/= read when nothing else is named. CI does not yet run the =PROFILE=ci= long run, scan the
 release assets or grep them (2, 3 over =dist/=, and 4). Until it does,
 whoever cuts the release runs those by hand and pastes the output into the
 notes.

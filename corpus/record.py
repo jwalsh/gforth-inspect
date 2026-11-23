@@ -13,7 +13,7 @@ For each scenario it writes, into OUT_DIR:
 and OUT_DIR/PROVENANCE, the blob ids of the inspect.fs and schema used.
 
 inspect.fs and the schema come from pbt/gforth_run.py's selection
-(INSPECT_FS, else INSPECT_REF, else the `harden` ref).  Each run is
+(INSPECT_FS, else INSPECT_REF, else this checkout's env/inspect.fs).  Each run is
 isolated the way gforth_run does it: a fresh temp dir as cwd and HOME,
 inspect.fs and the scenario loaded by relative name (so input.file is
 "NN-slug.fs"), and the log in a fresh GFORTH_INSPECT_LOG_DIR.
@@ -63,6 +63,8 @@ def producer_source(repo: Path) -> tuple[bytes, bytes, str, str]:
     explicit_schema = os.environ.get("SCHEMA_JSON")
     if explicit_schema:
         schema_bytes = Path(explicit_schema).read_bytes()
+    elif provenance.startswith("worktree:"):
+        schema_bytes = (repo / "contract" / "stacks-log.schema.json").read_bytes()
     elif provenance.startswith("ref:"):
         commit = provenance[len("ref:"):].split()[0].rpartition("@")[2]
         proc = subprocess.run(

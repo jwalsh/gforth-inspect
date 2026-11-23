@@ -31,31 +31,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      # pbt/ reads `git show harden:...` and `model:...` (falling back to
-      # origin/*), and experiment 004 pins commits that live on harden.
-      - name: Fetch every branch and make harden and model resolvable
-        run: |
-          git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
-          for branch in harden model; do
-            if git rev-parse --verify -q "refs/remotes/origin/$branch" >/dev/null; then
-              git branch -f "$branch" "origin/$branch"
-              echo "$branch -> $(git rev-parse --short "$branch")"
-            else
-              echo "::warning::origin/$branch is absent; tests that read it will fail"
-            fi
-          done
+      # Experiments name branches and commits by id.
+      - name: Fetch every branch
+        run: git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
 
-      # Test the tree under review, not harden's copy, once the tree has an
-      # inspector. Until then pbt/ falls back to the harden ref by design.
+      # Test the tree under review (pbt/'s default too, named here for the log).
       - name: Select the inspector under test
         run: |
-          if [ -f env/inspect.fs ] && [ -f contract/stacks-log.schema.json ]; then
-            echo "INSPECT_FS=$GITHUB_WORKSPACE/env/inspect.fs" >> "$GITHUB_ENV"
-            echo "SCHEMA_JSON=$GITHUB_WORKSPACE/contract/stacks-log.schema.json" >> "$GITHUB_ENV"
-            echo "inspector: this tree's env/inspect.fs"
-          else
-            echo "inspector: harden's env/inspect.fs (this tree has none)"
-          fi
+          echo "INSPECT_FS=$GITHUB_WORKSPACE/env/inspect.fs" >> "$GITHUB_ENV"
+          echo "SCHEMA_JSON=$GITHUB_WORKSPACE/contract/stacks-log.schema.json" >> "$GITHUB_ENV"
+          echo "inspector: this tree's env/inspect.fs"
 
       - name: Install gforth, GNU make, jq
         run: |
