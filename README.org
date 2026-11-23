@@ -12,20 +12,20 @@ A stack inspector for gforth 0.7.3.
 Download =inspect.fs= from the release and load it:
 
 #+begin_src sh
-curl -fsSLO https://github.com/jwalsh/gforth-inspect/releases/download/v0.3.0/inspect.fs
+curl -fsSLO https://github.com/jwalsh/gforth-inspect/releases/download/v0.3.1/inspect.fs
 gforth inspect.fs
 #+end_src
 
-It needs a 64-bit gforth 0.7.3. =inspect-version type= prints 0.3.0.
+It needs a 64-bit gforth 0.7.3. =inspect-version type= prints 0.3.1.
 
 With [[https://github.com/VitaSound/fmix][fmix]] (0.9.0 or earlier for gforth 0.7.3), add to =package.4th=:
 
 #+begin_example
-key-list dependencies gforth-inspect git https://github.com/jwalsh/gforth-inspect tag v0.3.0
+key-list dependencies gforth-inspect git https://github.com/jwalsh/gforth-inspect tag v0.3.1
 #+end_example
 
 then =fmix packages.get= and
-=require ./forth-packages/gforth-inspect/v0.3.0/env/inspect.fs=.
+=require ./forth-packages/gforth-inspect/v0.3.1/env/inspect.fs=.
 
 * Usage
 
