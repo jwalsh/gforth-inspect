@@ -8,15 +8,18 @@ inspect.fs comes from, in order:
   INSPECT_REF    a git ref; `git show REF:env/inspect.fs` is cached by blob id
   otherwise      env/inspect.fs of the checkout this file is in, so each
                  worktree tests its own tree, uncommitted edits included;
-                 copied once per process, so one run never mixes two versions
+                 copied with the schema once per process, so one run never
+                 mixes versions (an explicit INSPECT_FS is read as it is)
 The schema is SCHEMA_JSON, else INSPECT_REF's, else this checkout's; INSPECT_FS
 does not change it, so set SCHEMA_JSON with INSPECT_FS when the two differ.
 """
 
 from __future__ import annotations
 
+import atexit
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
@@ -36,25 +39,35 @@ def _git(*args: str) -> str:
 FIXTURE_REFS = Path(__file__).resolve().parent / "fixtures" / "refs"
 
 
-_SNAPSHOT: tuple[Path, str] | None = None
+_SNAPSHOT: tuple[Path, Path, str] | None = None
 
 
-def _worktree_snapshot() -> tuple[Path, str]:
-    """This checkout's env/inspect.fs, copied by blob id on the first call."""
+def _worktree_snapshot() -> tuple[Path, Path, str]:
+    """(inspect.fs, schema, provenance): this checkout's two files, copied
+    together on the first call into a temp dir that lives as long as the
+    process, so one run never mixes versions and nothing is shared or kept."""
     global _SNAPSHOT
     if _SNAPSHOT is None:
-        live = REPO / "env" / "inspect.fs"
-        if not live.exists():
-            raise RuntimeError("no env/inspect.fs in this checkout; set INSPECT_FS or INSPECT_REF")
-        content = live.read_bytes()
+        live_fs = REPO / "env" / "inspect.fs"
+        live_schema = REPO / "contract" / "stacks-log.schema.json"
+        if not live_fs.exists() or not live_schema.exists():
+            raise RuntimeError("no env/inspect.fs or schema in this checkout; set INSPECT_FS or INSPECT_REF")
+        content = live_fs.read_bytes()
+        schema_content = live_schema.read_bytes()
         blob = subprocess.run(["git", "-C", str(REPO), "hash-object", "--stdin"], input=content,
                               check=True, capture_output=True).stdout.decode().strip()
-        CACHE.mkdir(parents=True, exist_ok=True)
-        path = CACHE / f"inspect-{blob[:12]}.fs"
-        if not path.exists():
-            path.write_bytes(content)
-        _SNAPSHOT = path, f"worktree:env/inspect.fs blob:{blob[:12]}"
+        snap = Path(tempfile.mkdtemp(prefix="gforth-inspect-snapshot-"))
+        atexit.register(shutil.rmtree, snap, ignore_errors=True)
+        (snap / "inspect.fs").write_bytes(content)
+        (snap / "stacks-log.schema.json").write_bytes(schema_content)
+        _SNAPSHOT = (snap / "inspect.fs", snap / "stacks-log.schema.json",
+                     f"worktree:env/inspect.fs blob:{blob[:12]}")
     return _SNAPSHOT
+
+
+def worktree_schema_path() -> Path:
+    """The schema snapshotted with the default inspect.fs (corpus/record.py)."""
+    return _worktree_snapshot()[1]
 
 
 def inspect_source() -> tuple[Path, str]:
@@ -68,7 +81,8 @@ def inspect_source() -> tuple[Path, str]:
         return path, f"file:{path.name} blob:{blob[:12]}"
     ref = os.environ.get("INSPECT_REF")
     if not ref:
-        return _worktree_snapshot()
+        path, _, provenance = _worktree_snapshot()
+        return path, provenance
     fixture = FIXTURE_REFS / ref / "inspect.fs"
     if fixture.exists():
         # a pinned commit that is no longer in the history (2026-11-22 scrub)
@@ -81,7 +95,11 @@ def inspect_source() -> tuple[Path, str]:
     CACHE.mkdir(parents=True, exist_ok=True)
     path = CACHE / f"inspect-{blob[:12]}.fs"
     if not path.exists():
-        path.write_text(_git("show", f"{ref}:env/inspect.fs"))
+        # atomic: worktrees share this cache, and a reader must never see half a file
+        fd, partial = tempfile.mkstemp(dir=CACHE, prefix=path.name + ".")
+        with os.fdopen(fd, "w") as out:
+            out.write(_git("show", f"{ref}:env/inspect.fs"))
+        os.replace(partial, path)
     commit = _git("rev-parse", "--short", ref).strip()
     return path, f"ref:{ref}@{commit} blob:{blob[:12]}"
 
@@ -150,7 +168,7 @@ def schema() -> dict:
         return json.loads(Path(explicit).read_text())
     ref = os.environ.get("INSPECT_REF")
     if not ref:
-        return json.loads((REPO / "contract" / "stacks-log.schema.json").read_text())
+        return json.loads(_worktree_snapshot()[1].read_text())
     fixture = FIXTURE_REFS / ref / "stacks-log.schema.json"
     if fixture.exists():
         return json.loads(fixture.read_text())

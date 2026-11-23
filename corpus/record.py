@@ -64,7 +64,10 @@ def producer_source(repo: Path) -> tuple[bytes, bytes, str, str]:
     if explicit_schema:
         schema_bytes = Path(explicit_schema).read_bytes()
     elif provenance.startswith("worktree:"):
-        schema_bytes = (repo / "contract" / "stacks-log.schema.json").read_bytes()
+        schema_bytes = gforth_run.worktree_schema_path().read_bytes()
+    elif provenance.startswith("ref:") and "@fixture " in provenance:
+        ref = provenance[len("ref:"):].split()[0].rpartition("@")[0]
+        schema_bytes = (gforth_run.FIXTURE_REFS / ref / "stacks-log.schema.json").read_bytes()
     elif provenance.startswith("ref:"):
         commit = provenance[len("ref:"):].split()[0].rpartition("@")[2]
         proc = subprocess.run(
