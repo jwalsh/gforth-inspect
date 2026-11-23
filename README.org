@@ -150,4 +150,4 @@ that is not finite is logged as =null=.
 
 * Licence
 
-GPL-3.0-or-later, the same as gforth. See [[file:LICENSE][LICENSE]].
+GPL-3.0-or-later. See [[file:LICENSE][LICENSE]].
