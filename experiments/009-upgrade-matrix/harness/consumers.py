@@ -18,8 +18,10 @@ from __future__ import annotations
 
 import json
 import os
+import select
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -46,8 +48,13 @@ def git(*args: str) -> bytes:
     return subprocess.run(["git", "-C", str(REPO), *args], check=True, capture_output=True).stdout
 
 
+# the consumer blobs the first run used (README, Log); a different one is refused
+PINNED = {"stacks.jq": "3b61e2d3c8bb", "checker.py": "b8e9b6d6386e", "mock_server.py": "6c7ca6a10665",
+          "bb/checker.clj": "ed86074476b5", "bb/mock_server.clj": "40992d834ffa"}
+
+
 def pin(work: Path) -> dict[str, str]:
-    """Copy the consumers into WORK/consumers; return name -> blob (public ones only)."""
+    """Copy the consumers into WORK/consumers, refusing any blob but the pinned one; name -> blob."""
     out = work / "consumers"
     out.mkdir(parents=True, exist_ok=True)
     blobs = {}
@@ -57,12 +64,12 @@ def pin(work: Path) -> dict[str, str]:
         blobs[name] = git("rev-parse", f"HEAD:pbt/consumers/{name}").decode().strip()[:12]
     if shutil.which("bb"):
         for name in ("checker.clj", "mock_server.clj"):
-            try:
-                content = git("show", f"{BB_REF}:pbt/consumers/bb/{name}")
-            except subprocess.CalledProcessError:
-                continue
+            content = git("show", f"{BB_REF}:pbt/consumers/bb/{name}")
             (out / f"bb-{name}").write_bytes(content)
             blobs[f"bb/{name}"] = git("rev-parse", f"{BB_REF}:pbt/consumers/bb/{name}").decode().strip()[:12]
+    wrong = {name: blob for name, blob in blobs.items() if not PINNED[name].startswith(blob)}
+    if wrong:
+        raise RuntimeError(f"consumers differ from the pinned blobs: {wrong}")
     sys.path.insert(0, str(HERE))
     import ledger
     root = ledger.vc_root()
@@ -138,20 +145,27 @@ def run_mock(work: Path, log: Path, twin: bool = False) -> Result:
         command = ["bb", str(work / "consumers" / "bb-mock_server.clj"), str(log)]
     else:
         command = [sys.executable, str(work / "consumers" / "mock_server.py"), str(log)]
-    server = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    server = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
     try:
-        port_line = server.stdout.readline()
+        ready, _, _ = select.select([server.stdout], [], [], 30)
+        port_line = server.stdout.readline() if ready else ""
         if not port_line.startswith("PORT "):
-            return Result(name, "crash:no PORT line", None)
+            return Result(name, "crash:no PORT line" if ready else "crash:no PORT line in 30s", None)
         url = f"http://127.0.0.1:{port_line.split()[1]}/stacks"
         try:
             with urllib.request.urlopen(url, timeout=10) as response:
                 status, body, ctype = response.status, response.read(), response.headers.get("Content-Type")
         except urllib.error.HTTPError as error:
             status, body, ctype = error.code, error.read(), error.headers.get("Content-Type")
+        except (urllib.error.URLError, socket.timeout, ConnectionError) as error:
+            return Result(name, f"crash:{type(error).__name__}", None)
     finally:
         server.terminate()
-        server.wait(timeout=5)
+        try:
+            server.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            server.kill()
+            server.wait()
     if status == 404:
         return Result(name, "404", None, extra={"status": 404})
     content = log.read_bytes() if log.exists() else b""

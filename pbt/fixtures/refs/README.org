@@ -1,4 +1,7 @@
-inspect.fs and stacks-log.schema.json at commits the experiments pin
-(004, 005, 009) that are no longer in this repository's history.
+Files at commits the experiments pin (004, 005, 009) that are no longer in
+this repository's history: inspect.fs and stacks-log.schema.json, and for
+009 the other release assets the commit had (stacks-log.org; at 6fe7632,
+harden's head, also CONSUMERS.org, CONSUMER-AGENTS.md and SKILL.md).
 =gforth_run.inspect_source= and =schema= read =<ref>/= here before asking
-git, and so does 009's =harness/ledger.py=.
+git. 009's =harness/ledger.py= does too, and takes a file missing from a
+=<ref>/= dir as missing at that commit.

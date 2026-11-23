@@ -22,19 +22,22 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 
-# key, commit (rewritten history); V5 is the release candidate on harden, pinned
-# by its blob. None of the six is on a branch any more: pbt/fixtures/refs/<commit>/
-# holds their inspect.fs and schema, read before asking git.
+# key, commit (rewritten history), inspect.fs blob; V5 is the release candidate
+# on harden. None of the six is on a branch any more: pbt/fixtures/refs/<commit>/
+# holds their release assets, read before asking git. Each blob is checked at
+# load. V0's is the rewritten one: the first run measured 76d34db7cd61 (Log).
 LEDGER = [
-    ("V0", "b1c162e"),
-    ("V1", "9528a4c"),
-    ("V2", "10a0da4"),
-    ("V3", "7dbf040"),
-    ("V4", "d4bf1bb"),
-    ("V5", "e645c92"),
+    ("V0", "b1c162e", "0c494fbd693a"),
+    ("V1", "9528a4c", "1264ab7e38c0"),
+    ("V2", "10a0da4", "a7e5c141af51"),
+    ("V3", "7dbf040", "8ee70482686b"),
+    ("V4", "d4bf1bb", "d1d87b91d38e"),
+    ("V5", "e645c92", "af95cdf354af"),
 ]
+# harden's head (PR #13): V5's inspect.fs and schema, plus the three guides
+# that arrive on harden after V4. The release assets of V5, the fixtures and Vc.
+HARDEN = "6fe7632"
 FIXTURE_REFS = REPO / "pbt" / "fixtures" / "refs"
-V5_BLOB = "af95cdf354af"
 SEQUENCE = ["V0", "V1", "V2", "V3", "V4", "V5", "F1", "F2", "F3", "F4", "F5"]
 SKIPS = [("V2", "V5"), ("Vc", "V5"), ("V5", "F4"), ("V5", "F5")]
 
@@ -63,10 +66,14 @@ def git(*args: str) -> str:
 
 
 def at_ref(commit: str, repo_path: str) -> str:
-    """repo_path at commit: the pinned fixture if there is one, else git."""
-    fixture = FIXTURE_REFS / commit / Path(repo_path).name
-    if fixture.exists():
-        return fixture.read_text()
+    """repo_path at commit, from its pinned fixture dir when there is one, else from git.
+
+    A pinned dir holds every asset the commit had: a file missing from it is
+    missing at the commit (FileNotFoundError), never looked up in git.
+    """
+    pinned = FIXTURE_REFS / commit
+    if pinned.is_dir():
+        return (pinned / Path(repo_path).name).read_text()
     return git("show", f"{commit}:{repo_path}")
 
 
@@ -216,14 +223,14 @@ def materialize(work: Path) -> dict[str, Producer]:
                                   schema_path, ": log-id " in text,
                                   "gforth-inspect" if 's" /gforth-inspect"' in text else "legacy")
 
-    for key, commit in LEDGER:
+    for key, commit, expected_blob in LEDGER:
         text = at_ref(commit, "env/inspect.fs")
         schema_text = at_ref(commit, "contract/stacks-log.schema.json")
         inspect = "0.1.0" if 's" 0.1.0"' in text else None
         contract = "1.1" if ': contract-version ( -- c-addr u ) s" 1.1"' in text else None
         add(key, commit, text, schema_text, inspect, contract, 1)
-    if not producers["V5"].blob.startswith(V5_BLOB):
-        raise RuntimeError(f"V5 blob {producers['V5'].blob[:12]} is not {V5_BLOB}")
+        if not producers[key].blob.startswith(expected_blob):
+            raise RuntimeError(f"{key} blob {producers[key].blob[:12]} is not {expected_blob}")
     root = vc_root()
     if root is not None:
         vc_text = (root / "forth" / "env" / "inspect.fs").read_text()

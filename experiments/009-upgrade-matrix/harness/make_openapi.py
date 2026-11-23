@@ -1,6 +1,6 @@
 """Write ../openapi-stacks.json: an OpenAPI 3.1 draft for GET /stacks (proposal, E-6).
 
-    python3 make_openapi.py [REF]     REF holds contract/stacks-log.schema.json (default origin/harden)
+    python3 make_openapi.py [REF]     REF holds contract/stacks-log.schema.json (default harden's head, pinned)
 
 info.version is the contract MAJOR.MINOR the API serves, so it is one field
 of the compound version tuple (H5, D-37).  The record schema is embedded
@@ -10,12 +10,13 @@ as components.schemas.Record, from the schema at REF, unchanged.
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[2]
+sys.path.insert(0, str(HERE))
+
+import ledger  # noqa: E402
 
 
 def build(schema: dict) -> dict:
@@ -60,9 +61,8 @@ def build(schema: dict) -> dict:
 
 
 def main(argv: list[str]) -> int:
-    ref = argv[0] if argv else "origin/harden"
-    schema = json.loads(subprocess.run(["git", "-C", str(REPO), "show", f"{ref}:contract/stacks-log.schema.json"],
-                                       check=True, capture_output=True, text=True).stdout)
+    ref = argv[0] if argv else ledger.HARDEN
+    schema = json.loads(ledger.at_ref(ref, "contract/stacks-log.schema.json"))
     (HERE.parent / "openapi-stacks.json").write_text(json.dumps(build(schema), indent=2) + "\n")
     return 0
 

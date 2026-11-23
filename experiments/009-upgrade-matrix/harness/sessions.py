@@ -45,10 +45,13 @@ class Session:
         assignments = [f"{key}={value}" for key, value in env.items()
                        if key in ("PATH", "HOME", "XDG_STATE_HOME", "GFORTH_INSPECT_LOG_DIR", "TERM", "LANG")]
         command = ["env", "-i", *assignments, f"PS1={PROMPT}", "/bin/sh"]
-        tmux("new-session", "-d", "-s", name, "-x", "400", "-y", "50", "-c", str(sandbox),
-             " ".join(_quote(part) for part in command))
+        # The pane waits on `read` until pipe-pane is attached, so the first
+        # prompt cannot be printed before anything records it.
+        held = "/bin/sh -c " + _quote("read line; exec " + " ".join(_quote(part) for part in command))
+        tmux("new-session", "-d", "-s", name, "-x", "400", "-y", "50", "-c", str(sandbox), held)
         (sandbox / "pane.log").touch()
         tmux("pipe-pane", "-t", name, "-o", f"cat >> {_quote(str(sandbox / 'pane.log'))}")
+        tmux("send-keys", "-t", name, "Enter")
         session = cls(name, sandbox, env)
         session._wait_prompt()
         return session

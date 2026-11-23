@@ -46,8 +46,8 @@ def main(argv: list[str]) -> int:
     rows = []
     for key, prod in producers.items():
         sandbox = producer.Sandbox.make(work, f"x10-{key}")
-        producer.run_batch(prod.fs_path, "gforth", sandbox, producer.workload(f"009-x10-{key}", 9009).lines)
-        log = sandbox.logs()[0]
+        log = producer.run_checked(prod.fs_path, "gforth", sandbox,
+                                   producer.workload(f"009-x10-{key}", 9009).lines, f"x10 {key}")
         lines = [line for line in log.read_bytes().split(b"\n") if line]
         served = consumers.run_mock(work, log)
         response = api["paths"]["/stacks"]["get"]["responses"]

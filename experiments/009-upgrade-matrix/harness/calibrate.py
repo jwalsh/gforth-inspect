@@ -4,7 +4,8 @@
 
 Plants (each on a copy in WORK_DIR, never on pbt/ or env/):
   a. checker.py with its version stop disabled: the V0 and F3 cells must
-     show match NO (predicted stop, observed accept).
+     match before the plant and show match NO after it, observed accept
+     (predicted stop): red for that reason, not for any other.
   b. a fixture labelled PATCH that changes jq output (F2 with "where"
      renamed "at"): the F1 -> F2 values row must show match NO.
   c. a checker that crashes on X5 (an unknown event raises): the cell must
@@ -48,20 +49,26 @@ def main(argv: list[str]) -> int:
     logs = {}
     for key in ("V0", "V5", "F1", "F3"):
         sandbox = producer.Sandbox.make(work, f"cal-{key}")
-        producer.run_batch(producers[key].fs_path, "gforth", sandbox, producer.workload("009-cal", 9009).lines)
-        logs[key] = sandbox.logs()[0]
+        logs[key] = producer.run_checked(producers[key].fs_path, "gforth", sandbox,
+                                         producer.workload("009-cal", 9009).lines, f"cal {key}")
     caught = {}
     checker = work / "consumers" / "checker.py"
     original = checker.read_text()
 
-    # a. version stop disabled
+    # a. version stop disabled: the same cells green unplanted, then red because they accept
+    def cells_a(run: str) -> list[dict]:
+        out.rows.clear()
+        out.cache.clear()
+        for key in ("V0", "F3"):
+            matrix.observe(out, logs[key], v5.schema_path, "1.1", ["checker"], run=run, transition=key)
+        return list(out.rows)
+
+    before = cells_a("cal-a-unplanted")
     plant_file(checker, "    if version_stop:\n", "    if False:  # PLANT a\n")
-    out.rows.clear()
-    out.cache.clear()
-    for key in ("V0", "F3"):
-        matrix.observe(out, logs[key], v5.schema_path, "1.1", ["checker"], run="cal-a", transition=key)
-    caught["a"] = all(row["match"] == "NO" for row in out.rows)
-    print("a", [(row["transition"], row["predicted"], row["observed"], row["match"]) for row in out.rows])
+    after = cells_a("cal-a")
+    caught["a"] = (len(before) == len(after) == 2 and all(row["match"] == "yes" for row in before)
+                   and all(row["match"] == "NO" and row["observed"] == "accept" for row in after))
+    print("a", [(row["transition"], row["predicted"], row["observed"], row["match"]) for row in before + after])
     checker.write_text(original)
 
     # b. a PATCH fixture that changes jq output
@@ -70,11 +77,12 @@ def main(argv: list[str]) -> int:
     if f2_plant.read_text() == producers["F2"].fs_path.read_text():
         raise SystemExit("plant b did not apply")
     sandbox = producer.Sandbox.make(work, "cal-F2-plant")
-    producer.run_batch(f2_plant, "gforth", sandbox, producer.workload("009-cal", 9009).lines)
+    f2_log = producer.run_checked(f2_plant, "gforth", sandbox, producer.workload("009-cal", 9009).lines,
+                                  "cal F2-plant")
     out.rows.clear()
     out.cache.clear()
     state = matrix.state_for(v5, v5)
-    matrix.values(out, ("F1", "F2"), logs["F1"], sandbox.logs()[0], state, state,
+    matrix.values(out, ("F1", "F2"), logs["F1"], f2_log, state, state,
                   producer.workload("x", 9009), run="cal-b")
     jq_rows = [row for row in out.rows if row["consumer"] == "values:jq"]
     caught["b"] = bool(jq_rows) and all(row["match"] == "NO" for row in jq_rows)
@@ -104,9 +112,9 @@ def main(argv: list[str]) -> int:
     green = []
     for key, prod in producers.items():
         sandbox = producer.Sandbox.make(work, f"cal-d-{key}")
-        producer.run_batch(prod.fs_path, "gforth", sandbox, producer.workload("009-cal", 9009).lines)
-        known = {prod.v}
-        green.append(prefix_check.check(sandbox.logs()[0].read_bytes(), known, every_line=True).get("ok") is True)
+        log = producer.run_checked(prod.fs_path, "gforth", sandbox, producer.workload("009-cal", 9009).lines,
+                                   f"cal-d {key}")
+        green.append(prefix_check.check(log.read_bytes(), {prod.v}, every_line=True).get("ok") is True)
     caught["d"] = all(red) and all(green) and len(x11) >= 6
     print("d", f"X11 red {sum(red)}/{len(red)}, ledger+fixtures green {sum(green)}/{len(green)}")
 

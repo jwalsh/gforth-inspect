@@ -98,3 +98,13 @@ def run_batch(fs_path: Path, engine: str, sandbox: Sandbox, program: list[str],
                           capture_output=True, stdin=subprocess.DEVNULL, timeout=timeout)
     (sandbox.root / "gforth.stderr").write_bytes(proc.stderr)
     return proc.returncode
+
+
+def run_checked(fs_path: Path, engine: str, sandbox: Sandbox, program: list[str], label: str,
+                timeout: float = 30.0) -> Path:
+    """run_batch, then its one log; a failed run or a missing log raises, never a stale log."""
+    status = run_batch(fs_path, engine, sandbox, program, timeout)
+    found = sandbox.logs()
+    if status != 0 or len(found) != 1:
+        raise RuntimeError(f"{label}: exit {status}, {len(found)} logs")
+    return found[0]

@@ -1,0 +1,5 @@
+D=$(mktemp -d); mkdir -p $D/course-repo
+( { echo 'log-on s" A1" log-id 1 .stacks'; sleep 2; echo 's" A2" log-id 2 .stacks bye'; } \
+    | XDG_STATE_HOME=$D gforth env/inspect.fs >/dev/null 2>&1 ) &
+sleep 1; XDG_STATE_HOME=$D gforth env/inspect.fs -e 'log-on s" B1" log-id 9 .stacks bye' >/dev/null; wait
+python3 -c 'import json,sys; [json.loads(l) for l in open(sys.argv[1])]' $D/course-repo/stacks.jsonl

@@ -51,10 +51,6 @@ FIXTURE_ROWS = {
 }
 
 
-def git(*args: str, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", "-C", str(REPO), *args], capture_output=True, check=check)
-
-
 def sandbox_env(root: Path) -> dict[str, str]:
     env = {key: value for key, value in os.environ.items()
            if key not in ("GFORTH_INSPECT_LOG_DIR", "XDG_STATE_HOME")}
@@ -69,21 +65,20 @@ def sandbox_env(root: Path) -> dict[str, str]:
 def stage(prod: ledger.Producer, directory: Path) -> tuple[list[str], list[str]]:
     """Build B's release dir as RELEASING.org "by hand" does; (assets present, assets missing)."""
     directory.mkdir(parents=True, exist_ok=True)
-    commit = {"V5": "origin/harden"}.get(prod.key, prod.source)
-    if prod.source == "fixture from V5" or prod.key == "Vc":
-        commit = "origin/harden"
+    commit = ledger.HARDEN if prod.key in ("V5", "Vc") or prod.source == "fixture from V5" else prod.source
     present, missing = [], []
     for source, name in ASSETS:
-        proc = git("show", f"{commit}:{source}", check=False)
-        if proc.returncode != 0:
-            missing.append(name)
-            continue
-        content = proc.stdout
         if name == "inspect.fs":
             content = prod.fs_path.read_bytes()
         elif name == "stacks-log.schema.json":
             content = prod.schema_path.read_bytes()
-        elif name == "stacks-log.org":
+        else:
+            try:
+                content = ledger.at_ref(commit, source).encode()
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                missing.append(name)
+                continue
+        if name == "stacks-log.org":
             content = content.replace(b"../CONSUMERS.org", b"CONSUMERS.org")
             chain = {"F1a": ["F1a"], "F1": ["F1"], "F2": ["F1", "F2"], "F3": ["F1", "F2", "F3"],
                      "F4": ["F1", "F2", "F3", "F4"], "F5": ["F1", "F2", "F3", "F4", "F5"]}.get(prod.key, [])
@@ -158,11 +153,13 @@ def step2(a: ledger.Producer, b: ledger.Producer, root: Path, work: Path, log_b:
 
 # --- step 3: each deviation's reproducer ------------------------------------------------
 
+REPRODUCERS = HERE.parent / "reproducers"
+
+
 def reproducer(number: int) -> str | None:
-    body = subprocess.run(["gh", "issue", "view", str(number), "-R", "jwalsh/gforth-inspect", "--json", "body",
-                           "--jq", ".body"], capture_output=True, text=True).stdout
-    match = re.search(r"```(?:sh|bash)?\n(.*?)```", body, re.S)
-    return match.group(1) if match else None
+    """The issue's first code block, from the reviewed copy in reproducers/: never the live issue text."""
+    pinned = REPRODUCERS / f"issue-{number}.txt"
+    return pinned.read_text() if pinned.exists() else None
 
 
 def as_written(number: int, code: str | None, release: Path, scratch: Path) -> str:
@@ -284,7 +281,7 @@ def step4(a: ledger.Producer, b: ledger.Producer, log_b: Path) -> list[tuple[str
         if invalid:
             problems.append(f"{invalid} records invalid under B's schema")
     except ImportError:
-        problems.append("no validator")
+        raise SystemExit("009 needs jsonschema: uv run --no-project --with jsonschema python ...")
     if a.inspect == b.inspect and a.blob != b.blob:
         problems.append(f"version cannot tell A from B: both hello.inspect {b.inspect}, blobs differ")
     return [("4", "failed as written" if problems else "ran", "; ".join(problems) or
@@ -337,8 +334,10 @@ def main(argv: list[str]) -> int:
     consumers.pin(work)
     codes = {number: reproducer(number) for number in DEVIATIONS}
     listed = subprocess.run(["gh", "release", "list", "-R", "jwalsh/gforth-inspect", "--json", "tagName",
-                             "--jq", "length"], capture_output=True, text=True).stdout.strip()
-    releases = int(listed or 0)
+                             "--jq", "length"], capture_output=True, text=True)
+    if listed.returncode != 0:  # a failed gh is not "no release"
+        raise RuntimeError(f"gh release list: exit {listed.returncode}: {listed.stderr.strip()[:80]}")
+    releases = int(listed.stdout.strip())
     rows, replies, cache = [], [], {}
     scratch = work / "h2"
     scratch.mkdir(exist_ok=True)
@@ -353,8 +352,8 @@ def main(argv: list[str]) -> int:
         if a_key == "Vc" and vc is not None:  # the downstream copy's own prose, never committed
             shutil.copyfile(vc / "forth" / "env" / "stacks-log.org", root / "release-a" / "stacks-log.org")
         sandbox = producer.Sandbox.make(root, "b-run")
-        producer.run_batch(b.fs_path, "gforth", sandbox, producer.workload(f"009-h2-{b_key}", 9009).lines)
-        log_b = sandbox.logs()[0]
+        log_b = producer.run_checked(b.fs_path, "gforth", sandbox,
+                                     producer.workload(f"009-h2-{b_key}", 9009).lines, f"h2 {b_key}")
         label = f"{a_key}->{b_key}"
         first = prefix_check.check(log_b.read_bytes(), {a.v}, every_line=True)
         steps = [("0", "ran", "I-1 ok, v " + str(first["v"])) if first.get("ok")

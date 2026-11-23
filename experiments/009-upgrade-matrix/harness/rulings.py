@@ -76,8 +76,8 @@ def full_validate(lines: list[bytes], schema: dict) -> str | None:
     """Every record against the consumer's schema with a 2020-12 validator; None if valid."""
     try:
         import jsonschema
-    except ImportError:
-        return None
+    except ImportError:  # a missing validator must not read as "valid"
+        raise SystemExit("009 needs jsonschema: uv run --no-project --with jsonschema python ...")
     validator = jsonschema.Draft202012Validator(schema)
     for number, line in enumerate(lines, 1):
         try:

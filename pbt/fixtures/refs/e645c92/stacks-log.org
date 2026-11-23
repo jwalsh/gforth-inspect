@@ -1,0 +1,155 @@
+#+TITLE: Stacks log contract 1.1 (record v1)
+#+STARTUP: showall
+
+Producer: =env/inspect.fs= (gforth 0.7.3) after =log-on=.
+Schema: =contract/stacks-log.schema.json= (JSON Schema 2020-12, =x-version= 1).
+Checked by =gmake test= (every line any test writes is validated, and
+every stream must pass the consumer rule below).  Who reads it:
+[[file:../CONSUMERS.org][CONSUMERS.org]].
+
+Two numbers: the record version =v= (and the schema's =x-version=) is
+=1= and changes only on a breaking change; the contract version
+=MAJOR.MINOR= (=x-contract=, announced in every =hello=) is =1.1=.
+
+* Files
+
+| path                    | written by              | content                  |
+|-------------------------+-------------------------+--------------------------|
+| =<dir>/stacks.jsonl=    | =inspect.fs= (=log-on=) | one JSON object per line |
+
+=<dir>= is =$GFORTH_INSPECT_LOG_DIR= when that is set and non-empty, else
+=${XDG_STATE_HOME:-$HOME/.local/state}/gforth-inspect=.  It is created
+(with parents) by =log-on=, which computes it at that moment; =log-where=
+prints the file's path.  An embedding project points
+=GFORTH_INSPECT_LOG_DIR= wherever its own tools look.
+
+Append-only. One complete object per line, UTF-8, terminated by a newline;
+a consumer that wants "now" reads the last line.
+
+*One producer per =GFORTH_INSPECT_LOG_DIR= is the supported setup.*
+Several producers on one log are best-effort. The producer builds each
+record in memory and writes it as one whole line at the current end of
+the file, so producers that take turns (a REPL and a one-shot
+=gforth -e=) never lose a record. Producers writing at the same instant
+make an interleaved or lost line rare, but not impossible: gforth 0.7.3
+cannot open a file in append mode, so the seek to the end and the write
+are separate calls, and a record longer than the stdio buffer can reach
+the file in more than one write.
+
+* Data flow
+
+One producer, a file as the interface, independent read-only consumers.
+No debugger in the path.
+
+#+begin_src mermaid :file out/stacks-flow.png :scale 2
+flowchart LR
+  U["you type<br/>.stacks  #126;#126;#126;  #126;#126;"] --> G["gforth 0.7.3<br/>env/inspect.fs log-on"]
+  G -- "one JSON line<br/>per record" --> J[("&lt;dir&gt;/stacks.jsonl<br/>hello + snapshot, v1")]
+  S{{"stacks-log.schema.json<br/>x-version 1"}}
+  J --> R["consumers (read-only):<br/>editor dashboards, checks, tools"]
+  S -. validates .-> R
+#+end_src
+
+* Records
+
+Every record: ="v": 1=, ="event"=, ="t"= (Unix seconds, integer).
+
+** =hello= (sentinel)
+
+Written once by =log-on=. Tells the consumer a v1 producer is attached and
+which contract it speaks.  =inspect= (the producer's =inspect-version=,
+since 0.1.0) and =contract= (=MAJOR.MINOR=, since 1.1) are optional in the
+schema, so older producers still validate; the consumer rule below decides
+whether a consumer reads the stream.
+
+#+begin_src json
+{"v":1,"event":"hello","t":1763740800,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+#+end_src
+
+*Consumer rule (1.1).*  A consumer built for contract =M.N= reads a stream
+only if its newest =hello= announces exactly =M.N=.  It refuses a stream
+with no =hello=, whose newest =hello= has no =contract=, or announces
+another MAJOR or another MINOR.  A stream may hold several =hello= records
+(one per =log-on=); only the newest counts.  Reference checker:
+=test/consumer.py=; streams it must accept and refuse:
+=test/contract/streams/=.
+
+** =snapshot=
+
+Written by =.stacks=, =~~~=, and plain =~~= after =all-~~=.
+
+#+begin_src json
+{"v":1,"event":"snapshot","t":1763740801,"id":"step-3",
+ "where":"fact~","src":"x.fs:3",
+ "data":[3,2,1],
+ "float":[2.5000000000000000E0],
+ "rs":[{"word":"fact~","off":96},"sp",0],
+ "input":{"file":"x.fs","line":4,"in":8,"text":"3 fact~ ."}}
+#+end_src
+
+| key     | type                    | meaning                                                   |
+|---------+-------------------------+-----------------------------------------------------------|
+| =id=    | string, optional        | the tag set by =log-id= (since 1.1); absent when none     |
+| =where= | string or null          | the word containing the =~~~= or (after =all-~~=) =~~=; null for =.stacks= and for =~~= at the prompt |
+| =src=   | string or null          | =file:line= of that =~~~= / =~~=; null when =where= is    |
+| =data=  | array of integers       | data stack, bottom first, decimal whatever =BASE= is      |
+| =float= | array of numbers / null | float stack, bottom first, 17 significant digits (round-trips binary64), =-0.0= keeps its sign; null for inf or NaN |
+| =rs=    | array                   | return stack, top first; ={"word","off"}= for a return into a colon definition, ="sp"= for a stack pointer, an integer otherwise; stops at the text interpreter unless =rs-full on= |
+| =input= | object                  | =file=, =line=, =in= (=>in=), =text= (the source line)    |
+
+Strings are escaped per RFC 8259: =\"= =\\=, =\n= =\t= =\r= =\b= =\f=,
+other control characters as =\u00XX=; bytes that are not valid UTF-8
+become =�=.  Numbers never use =NaN= or =Infinity=.
+
+* Compatibility
+
+A consumer rejects records whose =v= it does not know. Adding keys is
+compatible; renaming or retyping one is a new =v=.
+
+*Breaking = version update.*  Anything that would break one of these three
+reference consumers, as they are today, is a breaking change for the inspector
+(a new =v= and a MAJOR release), whatever the schema technically allows:
+
+- simple CLI tooling: =tail -f stacks.jsonl | jq -c '{e:.event,w:.where,d:.data,f:.float}'=
+  (one complete JSON object per line, append-only, stable key names, numbers
+  that parse to the same value);
+- an Emacs dashboard as it is (renders the last snapshot; a check that reads
+  the newest =hello=);
+- a mock API server that serves the last record as-is (=GET /stacks=).
+
+So: removing or renaming a key or an event, changing a type, changing what
+=null= means, splitting a record over lines, changing the default file
+location, or printing numbers that decode to different values are all
+version updates.  New optional keys and new event types that these consumers
+can ignore are not.
+
+* Changing the contract or the tooling
+
+Every change to a record, a file location, the producer words, or a consumer
+follows the same path, in one commit:
+
+1. *Issue first*, on this repository: what changes, why, a reproducer or
+   example record, and whether it is additive (MINOR) or breaking (new =v=).
+2. *Schema*: =contract/stacks-log.schema.json=.  Additive = a new optional
+   property and a MINOR bump of =x-contract=; =x-version= stays.  Breaking =
+   bump =x-version= and the =v= const, and the consumer must accept old and
+   new during the switch.
+3. *Prose*: the record table above and a row in the change log below.
+4. *Producer*: =env/inspect.fs= (=contract-version= follows =x-contract=;
+   =gmake test= checks they agree).
+5. *Consumers*: every reader in [[file:../CONSUMERS.org][CONSUMERS.org]]
+   gets the same change; downstream copies that carry it before a release
+   record it as a deviation.
+6. *Checks*: a golden test exercises the new field in all three engines;
+   good and bad records in =test/contract/=; =gmake test=.
+7. *Tell the downstream sessions* so their copies of the schema match.
+
+* Change log
+
+| date       | change                                   | kind              | issue | producer   | consumers          |
+|------------+------------------------------------------+-------------------+-------+------------+--------------------|
+| 2026-11-21 | 1.0: =hello=, =snapshot= (record v1)     | initial           |       | inspect.fs | dashboard, CLI     |
+| 2026-11-21 | snapshot floats: 17 digits, =-0.0= kept  | PATCH (values only) | #1  | 0.1.0      | none needed        |
+| 2026-11-21 | =all-~~= snapshots fill =where= / =src=  | PATCH (values only) | #2  | 0.1.0      | none needed        |
+| 2026-11-21 | 1.1: snapshot =id= (optional), word =log-id=; =hello.contract=; consumers stop on a MAJOR or MINOR change | MINOR | #3 | 0.1.0 | checker, dashboard |
+| 2026-11-21 | =log-write= builds each record in memory, seeks to the end, and writes it as one whole line. Producers that take turns never lose a record. Concurrent producers are best-effort (rare, not impossible, interleaving); one producer per =GFORTH_INSPECT_LOG_DIR= is supported | PATCH (no schema change) | #17 | 0.1.0 | none needed |

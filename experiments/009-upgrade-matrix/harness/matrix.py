@@ -230,9 +230,13 @@ def append_logs(out: Out, producers: dict[str, ledger.Producer], keys: list[str]
     snapshots = []
     for index, key in enumerate(keys):
         xrid = f"{name}-{index}-{key}-{producer.ENGINE_SHORT[engine]}"
-        producer.run_batch(producers[key].fs_path, engine, sandbox, producer.workload("009-" + xrid, 9009).lines)
+        status = producer.run_batch(producers[key].fs_path, engine, sandbox,
+                                    producer.workload("009-" + xrid, 9009).lines)
         log = sandbox.expected_log()
-        snapshots.append(log.read_bytes() if log.exists() else b"")
+        content = log.read_bytes() if log.exists() else b""
+        if status != 0 or len(content) <= len(snapshots[-1] if snapshots else b""):
+            raise RuntimeError(f"{xrid}: exit {status}, log did not grow: no stream is built on it")
+        snapshots.append(content)
         out.manifest.append({"xrid": xrid, "run": "n0", "slot": name, "key": key,
                              "source": producers[key].source, "blob": ledger.public_blob(producers[key]),
                              "engine": engine, "seed": 9009, "cwd": out.rel(sandbox.root),
@@ -318,7 +322,7 @@ def envelope_errors(content: bytes, envelope: dict) -> str:
     try:
         import jsonschema
     except ImportError:
-        return "unchecked"
+        raise SystemExit("009 needs jsonschema: uv run --no-project --with jsonschema python ...")
     validator = jsonschema.Draft202012Validator(envelope)
     reasons = {}
     for number, line in enumerate([line for line in content.split(b"\n") if line], 1):
@@ -538,7 +542,8 @@ def main(argv: list[str]) -> int:
         snapshots = append_logs(out, producers, ["V2", "V5", "F3", "F4"], "gforth", "x6")
         x6 = {"V2-V5": snapshots[1], "V2-V5-F3": snapshots[2], "V2-V5-F3-F4": snapshots[3]}
         summary = x_cells(out, producers, logs, x6, names, api, envelope)
-        with open(out.out_dir / "xstreams.tsv", "w") as handle:
+        xname = "xstreams.tsv" if options.tag == "matrix" else f"{options.tag}-xstreams.tsv"
+        with open(out.out_dir / xname, "w") as handle:
             columns = ["stream", "usable", "prefix-first", "prefix-every", "envelope", "compound", "note"]
             handle.write("\t".join(columns) + "\n")
             for entry in summary:

@@ -19,7 +19,7 @@ disagreement stops the consumer with a message naming that field:
                 info.x-contract equal hello.contract
  10. envelope   (with --envelope) every record validates against it
  11. payload    every record from the newest hello on validates against
-                the schema (2020-12 validator, if jsonschema is importable)
+                the schema (2020-12 validator; jsonschema is required)
 
 Output: {"ok": true, "tuple": {...}} (exit 0) or {"stopped": "<field>: ..."}
 (exit 1).
@@ -46,8 +46,8 @@ class Stop(Exception):
 def validator_for(schema: dict):
     try:
         import jsonschema
-    except ImportError:
-        return None
+    except ImportError:  # skipping the envelope and payload steps would report ok
+        raise SystemExit("009 needs jsonschema: uv run --no-project --with jsonschema python ...")
     return jsonschema.Draft202012Validator(schema)
 
 
