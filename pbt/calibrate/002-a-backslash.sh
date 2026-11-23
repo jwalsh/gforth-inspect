@@ -6,7 +6,7 @@ set -eu
 pbt=$(cd "$(dirname "$0")/.." && pwd)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-ref_show "${INSPECT_REF:-HEAD}" env/inspect.fs > "$tmp/clean.fs"
+under_test env/inspect.fs > "$tmp/clean.fs"
 # the first -e is json-chars from inspect 0.1.0, the second json-str
 # from harden@b1c162e; one of them has to match (checked below)
 sed -e 's/r@ \[char\] " = r@ \[char\] \\ = or IF r@ jesc 1/r@ [char] " = IF r@ jesc 1/' \

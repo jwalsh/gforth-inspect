@@ -1,6 +1,8 @@
 # 001-lib.inc -- shared by calibrate/001-*.sh (not itself a calibration: no .sh)
 #
-# plant SED_EXPR into inspect.fs from ${INSPECT_REF:-HEAD}, run the selected
+. "$(dirname "$0")/ref-show.lib"
+
+# plant SED_EXPR into the inspect.fs under test (under_test, ref-show.lib), run the selected
 # 001 tests on the clean copy (control: must pass) and on the planted copy
 # (must fail, on exactly EXPECT_FAILED test ids, each message matching
 # EXPECT_MESSAGE).  Exit 0 only if all of that holds.
@@ -9,13 +11,12 @@ calibrate_001() {
     set -f  # test ids hold [...]; never let the shell glob them
     name=$1 sed_expr=$2 selection=$3 expect_failed=$4 expect_message=$5
     pbt_dir=$(cd "$(dirname "$0")/.." && pwd)
-    ref=${INSPECT_REF:-HEAD}
     work=$(mktemp -d)
     trap 'rm -rf "$work"' EXIT
-    git -C "$pbt_dir" show "$ref:env/inspect.fs" > "$work/clean.fs" || return 1
+    under_test env/inspect.fs > "$work/clean.fs" || return 1
     sed "$sed_expr" "$work/clean.fs" > "$work/planted.fs"
     if cmp -s "$work/clean.fs" "$work/planted.fs"; then
-        echo "$name: fault not planted (sed matched nothing in $ref:env/inspect.fs)"; return 1
+        echo "$name: fault not planted (sed matched nothing in the inspect.fs under test)"; return 1
     fi
     # exactly one line may change: a range that re-opens would over-plant
     changed=$(diff "$work/clean.fs" "$work/planted.fs" | grep -c '^>')

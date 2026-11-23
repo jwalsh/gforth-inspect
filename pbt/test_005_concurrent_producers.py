@@ -10,7 +10,7 @@ against the schema, and every (producer, sequence) written must be there
 exactly once, with one hello per producer.
 
   test_concurrent_producers  the runner's inspect.fs (INSPECT_REF /
-                             INSPECT_FS, default harden).  Strict xfail
+                             INSPECT_FS, default this checkout's).  Strict xfail
                              citing #17 while its log-on and log-write are
                              those of a pinned unfixed ref (b1c162e,
                              10a0da4), a plain test once either changes

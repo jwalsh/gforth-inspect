@@ -7,8 +7,10 @@ inspect.fs comes from, in order:
   INSPECT_FS     a path (use this to test a planted fault)
   INSPECT_REF    a git ref; `git show REF:env/inspect.fs` is cached by blob id
   otherwise      env/inspect.fs of the checkout this file is in, so each
-                 worktree tests its own tree, uncommitted edits included
-The schema follows the same choice (SCHEMA_JSON overrides it).
+                 worktree tests its own tree, uncommitted edits included;
+                 copied once per process, so one run never mixes two versions
+The schema is SCHEMA_JSON, else INSPECT_REF's, else this checkout's; INSPECT_FS
+does not change it, so set SCHEMA_JSON with INSPECT_FS when the two differ.
 """
 
 from __future__ import annotations
@@ -34,6 +36,27 @@ def _git(*args: str) -> str:
 FIXTURE_REFS = Path(__file__).resolve().parent / "fixtures" / "refs"
 
 
+_SNAPSHOT: tuple[Path, str] | None = None
+
+
+def _worktree_snapshot() -> tuple[Path, str]:
+    """This checkout's env/inspect.fs, copied by blob id on the first call."""
+    global _SNAPSHOT
+    if _SNAPSHOT is None:
+        live = REPO / "env" / "inspect.fs"
+        if not live.exists():
+            raise RuntimeError("no env/inspect.fs in this checkout; set INSPECT_FS or INSPECT_REF")
+        content = live.read_bytes()
+        blob = subprocess.run(["git", "-C", str(REPO), "hash-object", "--stdin"], input=content,
+                              check=True, capture_output=True).stdout.decode().strip()
+        CACHE.mkdir(parents=True, exist_ok=True)
+        path = CACHE / f"inspect-{blob[:12]}.fs"
+        if not path.exists():
+            path.write_bytes(content)
+        _SNAPSHOT = path, f"worktree:env/inspect.fs blob:{blob[:12]}"
+    return _SNAPSHOT
+
+
 def inspect_source() -> tuple[Path, str]:
     """(path to inspect.fs, provenance string for run logs)."""
     explicit = os.environ.get("INSPECT_FS")
@@ -45,11 +68,7 @@ def inspect_source() -> tuple[Path, str]:
         return path, f"file:{path.name} blob:{blob[:12]}"
     ref = os.environ.get("INSPECT_REF")
     if not ref:
-        path = REPO / "env" / "inspect.fs"
-        if not path.exists():
-            raise RuntimeError("no env/inspect.fs in this checkout; set INSPECT_FS or INSPECT_REF")
-        blob = _git("hash-object", str(path)).strip()
-        return path, f"worktree:env/inspect.fs blob:{blob[:12]}"
+        return _worktree_snapshot()
     fixture = FIXTURE_REFS / ref / "inspect.fs"
     if fixture.exists():
         # a pinned commit that is no longer in the history (2026-11-22 scrub)

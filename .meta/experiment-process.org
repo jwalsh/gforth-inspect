@@ -24,6 +24,8 @@
 |-----+-------+----------------------------------------------------------|
 | E-8 | why   | every experiment tests one named blob                    |
 | E-8 | how   | =gmake verify= sets =INSPECT_REF=HEAD=                      |
-| E-8 | limit | the =pbt/= default is =harden=                               |
+| E-8 | limit | none since #57: the =pbt/= default is this checkout's file |
 
-Open: change the =pbt/= default =INSPECT_REF= from =harden= to =HEAD=.
+Done in #57: with nothing set, =pbt/=, =corpus/= and the calibrations read
+this checkout's =env/inspect.fs=, uncommitted edits included (the working
+tree, not =HEAD=), so a plant edits what =check= runs.
