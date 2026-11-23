@@ -61,26 +61,19 @@ first real edit, even when the work is speculative:
 
 ## Leaving draft
 
-A PR comes out of draft only through [REVIEW.md](docs/REVIEW.md): `gmake verify`
-green, a `/code-review` of your own branch, every finding answered, and the
-review recorded in the PR body. Coordinators merge. Agents never merge
-their own PRs.
+When the work is done:
 
-### What `/code-review` checks here
+1. `gmake verify` is green on the head you are about to mark ready.
+2. Run `/code-review` on your branch: `high` for code, `medium` for
+   documentation only. Never `max` or `ultra` unless the owner asks.
+3. Fix every finding, or answer it in the PR body with a reason. Never
+   weaken a test to make a finding go away.
+4. Record it in the PR body: the verify summary line and sha, and each
+   finding with its fix sha or the reason it stands.
+5. `gh pr ready <number>`.
 
-`/code-review` counts rules only from CLAUDE.md files; `.claude/CLAUDE.md` imports
-this file (`@../AGENTS.md`), so these rules reach it. REVIEW.md does not. On top
-of correctness, flag:
-
-| fault | rule |
-|---|---|
-| an inspector word moves what it reports | every stack bit-identical after any word that reads one (`.stacks` once printed its own return-stack frame) |
-| a word not in 0.7.3 | `{: :}`, `[: ;]`, `[{:` are gforth 1.0; check with `gforth -e 's" WORD" find-name 0<> . bye'` |
-| one engine only | threaded-code changes (`dbg`, `see`, return addresses) tested in `gforth`, `gforth-fast`, `gforth-itc` |
-| a record-format change | needs an issue, a schema change and a change-log row ([RELEASING.org](docs/RELEASING.org), "Changing the contract or the tooling"); must not break a reference consumer |
-| an uncalibrated gate | a new check has a planted fault that turns it red, for the right reason |
-| private data | absolute paths, names, addresses, tokens, other people's code, session transcripts, in files or test output |
-| developer notes in README.org | README is end-user only |
+Coordinators merge. Agents never merge their own PRs. A red `gmake verify`
+stays a draft, even when the red is someone else's.
 
 ## What an agent owns
 

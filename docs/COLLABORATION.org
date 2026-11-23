@@ -7,7 +7,7 @@ and the agents working for them, change the tool together without breaking
 each other.
 
 The contract it depends on is in [[file:../contract/CONSUMERS.org][contract/CONSUMERS.org]], the release rules are in
-[[file:RELEASING.org][RELEASING.org]], and the per-agent rules are in [[file:../AGENTS.md][AGENTS.md]] and [[file:REVIEW.md][REVIEW.md]].
+[[file:RELEASING.org][RELEASING.org]], and the per-agent rules are in [[file:../AGENTS.md][AGENTS.md]] and [[file:../REVIEW.md][REVIEW.md]].
 Everything here was either lived through on 2026-11-21 (see
 [[file:../.meta/decisions.org][.meta/decisions.org]]) or is the smallest extension of that to N consumers.
 
@@ -68,7 +68,7 @@ is done.
    change-log row), then producer, then the reference consumers, then the
    checks. MAJOR and MINOR changes bump =x-contract=. A PATCH does not.
 4. *Review.* Draft PR, =gmake verify=, =/code-review= of the PR's own
-   branch, every finding answered (REVIEW.md), then the producer
+   branch, every finding answered (AGENTS.md, "Leaving draft"), then the producer
    coordinator merges.
 5. *Release.* Only from green. Before the first stable tag (v0.5.0 or
    v1.0.0), as a prerelease (D-41). Each fixing PR
