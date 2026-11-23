@@ -1,0 +1,2 @@
+GFORTH_INSPECT_LOG_DIR=$(mktemp -d) XDG_STATE_HOME=$(mktemp -d) gforth env/inspect.fs -e 'log-on all-~~ : t ( -- ) -7 ~~ drop ; t bye'
+tail -1 <logdir>/stacks.jsonl   # "where":null,"src":null

@@ -1,0 +1,44 @@
+stream	usable	prefix-first	prefix-every	envelope	compound	note
+X1-none	False	ok	ok	valid	hello: no hello record	no hello at all
+X2-no-contract	False	ok	ok	'contract' is a required property (lines 1)	contract: hello.contract null is not MAJOR.MINOR	hello without contract
+X2-no-inspect	True	ok	ok	valid	inspect: hello.inspect null is not X.Y.Z	hello without inspect (optional key)
+X2-no-v	False	line 1: no I-1 prefix {"v":<int>, (starts '{"event":"he')	line 1: no I-1 prefix {"v":<int>, (starts '{"event":"he')	'v' is a required property (lines 1)	I-1: line 1 does not begin {"v":<int>,	hello without v
+X3-1	False	ok	ok	'1' does not match '^(0|[1-9][0-9]*)\\.(0|[1-9][0- (lines 1)	contract: hello.contract "1" is not MAJOR.MINOR	contract "1"
+X3-1.1.1	False	ok	ok	'1.1.1' does not match '^(0|[1-9][0-9]*)\\.(0|[1-9 (lines 1)	contract: hello.contract "1.1.1" is not MAJOR.MINOR	contract "1.1.1"
+X3-num	False	ok	ok	1.1 is not of type 'string' (lines 1)	contract: hello.contract 1.1 is not MAJOR.MINOR	contract 1.1
+X3-empty	False	ok	ok	'' does not match '^(0|[1-9][0-9]*)\\.(0|[1-9][0-9 (lines 1)	contract: hello.contract "" is not MAJOR.MINOR	contract ""
+X3-x.y	False	ok	ok	'x.y' does not match '^(0|[1-9][0-9]*)\\.(0|[1-9][ (lines 1)	contract: hello.contract "x.y" is not MAJOR.MINOR	contract "x.y"
+X4-v2	False	line 1: envelope v 2, this consumer knows [1]	line 1: envelope v 2, this consumer knows [1]	valid	v: line 1 has v 2, expected 1	every record v 2
+X4-missing	False	line 1: no I-1 prefix {"v":<int>, (starts '{"event":"he')	line 1: no I-1 prefix {"v":<int>, (starts '{"event":"he')	'v' is a required property (lines 1,2,3,4)	I-1: line 1 does not begin {"v":<int>,	every record without v
+X4-string	False	line 1: no I-1 prefix {"v":<int>, (starts '{"v":"1","ev')	line 1: no I-1 prefix {"v":<int>, (starts '{"v":"1","ev')	'1' is not of type 'integer' (lines 1,2,3,4)	I-1: line 1 does not begin {"v":<int>,	every record v "1"
+X4-v2-last	False	ok	line 6: envelope v 2, this consumer knows [1]	valid	v: line 6 has v 2, expected 1	only the last record v 2
+X4-v2-middle	False	ok	line 3: envelope v 2, this consumer knows [1]	valid	v: line 3 has v 2, expected 1	one middle record v 2, last record fine
+X4-t-missing	False	ok	ok	't' is a required property (lines 1,2,3,4)	envelope: line 1: 't' is a required property	every record without t
+X4-t-string	False	ok	ok	'1970-01-01T00:00:00Z' is not of type 'integer' (lines 1,2,3,4)	envelope: line 1: '1970-01-01T00:00:00Z' is not of type 'integer'	every record t a string
+X5-event-last	False	ok	ok	valid	payload: line 7: 'tick' is not one of ['hello', 'snapshot']	unknown event as the last line
+X5-event-middle	False	ok	ok	valid	payload: line 3: 'tick' is not one of ['hello', 'snapshot']	unknown event mid-stream
+X5-field-hello	True	ok	ok	valid	ok	unknown key in hello
+X5-field-snapshot	True	ok	ok	valid	ok	unknown key in every snapshot
+X5-field-input	True	ok	ok	valid	ok	unknown key in input
+X5-field-rs-frame	False	ok	ok	valid	payload: line 5: {'v': 1, 'event': 'snapshot', 't': 1795352421, 'id': '009-n0	unknown key in an rs frame object (schema: additionalProperties false)
+X6-V2-V5	True	ok	ok	valid	ok	one append-only file: V2-V5
+X6-V2-V5-F3	False	ok	ok	valid	contract: hello.contract 1.2, this consumer expects 1.1	one append-only file: V2-V5-F3
+X6-V2-V5-F3-F4	False	ok	line 19: envelope v 2, this consumer knows [1]	valid	v: line 19 has v 2, expected 1	one append-only file: V2-V5-F3-F4
+X7-hello-middle	True	ok	ok	valid	ok	the only hello on line 2
+X7-newest-1.1	True	ok	ok	valid	ok	1.2 hello first, newest hello 1.1
+X7-newest-1.2	False	ok	ok	valid	contract: hello.contract 1.2, this consumer expects 1.1	1.1 hello first, newest hello 1.2
+X7-row-1.1-1.2	False	ok	ok	valid	contract: hello.contract 1.2, this consumer expects 1.1	two hellos in a row: 1.1 then 1.2
+X7-row-1.2-1.1	True	ok	ok	valid	ok	two hellos in a row: 1.2 then 1.1
+X8-F5	False	line 1: envelope v 10, this consumer knows [1]	line 1: envelope v 10, this consumer knows [1]	valid	v: line 1 has v 10, expected 1	contract 10.0 stream
+X9-xcontract	False	ok	ok	valid	contract: hello.contract 1.2, this consumer expects 1.1	consumer schema x-contract 1.1, stream contract 1.2
+X9-xversion	False	line 1: envelope v 2, this consumer knows [1]	line 1: envelope v 2, this consumer knows [1]	valid	v: line 1 has v 2, expected 1	consumer schema x-version 1, stream v 2 under contract 1.1
+X9-draft07	True	ok	ok	valid	$schema: schema dialect 'http://json-schema.org/draft-07/schema#', expected 2020-12	consumer schema declares draft-07
+X9-schema-1.2	True	ok	ok	valid	x-contract: schema x-contract '1.2', stream 1.1	consumer schema x-contract 1.2, stream and expectation 1.1
+X9-schema-xv2	True	ok	ok	valid	x-version: schema x-version 2, records v 1	consumer schema x-version 2, stream v 1
+X11-event-first	False	line 1: no I-1 prefix {"v":<int>, (starts '{"event":"he')	line 1: no I-1 prefix {"v":<int>, (starts '{"event":"he')	'v' is a required property (lines 1,2,3,4)	I-1: line 1 does not begin {"v":<int>,	line starts {"event": (v dropped)
+X11-v-second	False	line 1: no I-1 prefix {"v":<int>, (starts '{"event":"he')	line 1: no I-1 prefix {"v":<int>, (starts '{"event":"he')	valid	I-1: line 1 does not begin {"v":<int>,	v is the second key
+X11-v-string	False	line 1: no I-1 prefix {"v":<int>, (starts '{"v":"1","ev')	line 1: no I-1 prefix {"v":<int>, (starts '{"v":"1","ev')	'1' is not of type 'integer' (lines 1,2,3,4)	I-1: line 1 does not begin {"v":<int>,	{"v":"1"
+X11-space	False	line 1: no I-1 prefix {"v":<int>, (starts '{ "v":1,"eve')	line 1: no I-1 prefix {"v":<int>, (starts '{ "v":1,"eve')	valid	I-1: line 1 does not begin {"v":<int>,	{ "v":1 (a space)
+X11-bom	False	line 1: no I-1 prefix {"v":<int>, (starts '\ufeff{"v":1,"e')	line 1: no I-1 prefix {"v":<int>, (starts '\ufeff{"v":1,"e')	valid	I-1: line 1 does not begin {"v":<int>,	UTF-8 BOM before the first {
+X11-v999	False	line 1: envelope v 999, this consumer knows [1]	line 1: envelope v 999, this consumer knows [1]	valid	v: line 1 has v 999, expected 1	v 999
+X11-later-line	False	ok	line 3: no I-1 prefix {"v":<int>, (starts '{"event":"sn')	'v' is a required property (lines 3)	I-1: line 3 does not begin {"v":<int>,	first line fine, line 3 without v

@@ -1,0 +1,34 @@
+{
+  "producer_exit": 0,
+  "jq": {
+    "exit": 0,
+    "lines": [
+      "{\"e\":\"hello\",\"w\":null,\"d\":null,\"f\":null}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[8],\"f\":[]}",
+      "{\"e\":\"snapshot\",\"w\":null,\"d\":[9],\"f\":[]}"
+    ]
+  },
+  "checker": {
+    "exit": 0,
+    "output": {
+      "event": "snapshot",
+      "where": null,
+      "src": null,
+      "data": [
+        9
+      ],
+      "float": [],
+      "rs": [],
+      "input": {
+        "file": "18-log-id-63.fs",
+        "line": 5,
+        "in": 10,
+        "text": "9 .stacks drop"
+      }
+    }
+  },
+  "mock_get_stacks": {
+    "status": 200,
+    "body": "{\"v\":1,\"event\":\"snapshot\",\"t\":0,\"id\":\"012345678901234567890123456789012345678901234567890123456789012\",\"where\":null,\"src\":null,\"data\":[9],\"float\":[],\"rs\":[],\"input\":{\"file\":\"18-log-id-63.fs\",\"line\":5,\"in\":10,\"text\":\"9 .stacks drop\"}}"
+  }
+}

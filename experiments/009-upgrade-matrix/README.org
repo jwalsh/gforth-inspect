@@ -1,0 +1,442 @@
+#+TITLE: 009 upgrade-matrix: past, current, future producers × consumers × 0–5 live sessions
+#+DATE: 2026-11-22
+#+STARTUP: showall
+
+Rules: [[file:../../.meta/README.org][.meta]] (E-*, O-*, RD-*). Every run has an xrid (RD-2).
+
+* Hypothesis
+
+H1. For every producer transition A → B on the version ledger below,
+[[file:../../docs/RELEASING.org::*Rulings][RELEASING.org::*Rulings]] predict each consumer's behaviour (follow; same output;
+stop with a message), and the consumers do exactly that, with 0 to 5 live
+producer sessions.
+
+H2. [[file:../../contract/CONSUMER-AGENTS.md][CONSUMER-AGENTS.md]] "A new version", steps 1–5, can be executed as
+written for every transition, by a scripted consumer.
+
+H3. The envelope (=v=, =event=, =t=, and =hello.contract=) is separable from
+the payload: every record from every ledger version and every fixture,
+including contract 10.0, validates against one envelope schema, and every
+consumer handles a record it cannot use by stopping with a message, never by
+crashing or emitting wrong data. (D-36: the envelope is frozen and versioned
+by 1.0.0.)
+
+H4. The corpus is complete: every schema path, value class and event is
+exercised under every version that supports it.
+
+H5. Compound version check. The version is a tuple, checked together: record
+=v=, =hello.contract=, =hello.inspect=, the schema's =$schema= dialect
+(=https://json-schema.org/draft/2020-12/schema=), =x-version= (1) and
+=x-contract= (1.1), and the API spec of =GET /stacks=. A consumer that checks
+one field accepts a stream another field says it cannot read.
+
+H6. Invariant I-1 (D-38): every line of every log, in every version, past
+and future, begins with the bytes ={"v":= followed by a decimal integer
+(the envelope version) and =,=. =v= is never renamed, moved, retyped or
+dropped. A consumer that checks this prefix on the first line, before
+parsing, fails early on anything it cannot read.
+
+* Version ledger (pinned by blob; RD-1)
+
+| key | source                 | blob         | =hello.inspect= | =hello.contract= | role                          |
+|-----+------------------------+--------------+---------------+----------------+-------------------------------|
+| V0  | b1c162e                | 0c494fbd693a | none          | none           | past: course import, contract 1.0 |
+| V1  | 9528a4c                | 1264ab7e38c0 | 0.1.0         | none           | past                          |
+| V2  | 3055452 = 10a0da4      | a7e5c141af51 | 0.1.0         | 1.1            | past: pre-#17                 |
+| V3  | 7dbf040                | 8ee70482686b | 0.1.0         | 1.1            | past: seek-only #17           |
+| V4  | d4bf1bb                | d1d87b91d38e | 0.1.0         | 1.1            | past: buffered #17            |
+| V5  | e645c92 = harden's head | af95cdf354af | 0.1.0         | 1.1            | current: release candidate    |
+| Vc  | course's local copy    | (hash in local manifest only) | per file | 1.1   | downstream deviation          |
+| F1  | fixture from V5        | built in temp | 0.5.0 / 1.0.0 | 1.1           | future: the release bump      |
+| F2  | fixture from V5        | built in temp | +patch        | 1.1            | future: PATCH, fix toward true value |
+| F3  | fixture from V5        | built in temp | +minor        | 1.2            | future: optional new field    |
+| F4  | fixture from V5        | built in temp | +major        | 2.0            | future: renamed field         |
+| F5  | fixture from V5        | built in temp | 10.0.0        | 10.0           | far future: many new fields and events |
+
+Fixtures are made by sed in a temp dir, never in =env/= (E-6). Vc is read
+from the course's main worktree only; nothing from it is committed.
+
+* Pathological streams (fixtures)
+
+| key | stream                                                        |
+|-----+---------------------------------------------------------------|
+| X1  | no =hello= at all                                               |
+| X2  | =hello= without =contract=; without =inspect=; without =v=          |
+| X3  | =contract= malformed: ="1"=, ="1.1.1"=, =1.1= (number), =""=, ="x.y"=     |
+| X4  | =v=: 2, missing, string                                           |
+| X5  | unknown =event= type; unknown fields in =hello= and =snapshot=      |
+| X6  | one append-only file across an upgrade: V2 records, V5 =hello=, V5 records; then F3, then F4 |
+| X7  | newest =hello= not at the top; two =hello= in a row with different contracts |
+| X8  | F5 (10.0) stream read by consumers built for 1.1               |
+| X9  | stream and schema disagree: =x-contract= 1.1 vs stream 1.2; =x-version= 1 vs =v= 2; schema =$schema= draft-07 under a 2020-12 validator |
+| X11 | I-1 broken: line starts ={"event":=; =v= second; ={"v":"1"=; ={ "v":1= (space); BOM before ={=; =v= = 999 |
+| X10 | =GET /stacks= response checked against its API spec (none today) |
+
+* Consumers (pinned)
+
+- the three frozen reference consumers: =pbt/consumers/stacks.jq=, =checker.py --expect 1.1=, =mock_server.py=;
+- their bb twins at PR #28's head, if present;
+- the course's own follower (main worktree only; counts reported, no content);
+- a scripted consumer that runs H2's five steps.
+
+* Sessions
+
+N ∈ {0, 1, 2, 3, 4, 5}. N = 0: replay recorded logs, no live gforth. N ≥ 1:
+N tmux sessions =gforth-inspect-009-<xrid>=, each one gforth (engines
+rotate gforth / gforth-fast / gforth-itc) at one ledger version, own sandbox
+(=HOME=, =XDG_STATE_HOME=, cwd), own log dir, consumers following live.
+Upgrade orders: consumer first; producer first; rolling (one session at a
+time); mixed steady state (N sessions on N versions, one consumer following
+all). Never attach to or type into any other tmux session.
+
+* Prediction (before the first run)
+
+- P1. =hello.inspect= "0.1.0" names five blobs (V1–V5): a consumer cannot
+  tell them apart by version, so H2 step 3 cannot know whether the #17 fix
+  is present. H2 refuted for transitions inside 0.1.0.
+- P2. V0, V1, X1, X2: =checker.py= stops ("missing"); jq and the mock
+  server follow without stopping.
+- P3. V2 → V5, V5 → F1, V5 → F2: frozen consumer output identical except
+  fixes toward the true value. PATCH holds.
+- P4. F3: checker stops; jq and mock follow (unknown field ignored). F4:
+  checker stops; jq emits =null= for the renamed field: MAJOR, as ruled.
+- P5. F5, X3, X4, X5: at least one frozen consumer crashes or emits wrong
+  data instead of stopping. H3 refuted on today's consumers; this is what
+  the frozen envelope must fix before 1.0.0.
+- P6. X6: checker obeys the newest =hello= and judges older records by it.
+  Result reported, no prediction of correctness.
+- P7. H2 step 1 cannot run as written before a tag exists, or without
+  access to the repo while it is private; it runs against a staged local
+  release dir.
+- P8. Vc differs from every upstream blob, and at least one difference
+  has no issue and no reproducer, so H2 step 3 cannot run for it.
+- P9. N does not change any verdict when each session owns its log dir.
+- P10. H5: no consumer checks the tuple. =checker.py= checks
+  =hello.contract= only; X9 passes it. =GET /stacks= has no OpenAPI or other
+  spec, so its version is unchecked: finding.
+- P12. H6: I-1 holds for V0–V5 and F1–F5 (every version writes
+  ={"v":1,"event":= first). No consumer checks it today; each X11 stream is
+  caught late (schema or field error) or not at all.
+- P11. H4: gaps exist; each is closed by a new corpus scenario.
+
+* Gate
+
+1. Calibrate first: each consumer-behaviour check red on a planted fault
+   (a checker with its version stop disabled; a fixture labelled PATCH that
+   changes jq output; a consumer that crashes on X5 reported as "stopped").
+2. Matrix: every ledger transition in sequence (V0 → … → V5 → F1 → … → F5),
+   plus skips V2 → V5, Vc → V5, V5 → F4, V5 → F5; × N ∈ {0..5} × 4 orders;
+   every X-stream × every consumer. All 3 engines across N ≥ 1.
+3. Every cell: observed vs the ruling's prediction, with xrid. A mismatch is
+   a finding, never a re-labelled ruling.
+4. H2: each of the five steps logged per transition: ran / failed as
+   written / not applicable. A step that fails as written is a finding →
+   a CONSUMER-AGENTS.md change by PR, in D-9 order.
+5. H3: an envelope schema candidate (=contract/= change proposal only, in the
+   PR body; E-6) that every ledger, fixture and X-stream record validates
+   against or is rejected by with a named reason.
+6. H5: a compound check (all tuple fields agree, or stop naming the field)
+   as a proposal in the PR body, run over every X9 cell; plus an OpenAPI
+   3.1 draft for =GET /stacks= whose =info.version= is in the tuple.
+7. H4: coverage table (schema path × value class × version); every gap
+   closed by a corpus scenario before the gate passes.
+8. H6: a prefix check (=^\{"v":[0-9]+,=, then the integer known or stop)
+   red on every X11 stream, green on every ledger and fixture record; run
+   as step 0 of H2, before =SHA256SUMS=.
+9. Outputs: =versions.org= (the ledger with rulings), =matrix.tsv=, the
+   coverage table, findings as issues. Counts and hashes only for Vc.
+
+* Log
+
+** 2026-11-22 registered
+
+Coordinator. Gate freezes at the first matrix run.
+
+** 2026-11-22 setup and calibration (gate 1)
+
+Agent. Amendment 315610b (H6, I-1, X11, P12, gate 8) was pulled before
+any run. Hypothesis, Prediction and Gate are as of 315610b and are not
+edited after this entry (E-5).
+
+Harness: =harness/= (stdlib, plus =jsonschema= via =uv run --no-project=,
+as =pbt/= does). The ledger is in [[file:versions.org][versions.org]].
+=ledger.py= pins V0–V5 by blob (V5 =af95cdf354af= checked at load) and
+builds F1a, F1, F2–F5 by text substitution on V5. Each substitution is
+refused when it changes nothing (the 004 plant rule). Nothing is written
+to =env/= or =contract/= (E-6). Vc is read from the course's main worktree
+only. Its blob and path live in the local manifest outside the repo;
+here it is =local-only=. Consumers are pinned by blob: =stacks.jq=
+3b61e2d3c8bb, =checker.py= b8e9b6d6386e, =mock_server.py= 6c7ca6a10665,
+and the bb twins on PR #28's branch, 977eab0 (=checker.clj= ed86074476b5,
+=mock_server.clj= 40992d834ffa). The course follower is copied to a temp
+dir and reported as counts only.
+
+Isolation: every gforth gets its own =mktemp -d= as cwd, =HOME= and
+=XDG_STATE_HOME=. =GFORTH_INSPECT_LOG_DIR= is inside it, except in slots
+where =(slot + run) % 4 = 3=, which leave it unset to exercise the XDG
+fallback in the sandbox. The real =~/.local/state/gforth-inspect/stacks.jsonl=
+and the old default log were hashed before and after (SHA256 in the local
+manifest): unchanged, see the last entry.
+
+=calibrate.py=: all four plants red.
+- (a) =checker.py= with the version stop disabled: V0 and F3 cells
+  =stop → accept=, match NO.
+- (b) a PATCH-labelled F2 with =where= renamed =at=: values:jq
+  =null-break:2=, NO.
+- (c) a checker that raises on an unknown event: observed
+  =crash:RuntimeError=, h3 =crash= (not stop), NO.
+- (d) I-1: prefix check red on 7/7 X11 streams and green on 13/13
+  producers.
+
+** 2026-11-22 first matrix run (gate 2, 3)
+
+Command: =uv run -q --no-project --with jsonschema python harness/matrix.py <work>=,
+code at f9f12db, gforth 0.7.3, jq-1.7.1, bb 1.13.223. Seeds: 9009 for N=0
+and the X-streams; =crc32("<run>-<slot>")= per live slot, in
+=manifest.tsv=. Outputs: =matrix.tsv= (27240 cells), =manifest.tsv=
+(1103 producer runs, keyed by xrid: ref, blob, engine, seed, cwd relative
+to the work dir), =xstreams.tsv=. xrid: =n0-<key>-<engine>= for N=0,
+=x-<stream>= for X cells, and =<run>s<slot>-<nn>-<key><engine>= live,
+which is also the =log-id= from V2 on. V0, V1 and Vc are cross-referenced
+by log dir and segment offsets (RD-2, RD-3).
+
+Live: 20 runs (N = 1..5 × 4 orders), 60 tmux sessions named
+=gforth-inspect-009-r<NN>s<slot>=, 1060 producer starts. Engines rotate
+per slot and run, so all three appear in every N ≥ 3 run and across the
+N = 1, 2 runs (each N=1 run uses one engine, rotating gforth-fast, gforth-itc, gforth, gforth-fast). Text is typed with =send-keys -l --=. A line is
+acknowledged by =ACK<n>=, read from each pane's pipe-pane log, never
+capture-pane. No other tmux session was touched.
+
+Summary (=harness/summarize.py=):
+
+| kind             | cells | match NO |
+|------------------+-------+----------|
+| X-streams        |   258 |       15 |
+| N=0 verdicts     |  3024 |       72 |
+| N=0 values       |   168 |        0 |
+| live verdicts    | 20510 |      350 |
+| live values      |  3280 |        0 |
+| total            | 27240 |      437 |
+
+Producer runs: 1103 (gforth 369, gforth-fast 367, gforth-itc 367), 1060
+of them live. The live =jq= follower (=tail -n +1 -F | jq --unbuffered=)
+kept up with every file it followed: 2845 =follow= observations with
+lines = file lines, and 85 =absent= where only V0 or Vc had run, as
+ruled. The course follower: 3475 =follow=, 2 =crash= (X4-t only).
+The bb twins gave the same verdict and message as the Python consumers in
+every cell.
+
+Every mismatch, by kind:
+
+| cells | where                                                                                | predicted         | observed                       | finding                         |
+|-------+--------------------------------------------------------------------------------------+-------------------+--------------------------------+---------------------------------|
+|   422 | after the bump to 2.0 (F3→F4, V5→F4, F4→F5 step A, mixed window@F4): checker and bb twin, every N, order, engine | accept | =crash:KeyError: 'data'= | #32                     |
+|     8 | X2-no-v, X3-1.1.1, X4-v2-middle, X5-event-middle (checker, twin)                     | stop / reject     | accept                         | #31                             |
+|     4 | X5-field-rs-frame, X11-later-line (checker, twin)                                     | reject            | accept                         | #31, #36                        |
+|     2 | X4-t-missing, X4-t-string (course follower)                                           | follow            | crash (jq =strftime=)          | #36 (=t= in the envelope)       |
+|     1 | X11-bom (jq)                                                                          | die               | follow (jq-1.7.1 skips a BOM)  | my strict-JSON prediction; consumers disagree on BOM (#36) |
+
+** 2026-11-22 predictions
+
+- P1 held. V1–V5 are five blobs behind one =hello.inspect= ="0.1.0"=.
+  H2 step 4 fails as written for V1→V2, V2→V3, V3→V4, V4→V5 and V2→V5
+  ("version cannot tell A from B"). Whether #17 is in can only be told by
+  running a reproducer: adapted, V2 fails it and V3–V5 pass. #33.
+- P2 held. V0, V1, X1 and X2-no-contract: =checker.py= stops with
+  "contract (none) ... (major update)". jq, the mock (and the bb twins,
+  identically) follow. X2-no-inspect is accepted by the checker (=inspect=
+  is optional). X2-no-v is accepted: the hello is not the last line.
+- P3 held, at N=0 and live. V2→V5, V5→F1 and F1→F2 have only =same=
+  value classes. The fix classes are on the real ledger: V0→V1 (#1 floats
+  in jq, escaping in the checker's =input.text=), V1→V2 (#2 =w= in jq),
+  Vc→V5 (escaping). F1→F2 changes the mock body's bytes (=\u007f=), not
+  its decoded values.
+- P4 held. F3: the checker stops (minor); jq and the mock follow (the mock
+  shows an added key). F4: the checker stops (major); jq =d= is null in
+  5/5 snapshots (=null-break:5=).
+- P5 held. On F5 and the X3, X4, X5 cells, jq, the mock and the bb mock
+  emit wrong data (they follow streams a 1.1 consumer cannot use). The
+  checker accepts X3-1.1.1 and X5-event-middle. The course follower
+  crashes on X4-t-missing and X4-t-string (jq =strftime=). H3 is
+  refuted on today's consumers: over the X cells, h3 = 2 crash, 142
+  wrong-data, 48 stop, 66 ok.
+- P6 reported. X6 is one append-only file. V2→V5: accepted. +F3: stop
+  (minor). +F4: stop (major). The checker obeys the newest hello and
+  validates only the last line, so the older records are never judged.
+- P7 held. =gh release download v0.1.0= (and v1.0.0 … v10.0.0) gives
+  "release not found" for 14/14 transitions. The repo is private and
+  has no release. A staged dir, built as RELEASING.org's "by hand"
+  recipe, verifies =SHA256SUMS=. At b1c162e–d4bf1bb it holds only 3 of
+  the 6 assets.
+- P8 held, in this form: Vc differs from all 6 ledger blobs (diff lines
+  vs V0..V5: 45, 263, 273, 275, 301, 308). Against V0 there are 8
+  difflib hunks (=diff= finds 9): 4 cite an issue in their own comment,
+  2 are comment-only, and 2 change code with no citation of their own.
+  =diff= shows three such lines: the snapshot =id= line, the
+  =hello.contract= line and the =.debugline= hook. They fall under
+  deviation rows #3 and #2. The =hello.contract= change has no issue of
+  its own, and #3, the row it sits under, has an example instead of a
+  reproducer. So step 3 cannot check that change. Not predicted: Vc keeps
+  b1c162e's BASE bug (records in hex under =hex=: invalid JSON, wrong
+  cells). 9528a4c fixed it with no issue, so no deviation row can catch
+  it. #38. Also: Vc ignores =GFORTH_INSPECT_LOG_DIR=, while its own
+  follower reads it first.
+- P9 held. Over the live verdict cells, keyed by (order, transition,
+  step, consumer, the slot's producer, expectation): 1040 keys, 0
+  whose verdict changes with N.
+- P10 held. No consumer checks the tuple. The checker passes 3 of 5 X9
+  cells (draft-07 =$schema=, schema =x-contract= 1.2, schema =x-version=
+  2). It catches the other two through =hello.contract= and through the
+  schema's =v= const. =GET /stacks= has no spec: in X10, F3's last record
+  (contract 1.2) validates under the 1.1 record schema, and the response
+  carries no contract. #35.
+- P11 held. 21 (path, class, version) gaps in 3 classes: =input.file=
+  other, =input.line= ≤ 0, =snapshot.id= cut at 63
+  (=coverage-before.tsv=). They are closed by =corpus/17-evaluated-string=
+  and =corpus/18-log-id-63=, recorded at the PROVENANCE blob
+  a7e5c141af51 with =INSPECT_REF=10a0da4=. =check=, =engines= and
+  =calibrate= are green there. =coverage.tsv=: 55 rows × 12 versions, 0
+  gaps.
+- P12 held. I-1 holds on real output of V0–V5, Vc and F1–F5 in all three
+  engines (=prefix_check --every-line=). No consumer checks it. The
+  checker accepts X11-v-second, X11-space and X11-later-line, and
+  rejects X11-event-first, X11-v-string and X11-v999 late (schema). On
+  X11-bom it stops with "contract (none)", which is wrong: the stream has
+  one. jq and the mock follow all 7. One prediction cell is a mismatch:
+  I predicted jq would die on a BOM, but jq-1.7.1 skips it.
+
+** 2026-11-22 H2 step by step (gate 4)
+
+=harness/h2_upgrade.py= → =h2.tsv=, 14 transitions. Counts are of steps
+that failed as written:
+
+| step                     | failed as written | why                                                                                                   |
+|--------------------------+-------------------+-------------------------------------------------------------------------------------------------------|
+| 0 I-1 (D-38)             | 0/14              | ran; it stops at F3→F4, F4→F5, V5→F4, V5→F5 on the unknown v, as designed                              |
+| 1 download               | 14/14             | no release (P7); staged: 6/6 assets from V4→V5 on, 3/6 before                                          |
+| 2 change log, bump       | 4/14              | V0→V1 no change-log table; V4→V5 no row for e645c92; F3→F4, V5→F4 the bump crashes the checker (#32)  |
+| 3 deviation reproducers  | 14/14             | #1, #2, #17 call =env/inspect.fs= (assets are flat); =<logdir>= placeholder; #17 names the old dir; #3 has no command |
+| 4 own init and tests     | 6/14              | V0→V1 no contract; 5 transitions inside 0.1.0 (P1)                                                     |
+| 5 reply                  | 14/14             | no release thread; replies kept in =h2-replies.txt=                                                    |
+
+Adapted step 3 (the reproducers' intent, runnable): V1 fixes #1; V2
+fixes #1 #2 #3; V3 and later fix all four. V3→V4 shows "1 of A's rows
+rewritten": V4 replaced V3's #17 row. Each failing step is a finding for
+a CONSUMER-AGENTS.md change by PR, in D-9 order (issue first: #34).
+
+** 2026-11-22 proposals (gates 5, 6, 8) and issues
+
+- Envelope candidate =envelope.schema.json= (=x-envelope= 1.0.0).
+  V2–V5, Vc and F1–F5 validate. V0 and V1 hellos are rejected ("'contract'
+  is a required property"). Every X-stream record validates or is
+  rejected with a named reason (=xstreams.tsv=, column =envelope=). It
+  cannot see X11-v-second, X11-space or X11-bom: those need the byte
+  check.
+- Compound check =harness/compound_check.py=. It stops on 5/5 X9 cells,
+  each naming its field (=contract=, =v=, =$schema=, =x-contract=,
+  =x-version=). It is green on V2–V5 and F1–F5 with their own schema and
+  API version (=x10.tsv=), and stops on V0 and V1 (=contract=) and Vc
+  (=inspect=).
+- OpenAPI 3.1 draft =openapi-stacks.json=: =info.version= = contract. The
+  coordinator's evidence, reproduced with =harness/oas_check.py=
+  (openapi-spec-validator 0.9.0): 3.1 gives 0 errors; 3.0 rejects on the
+  version string first; 2.0 needs 'swagger'.
+- Issues: #31 (the checker accepts "1.1.1" and validates only the last
+  line), #32 (the step-2 bump crashes the checker on a MAJOR rename), #33
+  (one version for five blobs; the change log was rewritten and misses a
+  row), #34 (H2: no step runs as written), #35 (=GET /stacks= unversioned),
+  #36 (envelope, I-1, compound: D-9 step 1), #37 (corpus check red at
+  its default ref; =record.py= cannot record a producer that ignores
+  =GFORTH_INSPECT_LOG_DIR=), #38 (b1c162e BASE bug, fixed with no issue).
+
+Real logs, after every run: the SHA256 of the real =~/.local/state/gforth-inspect/stacks.jsonl= and of the old default log are the same as before the first run (local manifest); no run wrote outside its sandbox.
+
+** 2026-11-22 verdict
+
+- H1 refuted, in one class. In every other cell the consumers did what
+  the rulings predict, in all three engines, with 0 to 5 sessions, in all
+  four orders. That includes location: V0 and Vc never write to the
+  contract path (a pre-0.5.0 note, as ruled). The one class: after the
+  consumer bumps its expected version to a MAJOR that renames a key, the
+  checker crashes (422 cells, #32).
+- H2 refuted: no step runs as written for every transition. Steps 1, 3
+  and 5 fail for all 14 (#34).
+- H3 split. The envelope holds: every record validates against
+  =envelope.schema.json= or is rejected with a named reason, F5 (10.0)
+  included. The consumer half is refuted on today's consumers: 2 crashes
+  and 142 wrong-data cells over the X-streams (#31, #36).
+- H4 refuted before, holds after: 21 gaps, closed by corpus 17 and 18.
+- H5 held. The single-field checker accepts 3 of 5 X9 streams; the
+  compound check stops on all 5, naming the field.
+- H6 held for producers: I-1 holds on real output of every version and
+  fixture, in all three engines. No consumer checks it today. The prefix
+  check (gate 8) is red on 7/7 X11 and green on 13/13 producers.
+
+Gate: 1–9 have their outputs. The gate items that need a contract change
+(5, 6, and 8 as a consumer step) are proposals in the PR body (E-6).
+Every mismatch is a finding with an issue (gate 3).
+
+** 2026-11-22 rebased onto the rewritten history
+
+Agent. The history was rewritten for going public, and this branch was
+rebased onto main. Commit ids in this directory now name the rewritten
+commits: V0–V5 are b1c162e, 9528a4c, 10a0da4, 7dbf040, d4bf1bb, e645c92
+(also in the =source= column of =manifest.tsv=); the amendment is
+315610b, the run's code f9f12db, the bb twins 977eab0 on PR #28's branch
+(same blobs, =checker.clj= ed86074476b5, =mock_server.clj= 40992d834ffa).
+None of V0–V5 is on a branch now (harden was squash-merged in #13), so
+=ledger.py= reads =pbt/fixtures/refs/<commit>/= before asking git, as
+=gforth_run= does; V1, V3, V4 and V5 are added there.
+
+V1–V5 are byte-identical across the rewrite (blobs as in the ledger, V5
+still checked at load). V0 is not: the rewrite replaced the course's
+private directory name in two lines of =inspect.fs= (the =log-on=
+comment and the =log-dir= string) and in the schema's description. V0's
+blobs are now 0c494fbd693a and b37befc7b00d. The first run measured
+76d34db7cd61 and 4c620671e93d, and =manifest.tsv= keeps those as
+recorded. No cell depends on the name: =matrix.py= writes every
+non-contract directory as =legacy=, and V0 never writes to the contract
+path either way. The matrix was not re-run.
+
+** 2026-11-22 code review, and a re-run on the rewritten history
+
+Agent. =/code-review high= of the branch found 5 important and 5 minor
+faults in =harness/=. All are fixed in 3f5f2ac:
+- =h2_upgrade.py= staged the prose assets from =origin/harden= and from
+  commits no longer in the history, so a re-run staged 0/6. Every asset
+  now comes from =pbt/fixtures/refs/= (prose as =<name>.txt=, out of the
+  guide check's reach), with harden's head pinned as
+  6fe7632 (PR #13's head: V5's =inspect.fs= and schema blobs, and all six
+  assets). =make_openapi.py= reads the schema there too; the regenerated
+  =openapi-stacks.json= is byte-identical.
+- Step 3 ran the first code block of issues #1, #2, #3 and #17 as fetched
+  at run time, with =sh -c=. It now runs reviewed copies in
+  =reproducers/=.
+- A live session could lose its first prompt to a race between
+  =new-session= and =pipe-pane=. The shell now waits on =read= until the
+  pipe is attached.
+- Calibration plant (a) counted any =NO= as caught. It now requires the
+  same cells to match unplanted and to observe =accept= when planted.
+- A failed producer run was not checked in =append_logs=, h2, x10 or
+  calibrate. It now raises (=producer.run_checked=), as =record_base=
+  does. So does a failed =gh release list=, which h2 read as "0
+  releases".
+- Minor: =xstreams.tsv= follows =--tag=; every V0–V5 blob is checked at
+  load, not only V5's; a missing =jsonschema= stops the run instead of
+  reading as valid; the mock has a 30 s deadline for its PORT line, and
+  a connection error is a =crash:= verdict; consumers are refused unless
+  their blobs are the pinned ones.
+
+Re-run at 3f5f2ac from the pins, without Vc (so without the follower),
+into a scratch dir; the committed outputs were not replaced:
+- =calibrate.py=: a–d red as expected; (a) matches unplanted.
+- =matrix.py --only x,n0=: of the 2126 cells comparable with
+  =matrix.tsv= (no Vc, no follower), all 2126 have the same predicted,
+  observed and match. Two differ only in a timestamp =t= quoted in the
+  text. =xstreams.tsv= is the same apart from that timestamp.
+- =h2_upgrade.py=: steps 0, 1-staged, 2, 3 and 4 are as recorded in all 13
+  transitions without Vc. Step 1 now runs in the 6 transitions whose B
+  announces 0.1.0, and step 5 runs in all 13: v0.1.0 to v0.3.0 were
+  released after the first run. A download of v0.1.0 cannot say which of
+  the five 0.1.0 blobs it is (#33). =h2.tsv= keeps the first run.
+- Live sessions were not re-run.

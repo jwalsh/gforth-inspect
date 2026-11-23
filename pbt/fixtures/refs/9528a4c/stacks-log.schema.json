@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "stacks-log.schema.json",
+  "title": "gforth stacks log record",
+  "description": "One line of <dir>/stacks.jsonl, where <dir> is $GFORTH_INSPECT_LOG_DIR or ${XDG_STATE_HOME:-~/.local/state}/gforth-inspect. Producer: env/inspect.fs (log-on). Prose: stacks-log.org.",
+  "x-version": 1,
+  "type": "object",
+  "required": [
+    "v",
+    "event",
+    "t"
+  ],
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "event": {
+      "enum": [
+        "hello",
+        "snapshot"
+      ]
+    },
+    "t": {
+      "type": "integer",
+      "description": "Unix seconds"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "event": {
+          "const": "hello"
+        },
+        "gforth": {
+          "type": "string"
+        },
+        "inspect": {
+          "type": "string",
+          "description": "inspect-version of the producer (optional, since 0.1.0)"
+        }
+      },
+      "required": [
+        "gforth"
+      ]
+    },
+    {
+      "properties": {
+        "event": {
+          "const": "snapshot"
+        },
+        "where": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "src": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "float": {
+          "type": "array",
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "rs": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "const": "sp"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "word",
+                  "off"
+                ],
+                "properties": {
+                  "word": {
+                    "type": "string"
+                  },
+                  "off": {
+                    "type": "integer"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "input": {
+          "type": "object",
+          "required": [
+            "file",
+            "line",
+            "in",
+            "text"
+          ],
+          "properties": {
+            "file": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer"
+            },
+            "in": {
+              "type": "integer"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "where",
+        "src",
+        "data",
+        "float",
+        "rs",
+        "input"
+      ]
+    }
+  ]
+}

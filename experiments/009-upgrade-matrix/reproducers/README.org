@@ -1,0 +1,5 @@
+The first fenced block of issues #1, #2, #3 and #17, as =h2_upgrade.py=
+runs them in step 3 "as written". Copied by hand from the issue bodies on
+2026-11-22, after the history rewrite, and read before being pinned. H2
+runs these copies, never the live issue text, which anyone with triage
+rights could edit. To refresh one, copy the new block here and review it.
