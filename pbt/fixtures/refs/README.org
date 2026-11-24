@@ -7,3 +7,12 @@ links point into a tree that is not here.
 =gforth_run.inspect_source= and =schema= read =<ref>/= here before asking
 git. 009's =harness/ledger.py= does too, and takes a file missing from a
 =<ref>/= dir as missing at that commit.
+
+=model/= is the =model= branch's =model/data/= at 5e3eede (experiment 003),
+which is not public because the model's =words.json= records install paths.
+Its =words.json= is pinned with the gforth install prefix replaced by
+=$GFORTH= and the checkout's parent directory by =$WORK= (nothing else
+differs); =live.tsv= (names, flags and xt addresses from a live 0.7.3) is
+pinned byte for byte.
+=_003_helpers.model_source= and =calibrate/003-declared-effects.sh= read it
+here first, so =test_003= runs on a fresh clone (#60).

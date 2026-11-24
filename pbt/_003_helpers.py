@@ -1,9 +1,12 @@
 """Experiment 003: declared stack effects (model words.json) vs measured deltas.
 
-The model is read from git (`git show MODEL_REF:model/data/words.json`, default
-`model` then `origin/model`) or from WORDS_JSON (a path; the calibration uses
-this).  Only names, kinds, flags, effects and call edges are used; the source
-paths in the model are never copied anywhere.
+The model (words.json and live.tsv) is read at MODEL_REF, default `model`: from
+pbt/fixtures/refs/<ref>/ when it is pinned there, else from git.  The `model`
+branch is not public; its words.json is pinned with machine paths replaced by
+$GFORTH and $WORK (pbt/fixtures/refs/README.org).  WORDS_JSON (a path)
+replaces words.json; the calibration uses it.  Only names, kinds, flags,
+effects and call edges are used; the source paths in the model are never
+copied anywhere.
 
 The harness runs plain gforth (no inspect.fs): per call it clears both stacks,
 pushes typed inputs, records `depth fdepth`, runs the word under `catch`, and
@@ -35,20 +38,30 @@ def _git(*args: str) -> str:
                           capture_output=True, text=True).stdout
 
 
+FIXTURES = REPO / "pbt" / "fixtures" / "refs"
+
+
+def _ref_show(ref: str, path: str) -> tuple[str, str]:
+    """(PATH's text at REF, where it came from): fixtures/refs/REF/ first, as
+    calibrate/ref-show.lib does, else git."""
+    fixture = FIXTURES / ref / Path(path).name
+    if fixture.is_file():
+        return fixture.read_text(), f"{ref}@fixture"
+    return _git("show", f"{ref}:{path}"), f"{ref}@{_git('rev-parse', '--short', ref).strip()}"
+
+
 def model_source() -> tuple[dict, str, str]:
     """(words.json as a dict, live.tsv text, provenance for the log)."""
-    refs = [os.environ["MODEL_REF"]] if "MODEL_REF" in os.environ else ["model", "origin/model"]
-    for ref in refs:
-        try:
-            commit = _git("rev-parse", "--short", ref).strip()
-        except subprocess.CalledProcessError:
-            continue
-        live_text = _git("show", f"{ref}:model/data/live.tsv")
+    ref = os.environ.get("MODEL_REF", "model")
+    try:
+        live_text, where = _ref_show(ref, "model/data/live.tsv")
         explicit = os.environ.get("WORDS_JSON")
         if explicit:
-            return json.loads(Path(explicit).read_text()), live_text, f"WORDS_JSON (live.tsv from {ref}@{commit})"
-        return json.loads(_git("show", f"{ref}:model/data/words.json")), live_text, f"{ref}@{commit}"
-    raise RuntimeError(f"no model at any of {refs}; set MODEL_REF")
+            return json.loads(Path(explicit).read_text()), live_text, f"WORDS_JSON (live.tsv from {where})"
+        words_text, where = _ref_show(ref, "model/data/words.json")
+    except subprocess.CalledProcessError:
+        raise RuntimeError(f"no model at {ref} (pbt/fixtures/refs/{ref}/ or git); set MODEL_REF") from None
+    return json.loads(words_text), live_text, where
 
 
 def best_records(words: list[dict]) -> dict[str, dict]:

@@ -7,8 +7,7 @@
 set -u
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-ref=${MODEL_REF:-model}
-git rev-parse --verify -q "$ref" >/dev/null || ref=origin/model
+ref=${MODEL_REF:-model}  # pinned in fixtures/refs/model/; ref_show reads it there first
 ref_show "$ref" model/data/words.json | python3 -I -c '
 import json, sys
 model = json.load(sys.stdin)
