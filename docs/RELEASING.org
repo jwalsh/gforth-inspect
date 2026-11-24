@@ -48,8 +48,9 @@ execution (tests, scripts, CI, experiments).
   #+end_example
 - =inspect-version ( -- c-addr u )= returns ="X.Y.Z"=, and the =hello= record
   carries ="inspect":"X.Y.Z"= and ="contract":"MAJOR.MINOR"=, the latter equal
-  to the schema's =x-contract=. inspect 0.1.0 announces contract 1.1. A consumer
-  that follows CONSUMERS.org refuses a stream that has no =contract=.
+  to the schema's =x-contract=. inspect 0.3.1 (this release) announces
+  contract 1.1. A consumer that follows CONSUMERS.org refuses a stream that
+  has no =contract=.
 
 * Stable API, and what bumps what
 
@@ -105,7 +106,7 @@ experiment 004:
 The stable words: =.stacks .rs .input ~~~ .cs all-~~ dbg-fix dbg+ rs-full
 fclearstack log-on log-off log-where log-id inspect-version
 contract-version=. =contract-version ( -- c-addr u )= returns the announced
-contract, ="1.1"= for inspect 0.1.0.
+contract, the string in the hello record's ="contract":"1.1"=.
 
 =log-id ( c-addr u -- )= (issue #3) copies up to 63 characters. Each later
 snapshot carries ="id":"<tag>"=, and =s" " log-id= clears it, after which
@@ -211,7 +212,11 @@ compare it with the file, do not feed it back in.
 
 #+begin_src sh
 git switch main && git pull --ff-only
-# bump the version line in env/inspect.fs and inspect-version, then commit: chore(release): vX.Y.Z
+# bump env/inspect.fs's header line, its inspect-version doc comment and the inspect-version word, and in
+# the docs every "X.Y.Z (this release)" and "inspect":"X.Y.Z" example (scripts/check-current-version.sh,
+# in verify, names each one; it also checks "announces contract" against the schema), then commit:
+# chore(release): vX.Y.Z
+# the demo (demo/tour.*) is re-recorded for a MAJOR or MINOR release only: a PATCH leaves its banner
 gmake test && gmake -C pbt check PROFILE=ci && scripts/privacy-scan.sh
 gmake release-check   # builds dist/ as below and checks it
 # by hand, what release-check does:

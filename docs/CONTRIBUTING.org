@@ -34,10 +34,13 @@ every commit and every PR. It runs, in order:
 1. =scripts/privacy-scan.sh --calibrate= and then =scripts/privacy-scan.sh=
 2. =scripts/check-guides.sh --calibrate= and then =scripts/check-guides.sh=:
    the guides exist, their links resolve, and README.org stays end-user only
-3. =gmake test=: the goldens in =gforth=, =gforth-fast= and =gforth-itc=,
+3. =scripts/check-current-version.sh --calibrate= and then
+   =scripts/check-current-version.sh=: every version the docs give for this
+   release, and its contract, matches =env/inspect.fs= and the schema
+4. =gmake test=: the goldens in =gforth=, =gforth-fast= and =gforth-itc=,
    with every record validated against the schema; coverage, known limits
    and the dated log are in [[file:../test/README.org][test/README.org]]
-4. =gmake -C pbt check=, then =gmake -C pbt calibrate=
+5. =gmake -C pbt check=, then =gmake -C pbt calibrate=
 
 CI is disabled while GitHub Actions billing stops its jobs (D-40): run the
 baseline locally and paste its summary into the PR. When enabled, CI runs
