@@ -173,7 +173,7 @@ gmake -C corpus gate        # check, engines, calibrate
 
 =record= and =check= print the =inspect.fs= blob they used.  The producer
 is chosen as =pbt/gforth_run.py= chooses it: =INSPECT_FS=, else
-=INSPECT_REF=, else the =harden= ref.  Each run gets a fresh temp
+=INSPECT_REF=, else this checkout's own =env/inspect.fs=.  Each run gets a fresh temp
 directory as its working directory and =HOME=, with =inspect.fs= and the
 scenario loaded by relative name, so =input.file= is ="NN-slug.fs"=.
 =record= refuses to write if any output contains the home directory or a

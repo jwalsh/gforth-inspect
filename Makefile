@@ -102,9 +102,11 @@ verify: ## The CONTRIBUTING.org baseline: privacy, guides, test, pbt check + cal
 	$(PBT_ENV) $(MAKE) -C pbt check
 	$(PBT_ENV) $(MAKE) -C pbt calibrate
 
-# pbt/ would read inspect.fs from the `harden` branch (pbt/gforth_run.py).
-# verify points it at this working tree, as CI does; the calibrate scripts
-# that plant a fault with `git show REF:env/inspect.fs` use this commit.
+# pbt/ reads this checkout's inspect.fs by default (pbt/gforth_run.py);
+# verify names the working-tree files explicitly, as CI does, so the tests and
+# the calibrations' plants (calibrate/ref-show.lib, under_test) use the working
+# tree, uncommitted edits included.  INSPECT_REF=HEAD is for what still reads
+# a ref: 005's pinned sides and 004's old side.
 PBT_ENV := INSPECT_FS=$(CURDIR)/env/inspect.fs SCHEMA_JSON=$(CURDIR)/$(SCHEMA) INSPECT_REF=HEAD
 
 # Every gate, in order; each has been seen red on a planted fault.

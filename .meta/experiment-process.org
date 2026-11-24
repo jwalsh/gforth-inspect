@@ -16,14 +16,17 @@
 | E-5 | after the first run          | append to the Log                                                                              | edit the gate or the prediction         | gate section unchanged in =git log -p=       |
 | E-6 | bug found in =env/inspect.fs= | hand it to the inspector's owner as a shrunk case + one-line reproducer; the finding test stays red until the fix lands | fix the inspector; weaken the test to go green | test red until fix |
 | E-7 | gate passes or finding solid | PR to =main= via [[file:../REVIEW.md][REVIEW.md]]; coordinator merges; a refuted hypothesis merges as a Log with no code | merge own PR      | PR body has a Review section                |
-| E-8 | choosing the inspector       | take it from =INSPECT_REF=                                                                       | test the working tree implicitly | provenance line names the blob |
+| E-8 | choosing the inspector       | an experiment names it (=INSPECT_REF= or =INSPECT_FS=); with nothing named, =pbt/= tests this checkout's tree (owner, 2026-11-23, #57) | a moving branch name as the default (=harden=, since deleted) | provenance line names the blob |
 | E-9 | calibrating an unfixed bug   | pin its own ref: =CALIBRATE_005_REF= (default =10a0da4=)                                         | follow =INSPECT_REF=                      | red on pinned ref, green on the fix         |
 | E-10 | each gforth run             | give it its own temp dir as =XDG_STATE_HOME= (so its log lands there), and load files by relative name | let a record hold a real path | no absolute path in any record |
 
 | re  | kind  | claim                                                    |
 |-----+-------+----------------------------------------------------------|
 | E-8 | why   | every experiment tests one named blob                    |
-| E-8 | how   | =gmake verify= sets =INSPECT_REF=HEAD=                      |
-| E-8 | limit | the =pbt/= default is =harden=                               |
+| E-8 | how   | =gmake verify= names the working tree (=INSPECT_FS=)          |
+| E-8 | limit | 004's new side defaults to the pinned c0cab02, not the tree |
 
-Open: change the =pbt/= default =INSPECT_REF= from =harden= to =HEAD=.
+Done in #57: with nothing set, =pbt/=, =corpus/= and the calibrations read
+this checkout's =env/inspect.fs=, uncommitted edits included (the working
+tree, not =HEAD=), so a plant edits what =check= runs.  Experiment 004 still
+pins its new side (=NEW_REF= c0cab02) when nothing is set.
