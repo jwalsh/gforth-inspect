@@ -1,2 +1,2 @@
-{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
 {"v":1,"event":"snapshot","t":0,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"13-empty-line.fs","line":7,"in":0,"text":""}}

@@ -39,7 +39,7 @@ replace the schema.
 | =13-empty-line=                | =input.text= is =""= and =input.in= is 0                                                                                                |
 | =14-snapshots-in-a-row=        | three snapshots from one line, =log-off=, =log-on=: a second =hello= mid-log                                                            |
 | =15-error-partial=             | the program aborts (exit 1); the log just stops, with no closing record                                                                 |
-| =16-two-producers=             | *best-effort contract*: two gforths on one log, paced line by line; records overwrite each other (issue #17) and the last line is not JSON |
+| =16-two-producers=             | *best-effort contract*: two gforths on one log, paced line by line; each record lands whole and in order (the fix for #17)              |
 | =17-evaluated-string=          | snapshots inside =evaluate=: =input.file= is ="*evaluated string*"=, =input.line= is -1, =input.text= is the string; a file word run from it keeps =where= / =src= (exp 009) |
 | =18-log-id-63=                 | =log-id= keeps 63 characters: a longer tag is cut, and later snapshots carry the cut tag (exp 009) |
 
@@ -54,8 +54,9 @@ Things the recordings show that a reader has to cope with:
 - Nothing marks the end of a log (=15=).  A crashed producer and a paused
   one look the same.
 - =16= is not a promise.  The contract is written for one producer per
-  log; today the second producer's writes land on top of the first's.  A
-  fix for #17 will change this recording, and that is expected.
+  log.  Paced line by line, each producer's records land whole and in
+  order; before the fix for #17 they landed on top of each other.  The
+  recording shows what the producer does, not what it guarantees.
 
 * What =expect.json= holds
 
