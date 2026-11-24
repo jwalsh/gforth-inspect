@@ -134,8 +134,8 @@ names a particular downstream project.
    is what closes it on GitHub). Downstream projects use those
    numbers to retire their local patches (see below).
 
-CI (=.github/workflows/verify.yml=, a macOS runner with gforth 0.7.3 from
-Homebrew) runs on every pull request and every push to =main=. It runs
+CI (=.github/workflows/verify.yml=, an Ubuntu runner with gforth 0.7.3 from
+apt) runs on every pull request and every push to =main=. It runs
 =gmake verify= against the tree's own =env/inspect.fs= and schema, which is
 also what =pbt/= and =corpus/= read when nothing else is named. CI does not yet run the =PROFILE=ci= long run, scan the
 release assets or grep them (2, 3 over =dist/=, and 4). Until it does,
