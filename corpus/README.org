@@ -109,8 +109,9 @@ parse each line, render the last one.
 ;; => ([] [-0.0 0.0 nil nil nil 1.7976931348623157e+308 ...])
 #+end_src
 
-=16-two-producers.jsonl= returns =unparsable=. That is the case your
-dashboard must not crash on.  To test a dashboard against every scenario,
+No recording here has a damaged line (since the fix for #17, =16= is
+whole), but concurrent producers are best-effort, so a real log can end
+in one; keep the =unparsable= branch.  To test a dashboard against every scenario,
 loop over =(directory-files "corpus" t "^[0-9][0-9]-.*\\.jsonl$")= and
 compare what it renders with the =checker= output in the matching
 =.expect.json=.
@@ -159,8 +160,10 @@ An MCP reader, or any reader of its own, takes a log path: give it
 =corpus/NN-slug.jsonl= directly, or copy the file to
 =<dir>/stacks.jsonl= and set =GFORTH_INSPECT_LOG_DIR=<dir>=.  Its answer
 for "the current stacks" should match =checker.output=.  For
-=15-error-partial= the answer is the last snapshot, and for
-=16-two-producers= it should say that the log is damaged, not guess.
+=15-error-partial= and =16-two-producers= the answer is the last snapshot.
+A log whose last line is not JSON can still happen with concurrent
+producers; there the reader should say that the log is damaged, not
+guess.
 
 * Regenerating
 

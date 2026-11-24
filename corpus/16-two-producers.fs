@@ -1,6 +1,7 @@
 \ 16-two-producers: BEST-EFFORT CONTRACT.  Two gforth processes write one
 \ log.  The contract is written for one producer per log (issue #17); this
-\ recording shows what the producer does today, not what it promises.
+\ recording shows what the producer does, not what it promises: paced like
+\ this, every record lands whole and in order (the fix for #17).
 \
 \ This file is not loaded.  corpus/record.py starts two gforths with
 \ inspect.fs, both logging to one directory, and sends each "pN:" line
