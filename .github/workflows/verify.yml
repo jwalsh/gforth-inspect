@@ -1,4 +1,5 @@
-# verify -- the verify baseline (CONTRIBUTING.org) on a macOS runner.
+# verify -- the verify baseline (CONTRIBUTING.org) on an Ubuntu runner.
+# Not macOS: its minutes cost several times Linux's (owner, 2026-11-23).
 # Branch protection on main requires the check `verify`, which is this job's
 # id. The workflow's own name does not matter to that rule; renaming the job
 # or giving it a `name:` does, so change RELEASING.org's rule set with it.
@@ -20,11 +21,8 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 60
-    env:
-      HOMEBREW_NO_AUTO_UPDATE: "1"
-      HOMEBREW_NO_INSTALL_CLEANUP: "1"
     steps:
       - name: Checkout (full history)
         uses: actions/checkout@v7.0.1
@@ -42,9 +40,13 @@ jobs:
           echo "SCHEMA_JSON=$GITHUB_WORKSPACE/contract/stacks-log.schema.json" >> "$GITHUB_ENV"
           echo "inspector: this tree's env/inspect.fs"
 
+      # Ubuntu's gforth package is 0.7.3 with all three engines. GNU make is
+      # `make` here; the Makefiles and their docs call it gmake.
       - name: Install gforth, GNU make, jq
         run: |
-          brew install gforth make jq
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends gforth make jq
+          sudo ln -sf "$(command -v make)" /usr/local/bin/gmake
           for engine in gforth gforth-fast gforth-itc; do
             version=$("$engine" --version 2>&1)
             echo "$engine: $version"
