@@ -8,12 +8,19 @@ word's inputs depend only on (seed, word name).
 
 A JSON report is written to EFFECTS_REPORT, default
 $XDG_CACHE_HOME/gforth-inspect/003-report.json; the calibration reads it.
+
+The words excluded by measurement are compared exactly against the set
+measured on this platform, `sys.platform`-`platform.machine()` (or
+EFFECTS_PLATFORM, which the calibration sets); see MEASURED_EXCLUSIONS.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import platform
+import re
+import sys
 import time
 from pathlib import Path
 
@@ -72,16 +79,92 @@ CLASSIFIED: dict[str, tuple[str, str]] = {
 }
 
 # Words excluded by measurement in gforth: they killed gforth, hung, broke
-# the harness, threw on every-day typed inputs, or printed.
-KNOWN_CRASHED = {"(;code)", "unkeys", "unkey", "clearhash", "(endtry)", "del-string", "(reveal)",
-                 "compile-only", "restrict", "(does>2)", "!does", "open-lib"}
-KNOWN_THREW = {"c-library-incomplete", "c-source-file", "Type!", ",Branch", "MyBranch",
-               "char-append-buffer", "?CSP", "new-locals-reveal", "?struc", "CS-PICK", "cs-item?",
-               "non-orig?", "scope?", "do-dest?", "dest?", "orig?", "def?", "(compile)",
-               "interpreter1", "no.extensions", "interpreter-notfound1", "compiler-notfound1",
-               "parser", "parser1", "compile-only-error", "ticking-compile-only-error", "#>>",
-               'c(abort")', "wcall", "lib-sym", "(tablelfind)", "(hashlfind)"}
-KNOWN_WROTE = {"c-source-file", "vlist", "?", "dobacktrace", "dec.", "."}
+# the harness, threw on every-day typed inputs, or printed.  How gforth 0.7.3
+# reacts to bad inputs can depend on the platform, so each platform has its
+# own sets, measured there and compared exactly.  There is no fallback: a
+# platform not listed fails test_measured_exclusions_are_known (#72).
+#
+# One such difference: gforth 0.7.3 mmaps its stacks PROT_EXEC|READ|WRITE
+# with a PROT_NONE guard page around each (engine/main.c, alloc_stacks), and
+# its SIGSEGV handler turns a fault just past a stack into -3/-4/-44/-45
+# (engine/signals.c).  macOS arm64 refuses that RWX mmap (`gforth --debug`:
+# "mmap ... failed: Permission denied"), so there the stacks are malloc'd
+# with no guard pages, and a read past a stack returns garbage instead of
+# throwing.  That is how pick and fpick, given an index into an empty stack,
+# threw on Linux and passed on macOS, until the harness typed their `...`
+# (_003_helpers.DATA_FILLER).  The OS and the CPU decide it, so the key is
+# sys.platform and platform.machine().
+MEASURED_EXCLUSIONS: dict[str, dict[str, set[str]]] = {
+    # macOS arm64, Homebrew gforth 0.7.3: experiment 003's first sweep
+    # (2026-11-21), unchanged by DATA_FILLER (2026-11-25)
+    "darwin-arm64": {
+        "crashed": {"!does", "(;code)", "(does>2)", "(endtry)", "(reveal)", "clearhash",
+                    "compile-only", "del-string", "open-lib", "restrict", "unkey", "unkeys"},
+        "threw": {"#>>", "(compile)", "(hashlfind)", "(tablelfind)", ",Branch", "?CSP", "?struc",
+                  'c(abort")', "c-library-incomplete", "c-source-file", "char-append-buffer",
+                  "compile-only-error", "compiler-notfound1", "cs-item?", "CS-PICK", "def?",
+                  "dest?", "do-dest?", "interpreter-notfound1", "interpreter1", "lib-sym",
+                  "MyBranch", "new-locals-reveal", "no.extensions", "non-orig?", "orig?",
+                  "parser", "parser1", "scope?", "ticking-compile-only-error", "Type!", "wcall"},
+        "wrote": {".", "?", "c-source-file", "dec.", "dobacktrace", "vlist"},
+    },
+    # Ubuntu 24.04 arm64, apt gforth 0.7.3, in Docker on Apple silicon (a
+    # native arm64 VM, not emulation), 2026-11-25, with DATA_FILLER
+    "linux-aarch64": {
+        "crashed": {"!does", "(;code)", "(does>2)", "(endtry)", "(reveal)", "clearhash",
+                    "compile-only", "del-string", "open-lib", "restrict", "unkey", "unkeys"},
+        "threw": {"#>>", "(compile)", "(hashlfind)", "(tablelfind)", ",Branch", "?CSP", "?struc",
+                  'c(abort")', "c-library-incomplete", "c-source-file", "char-append-buffer",
+                  "compile-only-error", "compiler-notfound1", "cs-item?", "CS-PICK", "def?",
+                  "dest?", "do-dest?", "interpreter-notfound1", "interpreter1", "lib-sym",
+                  "MyBranch", "new-locals-reveal", "no.extensions", "non-orig?", "orig?",
+                  "parser", "parser1", "scope?", "ticking-compile-only-error", "Type!", "wcall"},
+        "wrote": {".", "?", "c-source-file", "dec.", "dobacktrace", "vlist"},
+    },
+    # GitHub ubuntu-latest (Ubuntu 26.04) x86_64, apt gforth 0.7.3, with
+    # DATA_FILLER: CI run 45694760373, 2026-11-25.  Without it, pick and
+    # fpick threw here too (run 45677558495, #72)
+    "linux-x86_64": {
+        "crashed": {"!does", "(;code)", "(does>2)", "(endtry)", "(reveal)", "clearhash",
+                    "compile-only", "del-string", "open-lib", "restrict", "unkey", "unkeys"},
+        "threw": {"#>>", "(compile)", "(hashlfind)", "(tablelfind)", ",Branch", "?CSP", "?struc",
+                  'c(abort")', "c-library-incomplete", "c-source-file", "char-append-buffer",
+                  "compile-only-error", "compiler-notfound1", "cs-item?", "CS-PICK", "def?",
+                  "dest?", "do-dest?", "interpreter-notfound1", "interpreter1", "lib-sym",
+                  "MyBranch", "new-locals-reveal", "no.extensions", "non-orig?", "orig?",
+                  "parser", "parser1", "scope?", "ticking-compile-only-error", "Type!", "wcall"},
+        "wrote": {".", "?", "c-source-file", "dec.", "dobacktrace", "vlist"},
+    },
+}
+MEASURE_HOWTO = (
+    "measure it there: `gmake -C pbt check` (or pytest -q test_003_declared_effects.py "
+    "in pbt/), take `excluded_measured` and `platform` from the report it writes "
+    "(EFFECTS_REPORT, default $XDG_CACHE_HOME/gforth-inspect/003-report.json), check "
+    "each new exclusion by hand, and add the three sets to MEASURED_EXCLUSIONS "
+    "under that key with a comment saying where they were measured"
+)
+
+
+def platform_key() -> str:
+    """`sys.platform`-`platform.machine()`, e.g. darwin-arm64, linux-x86_64,
+    without the OS version some sys.platform values carry (freebsd14).  It is
+    Python's OS and CPU, taken to be gforth's.  EFFECTS_PLATFORM replaces it
+    (the calibration names a platform not listed)."""
+    explicit = os.environ.get("EFFECTS_PLATFORM")
+    if explicit:
+        return explicit
+    return f"{re.sub(r'[0-9]+$', '', sys.platform)}-{platform.machine()}"
+
+
+def exclusion_diff(measured: dict[str, list[str]], expected: dict[str, set[str]]) -> dict:
+    """kind -> {"extra": [...], "missing": [...]} for every kind that differs;
+    empty when the measured exclusions equal the expected ones exactly."""
+    diff = {}
+    for kind in sorted(set(measured) | set(expected)):
+        got, want = set(measured.get(kind, ())), expected.get(kind, set())
+        if got != want:
+            diff[kind] = {"extra": sorted(got - want), "missing": sorted(want - got)}
+    return diff
 
 
 def report_path() -> Path:
@@ -126,6 +209,10 @@ def sweep() -> dict:
         "engines": engines,
         "wall_seconds": round(time.monotonic() - started, 1),
     }
+    key = platform_key()
+    expected = MEASURED_EXCLUSIONS.get(key)
+    result["platform"] = key
+    result["exclusions_diff"] = None if expected is None else exclusion_diff(measured_excluded, expected)
     result["unclassified"] = sorted(set(disagree) - set(CLASSIFIED))
     result["classified_but_agree"] = sorted(set(CLASSIFIED) - set(disagree))
     report_path().write_text(json.dumps(result, indent=1, sort_keys=True))
@@ -150,10 +237,13 @@ def test_every_disagreement_is_classified(sweep):
 
 
 def test_measured_exclusions_are_known(sweep):
-    measured = sweep["excluded_measured"]
-    assert set(measured["crashed"]) == KNOWN_CRASHED, measured["crashed"]
-    assert set(measured["threw"]) == KNOWN_THREW, measured["threw"]
-    assert set(measured["wrote"]) == KNOWN_WROTE, measured["wrote"]
+    key = sweep["platform"]
+    if key not in MEASURED_EXCLUSIONS:
+        pytest.fail(f"no measured exclusion set for platform {key!r} "
+                    f"(known: {sorted(MEASURED_EXCLUSIONS)}); {MEASURE_HOWTO}.  "
+                    f"Measured here: {json.dumps(sweep['excluded_measured'], sort_keys=True)}",
+                    pytrace=False)
+    assert sweep["exclusions_diff"] == {}, f"{key}: {sweep['exclusions_diff']}"
 
 
 def test_disagreements_do_not_depend_on_engine(sweep):
