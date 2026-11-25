@@ -23,7 +23,8 @@ report, out, planted = json.load(open(sys.argv[1])), open(sys.argv[2]).read(), s
 failed = sorted(set(re.findall(r"^FAILED \S+::(\w+)", out, re.M)))
 said = f"no measured exclusion set for platform {planted!r}" in out
 if report["platform"] == planted and report["exclusions_diff"] is None \
-        and failed == ["test_measured_exclusions_are_known"] and said and "4 passed" in out:
+        and failed == ["test_measured_exclusions_are_known"] and said \
+        and re.search(r"^1 failed, 4 passed\b", out, re.M):
     print(f"calibrate 003-b: red as expected, on exactly: no exclusion set for {planted}")
     sys.exit(0)
 print("calibrate 003-b: red, but not for the planted platform:", report["platform"],

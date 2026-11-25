@@ -158,8 +158,9 @@ TOKEN = {"xt": "' noop", "nt": "s\" noop\" find-name", "wid": "forth-wordlist"}
 ANY_VALUES = [0, 1, -1, 2, 3, 7, 100, -100, 12345, 0x7fff]
 FLOAT_VALUES = ["0.5e0", "1e0", "1.5e0", "2e0", "3.25e0", "0.125e0", "10e0", "4e0"]
 COUNT_MAX = 8  # counts (n u len ...) are 1..COUNT_MAX
-# A `...` input (pick's `S:... u`, fpick's `f:... u`) is typed as
-# COUNT_MAX + 1 items on its own stack, so a count after it indexes in range.
+# A `...` input at the bottom of its stack (pick's `S:... u`, fpick's
+# `f:... u`) is typed as COUNT_MAX + 1 items there, so a count after it
+# indexes in range; a `...` anywhere else is untypable (select).
 # Typed as nothing, `pick` read below the empty stack: garbage on macOS arm64,
 # where gforth 0.7.3's stacks are malloc'd, and -4 (-45 for fpick) on Linux,
 # where they sit between guard pages (#72).  Constant, so it draws nothing
@@ -328,7 +329,9 @@ def select(model: dict, live_text: str) -> Selection:
         if reason is None:
             gens = [data_generator(i) for i in effect.get("data_in", [])]
             fgens = [float_generator(i) for i in effect.get("float_in", [])]
-            if any(g is None for g in gens) or any(g is None for g in fgens):
+            # the filler goes under the word's inputs, never between them
+            inner_rest = "..." in effect.get("data_in", [])[1:] or "..." in effect.get("float_in", [])[1:]
+            if any(g is None for g in gens) or any(g is None for g in fgens) or inner_rest:
                 reason = "untypable-input"
             else:
                 selection.tested.append({"name": name, "effect": effect, "stack": stack,

@@ -197,8 +197,13 @@ compared exactly, with no fallback: darwin-arm64 (unchanged), linux-aarch64
 (Docker on Apple silicon), linux-x86_64 (CI run 45694760373). All three
 are equal today. =Type!= crashing under amd64 emulation did not happen on
 real x86_64 and is not recorded. Default and ci profiles both 5 passed on
-darwin-arm64 and linux-aarch64. Calibration adds =003-b-unknown-platform.sh=
+darwin-arm64 and linux-aarch64. A =...= that is not at the bottom of its
+stack is untypable (none is tested today). Calibration adds three plants
+for the exclusion comparison, outside gate 4's wording (they plant a
+platform or an exclusion, not a disagreement): =003-b-unknown-platform.sh=
 (an unlisted platform is red with the measure-and-add message, the other
-four green) and =003-c-exclusion-dropped.sh= (?CSP loses its declared
-effect; red on exactly =threw= missing ?CSP, which a subset or union check
-would miss). =003-declared-effects.sh= is still red on exactly =dup=.
+four green), =003-c-exclusion-dropped.sh= (?CSP loses its declared effect;
+red on exactly =threw= missing ?CSP, which a subset check would miss) and
+=003-d-exclusion-added.sh= (@ declared =( w -- w )= throws -9; red on
+exactly =threw= with @ extra, which a superset or union check would miss).
+=003-declared-effects.sh= is still red on exactly =dup=.

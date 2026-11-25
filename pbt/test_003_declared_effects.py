@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import re
 import sys
 import time
 from pathlib import Path
@@ -145,9 +146,14 @@ MEASURE_HOWTO = (
 
 
 def platform_key() -> str:
-    """`sys.platform`-`platform.machine()`, e.g. darwin-arm64, linux-x86_64.
-    EFFECTS_PLATFORM replaces it (the calibration names a platform not listed)."""
-    return os.environ.get("EFFECTS_PLATFORM") or f"{sys.platform}-{platform.machine()}"
+    """`sys.platform`-`platform.machine()`, e.g. darwin-arm64, linux-x86_64,
+    without the OS version some sys.platform values carry (freebsd14).  It is
+    Python's OS and CPU, taken to be gforth's.  EFFECTS_PLATFORM replaces it
+    (the calibration names a platform not listed)."""
+    explicit = os.environ.get("EFFECTS_PLATFORM")
+    if explicit:
+        return explicit
+    return f"{re.sub(r'[0-9]+$', '', sys.platform)}-{platform.machine()}"
 
 
 def exclusion_diff(measured: dict[str, list[str]], expected: dict[str, set[str]]) -> dict:
