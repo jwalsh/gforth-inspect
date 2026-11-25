@@ -505,6 +505,14 @@ location, or printing numbers that decode to different values are all
 version updates.  New optional keys and new event types that these consumers
 can ignore are not.
 
+*Before the first stable tag* (v0.5.0 or v1.0.0) the rule above is applied
+as a discipline: a break costs a row in the change log below and a MINOR
+=x-contract=, not a new =v= (RELEASING.org, "Rulings").  Contract 1.2
+(#66) is one: =float= items widened to include three strings, and =null=
+no longer means a non-finite value from 0.4.0 on, under =v= 1.  The
+MINOR is what protects a consumer: it stops on =hello.contract= 1.2 until it
+is bumped on purpose, so it never meets ="Infinity"= unprepared.
+
 * Changing the contract or the tooling
 
 Every change to a record, a file location, the producer words, or a consumer

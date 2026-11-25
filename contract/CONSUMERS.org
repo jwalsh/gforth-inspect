@@ -52,7 +52,9 @@ release may change no contract at all.
    keys and new event types that consumers can ignore are MINOR. Value-only
    fixes are PATCH, with no contract change. The one exception is the
    version stop under consumer obligation 2: it is the designed response to
-   an announced change, not a break.
+   an announced change, not a break. Before the first stable tag a break
+   costs a change-log row and a MINOR instead (RELEASING.org, "Rulings"):
+   contract 1.2 (#66) changed what =null= means in =float= under =v= 1.
 5. Every MAJOR or MINOR change follows the checklist in RELEASING.org: issue,
    schema (=x-contract=, plus =v= and =x-version= for a MAJOR), the prose
    change log, and the release notes. None is made silently.
