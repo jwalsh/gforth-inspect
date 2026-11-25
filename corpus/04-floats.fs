@@ -1,4 +1,4 @@
-\ 04-floats: the float values JSON cannot carry, and the edges it can.
+\ 04-floats: the float values JSON has no number for, and the edges it can.
 \ -0e is -0.0; +inf, -inf, NaN are "Infinity", "-Infinity", "NaN" (null before 0.4.0).
 \ DBL_MAX, the smallest normal and subnormal round-trip at 17 significant digits.
 \ gforth's fs. pads a mantissa with a trailing space: legal JSON whitespace.

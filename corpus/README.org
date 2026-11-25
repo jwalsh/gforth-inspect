@@ -81,7 +81,8 @@ Things the recordings show that a reader has to cope with:
   =05= (64-bit cells) and in how floats are spelt.
 - =checker= is =python3 pbt/consumers/checker.py NN-slug.jsonl schema.json
   --expect X=, where =X= is the schema's =x-contract= (1.2 here).  =expect=
-  records =X=, and =PROVENANCE= says the same.  As frozen, the checker
+  records =X= (=null= for a schema with no =x-contract=: the checker as
+  frozen), and =PROVENANCE= says the same.  As frozen, the checker
   expects 1.1 and stops (exit 1) on these streams; =--expect= is the bump
   a consumer makes on purpose, so the corpus keeps the answer for the
   current stacks.  It still refuses (exit 1) a stream it will not read.
@@ -169,7 +170,8 @@ for "the current stacks" should match =checker.output=, once the reader
 expects contract 1.2.  A checker still expecting 1.1 stops on these
 streams by design ([[file:../contract/CONSUMER-AGENTS.md][CONSUMER-AGENTS.md]], "A new version", step 2);
 =test_version_stop= in =pbt/test_004_reference_consumers.py= pins that.  For
-=15-error-partial= and =16-two-producers= the answer is the last snapshot.
+=15-error-partial= and =16-two-producers= the answer is the last snapshot;
+in =16= that is one producer's (=id= p1, which =checker.output= leaves out).
 A log whose last line is not JSON can still happen with concurrent
 producers; there the reader should say that the log is damaged, not
 guess.
