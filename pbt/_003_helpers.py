@@ -157,15 +157,26 @@ DOUBLE = {"d", "ud", "xd", "+d"}
 TOKEN = {"xt": "' noop", "nt": "s\" noop\" find-name", "wid": "forth-wordlist"}
 ANY_VALUES = [0, 1, -1, 2, 3, 7, 100, -100, 12345, 0x7fff]
 FLOAT_VALUES = ["0.5e0", "1e0", "1.5e0", "2e0", "3.25e0", "0.125e0", "10e0", "4e0"]
+COUNT_MAX = 8  # counts (n u len ...) are 1..COUNT_MAX
+# A `...` input (pick's `S:... u`, fpick's `f:... u`) is typed as
+# COUNT_MAX + 1 items on its own stack, so a count after it indexes in range.
+# Typed as nothing, `pick` read below the empty stack: garbage on macOS arm64,
+# where gforth 0.7.3's stacks are malloc'd, and -4 (-45 for fpick) on Linux,
+# where they sit between guard pages (#72).  Constant, so it draws nothing
+# from rng and the word's other inputs are unchanged.
+DATA_FILLER = " ".join(["0"] * (COUNT_MAX + 1))
+FLOAT_FILLER = " ".join(["0e0"] * (COUNT_MAX + 1))
 
 
 def data_generator(item: str):
     """item -> function(rng) giving Forth source that pushes it; None if untypable."""
     base = base_name(item)
+    if item == "...":
+        return lambda rng: DATA_FILLER
     if item.lower() in MARKERS:
         return lambda rng: ""
     if base in CELL_COUNT:
-        return lambda rng: str(rng.randint(1, 8))
+        return lambda rng: str(rng.randint(1, COUNT_MAX))
     if base in CELL_ANY:
         return lambda rng: str(rng.choice(ANY_VALUES))
     if base in FLAG:
@@ -183,6 +194,8 @@ def data_generator(item: str):
 
 
 def float_generator(item: str):
+    if item == "...":
+        return lambda rng: FLOAT_FILLER
     if item.lower() in MARKERS:
         return lambda rng: ""
     if base_name(item).startswith("r"):
@@ -333,8 +346,8 @@ create (scratch) {SCRATCH_BYTES + 32} allot
 variable (d0) variable (f0) variable (d1) variable (f1) variable (err)
 : (base) ( -- a-addr ) (scratch) 15 + -16 and ;
 : (fclear) ( F: ... -- ) begin fdepth while fdrop repeat ;
-\ <# resets the pictured-output area: without it, 200 calls of hold or <<#
-\ overflow it and gforth exits (found in the ci profile)
+\\ <# resets the pictured-output area: without it, 200 calls of hold or <<#
+\\ overflow it and gforth exits (found in the ci profile)
 : (pre) ( ... -- ) decimal clearstack (fclear) (base) {SCRATCH_BYTES} erase <# ;
 : (snap) ( -- ) depth (d0) ! fdepth (f0) ! ;
 : (post) ( ... err -- ) (err) ! depth (d1) ! fdepth (f1) ! decimal clearstack (fclear) ;
