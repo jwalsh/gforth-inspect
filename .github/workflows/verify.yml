@@ -1,8 +1,10 @@
 # verify -- the verify baseline (CONTRIBUTING.org) on an Ubuntu runner.
 # Not macOS: its minutes cost several times Linux's (owner, 2026-11-23).
-# Branch protection on main requires the check `verify`, which is this job's
-# id. The workflow's own name does not matter to that rule; renaming the job
-# or giving it a `name:` does, so change RELEASING.org's rule set with it.
+# Branch protection on main is to require the check `verify`, which is this
+# job's id; it is off until CI is green, and back in 0.4.1 (RELEASING.org,
+# "Mainline protection"). The workflow's own name does not matter to that
+# rule; renaming the job or giving it a `name:` does, so change RELEASING.org's
+# rule set with it.
 name: verify
 
 on:

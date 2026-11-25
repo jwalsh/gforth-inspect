@@ -18,6 +18,11 @@ the producer in CI" means someone runs =gmake verify= by hand, and a
 registered grind file is run by hand before a release. Guards marked
 (planned) in the table at the end are not in force yet.
 
+*Status, 2026-11-25:* CI exists and runs =gmake verify= on =ubuntu-latest=,
+but its check is not required yet, so "run by the producer in CI" still
+includes a local =gmake verify= pasted into each PR (CONTRIBUTING.org). The
+=consumers/= runner is still not started.
+
 * Roles
 
 | role                     | who                                                    | writes                                                                  | never writes                                         |
@@ -70,8 +75,9 @@ is done.
 4. *Review.* Draft PR, =gmake verify=, =/code-review= of the PR's own
    branch, every finding answered (AGENTS.md, "Leaving draft"), then the producer
    coordinator merges.
-5. *Release.* Only from green. Before the first stable tag (v0.5.0 or
-   v1.0.0), as a prerelease (D-41). Each fixing PR
+5. *Release.* Only from green. Published as a full release, marked
+   Latest (D-47); before the first stable tag (v0.5.0 or v1.0.0) it still
+   promises nothing stable. Each fixing PR
    says =Closes #N= (GitHub closes the issue on merge). The release notes
    list =Fixed: #N, ...= and the change log names every contract change.
 6. *Notify.* The producer coordinator comments on every issue the release
@@ -156,7 +162,7 @@ there is one). A red result means this candidate breaks that consumer.
 
 * Deprecation and support windows
 
-- *Before the first stable tag:* there is no window. Prereleases break with a
+- *Before the first stable tag:* there is no window. Releases break with a
   change-log row and a message to every registered consumer.
 - *A deprecation is announced at least one MINOR ahead of its removal.* The
   word or key is marked deprecated in the change log and in

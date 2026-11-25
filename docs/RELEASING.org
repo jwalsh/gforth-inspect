@@ -13,12 +13,14 @@ execution (tests, scripts, CI, experiments).
 * What a release is
 
 - A tag =vMAJOR.MINOR.PATCH= on =main=, published as a GitHub Release.
-- *Prereleases before the first stable tag.* Versions before it (v0.1.0,
-  v0.1.1, ...) are tagged and published as GitHub prereleases, to rehearse
-  this process (decision D-41). The first stable tag is v0.5.0 or v1.0.0
-  (D-32). Until then the coordinators commit directly to =main= while the
-  repository is under review, and downstream projects may keep their own
-  local copies.
+- *Every release is a full release, marked Latest.* From v0.3.1 on, each
+  tag is published as a GitHub release, not a prerelease, and marked Latest
+  (decision D-47, 2026-11-25). v0.1.0 to v0.3.0 were published as
+  prereleases, to rehearse this process (D-41). The label is all that
+  changed: the first stable tag is still v0.5.0 or v1.0.0 (D-32), and a
+  release before it promises nothing stable (Rulings). Until then the
+  coordinators commit directly to =main= while the repository is under
+  review, and downstream projects may keep their own local copies.
 - Each release carries its own spec and contract. The assets are
   self-contained and flat (no directories):
 
@@ -97,7 +99,7 @@ experiment 004:
   0.1.0 escaping. A consumer that relied on the wrong value was relying on
   a bug. The change log still records the fix.
 - *The first stable tag binds.* b1c162e was an import, and v0.1.0 and
-  later prereleases promise nothing stable. So moving the default log
+  every later release before the first stable tag promise nothing stable. So moving the default log
   directory to =.../gforth-inspect/= breaks no released promise. Until the
   first stable tag the table is applied as a discipline, recorded in the
   change log, but a break costs a note, not a MAJOR. From that tag on it
@@ -123,8 +125,10 @@ names a particular downstream project.
 
 1. =gmake test= passes: the golden files in all three engines, and every
    record validated against the schema.
-2. =gmake -C pbt check PROFILE=ci= passes, and =gmake -C pbt calibrate=
-   reports red on every planted fault.
+2. =gmake -C pbt check PROFILE=ci= passes with the release under test named
+   as verify names it (=INSPECT_FS=, =SCHEMA_JSON=, =INSPECT_REF=HEAD=; see
+   "Cutting one"), and =gmake -C pbt calibrate= reports red on every planted
+   fault.
 3. =scripts/privacy-scan.sh= is clean, over the tree and over the release
    assets themselves.
 4. =grep -c course-repo= on the assets prints 0.
@@ -150,7 +154,7 @@ notes.
 | rule                                       | why                                                                       |
 |--------------------------------------------+---------------------------------------------------------------------------|
 | a pull request before merging, 0 approvals | one owner and several agents: the PR is the record, not a sign-off         |
-| status check =verify=, strict from the first stable tag | a PR merges only when CI is green; from the first stable tag also on a head up to date with =main=. *Removed 2026-11-22* (D-40): GitHub Actions billing stopped every job; the workflow is disabled and a local =gmake verify= on the PR's head, pasted into the PR body (REVIEW.md), is the gate until billing works. To restore: =gh workflow enable verify.yml=, put the =required_status_checks= block back in the JSON, PUT it |
+| status check =verify=, strict from the first stable tag | a PR merges only when CI is green; from the first stable tag also on a head up to date with =main=. *Removed 2026-11-22* (D-40): GitHub Actions billing stopped every job, so the workflow was disabled and a local =gmake verify= on the PR's head, pasted into the PR body (REVIEW.md), became the gate. *2026-11-25* (D-48): the workflow runs again, on =ubuntu-latest= (#61), but the check stays off until CI is green on =main= (red from #62 and #60); until then the pasted local line is still the gate. Restoring it is part of 0.4.1: put ="required_status_checks": {"strict": false, "contexts": ["verify"]}= back in the JSON, PUT it |
 | linear history                             | the repository squash-merges; =main= stays one commit per change          |
 | no force pushes, no deletion               | tags and downstream =DEVIATIONS.org= rows point at =main='s commits       |
 | conversation resolution                    | a review thread on the PR is resolved before merge, not left hanging      |
@@ -170,7 +174,8 @@ Change the job and this rule set together.
    commit to =main= directly (coordination documents, as AGENTS.md says).
    =enforce_admins= is false, so admins bypass the PR and the check. For
    them the protection only stops force pushes and deletion. Anyone
-   without admin rights merges only through a PR with =verify= green. An
+   without admin rights merges only through a PR with =verify= green (while
+   the check is off, D-48, with a green local =gmake verify= in its body). An
    agent that pushes with the owner's credentials is an admin to GitHub:
    for it, as for the owner, the PR and the green check are rules of
    AGENTS.md, not of the protection. The =verify= check is *not strict* in this
@@ -217,7 +222,8 @@ git switch main && git pull --ff-only
 # in verify, names each one; it also checks "announces contract" against the schema), then commit:
 # chore(release): vX.Y.Z
 # the demo (demo/tour.*) is re-recorded for a MAJOR or MINOR release only: a PATCH leaves its banner
-gmake test && gmake -C pbt check PROFILE=ci && scripts/privacy-scan.sh
+# the PROFILE=ci run names the release under test, as verify's PBT_ENV does: bare, 004's new side is the pinned c0cab02 (#68)
+gmake test && INSPECT_FS=$PWD/env/inspect.fs SCHEMA_JSON=$PWD/contract/stacks-log.schema.json INSPECT_REF=HEAD gmake -C pbt check PROFILE=ci && scripts/privacy-scan.sh
 gmake release-check   # builds dist/ as below and checks it
 # by hand, what release-check does:
 mkdir -p dist && cp env/inspect.fs contract/stacks-log.schema.json contract/stacks-log.org contract/CONSUMERS.org contract/CONSUMER-AGENTS.md contract/skill/SKILL.md contract/WORDS.org dist/
@@ -226,7 +232,7 @@ scripts/dist-links.sh dist vX.Y.Z env/inspect.fs contract/stacks-log.schema.json
 scripts/privacy-scan.sh dist/*
 git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
 notes=$(mktemp)   # write the notes here: test summary and the Fixed: line (Gate, 5)
-gh release create vX.Y.Z dist/* --notes-file "$notes"   # notes live outside dist/, so dist/* is exactly the 8 assets
+gh release create vX.Y.Z dist/* --latest --notes-file "$notes"   # a full release, marked Latest (D-47); notes live outside dist/, so dist/* is exactly the 8 assets
 scripts/readme-release.sh vX.Y.Z    # README's Install names the real tag; refuses if the release isn't there
 git commit -am "docs(readme): install vX.Y.Z [skip ci]" && git push   # direct, as an admin
 # at the first stable tag: run the two lines above BEFORE flipping enforce_admins (Mainline protection);

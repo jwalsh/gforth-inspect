@@ -42,15 +42,17 @@ every commit and every PR. It runs, in order:
    and the dated log are in [[file:../test/README.org][test/README.org]]
 5. =gmake -C pbt check=, then =gmake -C pbt calibrate=
 
-CI is disabled while GitHub Actions billing stops its jobs (D-40): run the
-baseline locally and paste its summary into the PR. When enabled, CI runs
-this baseline on every pull request and every push to =main=, from
-=.github/workflows/verify.yml= on an Ubuntu runner with gforth 0.7.3 from
-apt. When the root Makefile is present, CI runs =gmake verify=;
-without it, only the privacy scan, =scripts/check-guides.sh= and the
-=pbt/= checks. Its check, =verify=, is required before a PR can merge
-(RELEASING.org, "Mainline protection"). A green run there does not replace
-running =gmake verify= yourself: the PR body records your summary line.
+CI runs this baseline on every pull request and every push to =main=, from
+=.github/workflows/verify.yml= on an Ubuntu runner (=ubuntu-latest=) with
+gforth 0.7.3 from apt. When the root Makefile is present, CI runs
+=gmake verify=; without it, only the privacy scan, =scripts/check-guides.sh=
+and the =pbt/= checks. Its check, =verify=, is not yet required before a PR
+can merge: it was dropped while GitHub Actions billing stopped every job
+(D-40), and it comes back once CI is green on =main=, as part of 0.4.1. It
+is red there today, from #62 (floats on Linux) and #60 (a test that needs a
+branch the public remote lacks); see RELEASING.org, "Mainline protection".
+Until then the gate is the summary line of a local =gmake verify= on the
+PR's head, pasted into the PR body. A green CI run does not replace it.
 
 Keep a baseline. Record the summary line of a green =gmake verify= on
 =main= in the PR description: engines, golden count, Hypothesis examples
