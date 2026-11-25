@@ -8,7 +8,9 @@ For each scenario it writes, into OUT_DIR:
                        set to 0 (a clock, not a stack: consumers must not
                        rely on it)
   NN-slug.expect.json  what the frozen reference consumers in
-                       pbt/consumers/ produce from that .jsonl
+                       pbt/consumers/ produce from that .jsonl; the checker
+                       runs with --expect set to the schema's x-contract
+                       (as frozen, "expect": null, if the schema has none)
 
 and OUT_DIR/PROVENANCE, the blob ids of the inspect.fs and schema used.
 
@@ -206,10 +208,20 @@ def run_jq(repo: Path, log_path: Path) -> dict:
             "lines": proc.stdout.decode("utf-8").splitlines()}
 
 
-def run_checker(repo: Path, log_path: Path, schema_path: Path) -> dict:
+def run_checker(repo: Path, log_path: Path, schema_path: Path, expect: str | None) -> dict:
+    """The frozen checker, bumped on purpose to `expect` (the schema's x-contract).
+
+    Run as frozen, it expects 1.1 and stops on every newer stream: that is the
+    version stop, by design, and test_004's test_version_stop pins it.  Here
+    the corpus wants the answer for the current stacks, so the checker is told
+    the contract the schema states, and the result says so.  A schema older
+    than x-contract (expect None) gets the checker as frozen.
+    """
+    bump = ["--expect", expect] if expect is not None else []
     proc = subprocess.run([sys.executable, str(repo / "pbt" / "consumers" / "checker.py"),
-                           str(log_path), str(schema_path)], capture_output=True)
-    return {"exit": proc.returncode, "output": json.loads(proc.stdout.decode("utf-8"))}
+                           str(log_path), str(schema_path), *bump], capture_output=True)
+    return {"expect": expect, "exit": proc.returncode,
+            "output": json.loads(proc.stdout.decode("utf-8"))}
 
 
 def run_mock(repo: Path, log_path: Path) -> dict:
@@ -231,11 +243,12 @@ def run_mock(repo: Path, log_path: Path) -> dict:
     return {"status": status, "body": body.decode("utf-8")}
 
 
-def expectations(repo: Path, log_path: Path, schema_path: Path, producer_exit: int) -> dict:
+def expectations(repo: Path, log_path: Path, schema_path: Path, checker_expect: str | None,
+                 producer_exit: int) -> dict:
     return {
         "producer_exit": producer_exit,
         "jq": run_jq(repo, log_path),
-        "checker": run_checker(repo, log_path, schema_path),
+        "checker": run_checker(repo, log_path, schema_path, checker_expect),
         "mock_get_stacks": run_mock(repo, log_path),
     }
 
@@ -260,6 +273,7 @@ def main(argv: list[str]) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     inspect_bytes, schema_bytes, inspect_blob, schema_blob = producer_source(repo)
+    checker_expect = json.loads(schema_bytes).get("x-contract")  # None: pre-contract schema
     gforth_version = tool_version(options.engine, "--version")
     jq_version = tool_version("jq", "--version")
     print(f"record: inspect.fs blob {inspect_blob}, schema blob {schema_blob}, "
@@ -267,7 +281,10 @@ def main(argv: list[str]) -> int:
     (out_dir / "PROVENANCE").write_text(
         f"inspect.fs blob {inspect_blob}\n"
         f"stacks-log.schema.json blob {schema_blob}\n"
-        f"recorded with {gforth_version} and {jq_version}\n")
+        f"recorded with {gforth_version} and {jq_version}\n"
+        + (f"checker run with --expect {checker_expect}, the schema's x-contract\n"
+           if checker_expect is not None else
+           "checker run as frozen: the schema has no x-contract\n"))
 
     scenarios = sorted(path for path in Path(options.scenarios).iterdir()
                        if SCENARIO_NAME.match(path.name))
@@ -283,7 +300,7 @@ def main(argv: list[str]) -> int:
                 raw, status = run_file(scenario, inspect_bytes, options.engine, root)
             log_path = out_dir / f"{scenario.stem}.jsonl"
             log_path.write_bytes(mask_time(raw))
-            expect = expectations(repo, log_path, schema_path, status)
+            expect = expectations(repo, log_path, schema_path, checker_expect, status)
             (out_dir / f"{scenario.stem}.expect.json").write_text(
                 json.dumps(expect, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             record_count = raw.count(b"\n")

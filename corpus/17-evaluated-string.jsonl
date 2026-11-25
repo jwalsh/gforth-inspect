@@ -1,3 +1,3 @@
-{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
 {"v":1,"event":"snapshot","t":0,"where":null,"src":null,"data":[7],"float":[],"rs":[],"input":{"file":"*evaluated string*","line":-1,"in":10,"text":"7 .stacks drop"}}
 {"v":1,"event":"snapshot","t":0,"where":"ev","src":"17-evaluated-string.fs:5","data":[9],"float":[],"rs":[],"input":{"file":"*evaluated string*","line":-1,"in":2,"text":"ev"}}

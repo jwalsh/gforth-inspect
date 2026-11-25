@@ -27,7 +27,7 @@ replace the schema.
 | =01-empty-stacks=              | =data=, =float=, =rs= all =[]=                                                                                                          |
 | =02-dotstacks-interpreter=     | =.stacks= at the interpreter: =where= / =src= null, =rs= empty                                                                         |
 | =03-deep-data-stack=           | 300 cells, bottom first                                                                                                                 |
-| =04-floats=                    | =-0.0=; =+inf=, =-inf=, NaN as =null=; ±DBL_MAX, smallest normal, a subnormal, the smallest subnormal; 17 significant digits             |
+| =04-floats=                    | =-0.0=; =+inf=, =-inf=, NaN as ="Infinity"=, ="-Infinity"=, ="NaN"=; ±DBL_MAX, smallest normal, a subnormal, the smallest subnormal; 17 significant digits |
 | =05-full-range-cells=          | 0, ±1, the largest and smallest 64-bit cell, logged while =BASE= is hex (=data= is decimal anyway)                                     |
 | =06-tilde3-in-definition=      | =~~~= inside a word: =where= is the word, =src= is =file:line=                                                                         |
 | =07-tilde2-after-all-tilde2=   | plain =~~= after =all-~~=, inside a word (=where= filled) and at the prompt (null); for =~~= the =rs= starts at the word holding it, so =rs[0]= is =halve= itself (=~~~= in =06= starts at its caller)                                                    |
@@ -39,7 +39,7 @@ replace the schema.
 | =13-empty-line=                | =input.text= is =""= and =input.in= is 0                                                                                                |
 | =14-snapshots-in-a-row=        | three snapshots from one line, =log-off=, =log-on=: a second =hello= mid-log                                                            |
 | =15-error-partial=             | the program aborts (exit 1); the log just stops, with no closing record                                                                 |
-| =16-two-producers=             | *best-effort contract*: two gforths on one log, paced line by line; records overwrite each other (issue #17) and the last line is not JSON |
+| =16-two-producers=             | *best-effort contract*: two gforths on one log, paced line by line; each record lands whole and in order (the fix for #17)              |
 | =17-evaluated-string=          | snapshots inside =evaluate=: =input.file= is ="*evaluated string*"=, =input.line= is -1, =input.text= is the string; a file word run from it keeps =where= / =src= (exp 009) |
 | =18-log-id-63=                 | =log-id= keeps 63 characters: a longer tag is cut, and later snapshots carry the cut tag (exp 009) |
 
@@ -48,14 +48,18 @@ Things the recordings show that a reader has to cope with:
 - A float is written by gforth's =fs.=, which pads the mantissa with a
   space: ="float":[1.5000000000000000E0 ,-2.2500000000000000E0 ]=.  That is
   legal JSON whitespace; a hand-rolled parser must allow it.
+- A =float= item is a number or one of the strings ="Infinity"=,
+  ="-Infinity"=, ="NaN"= (=04=, contract 1.2).  A log from inspect
+  before 0.4.0 has =null= in those slots; the schema still accepts it.
 - An integer can need all 64 bits (=05=).  A reader that turns every
   number into a double loses the low bits.
 - A log can hold several =hello= records (=14=). Only the newest counts.
 - Nothing marks the end of a log (=15=).  A crashed producer and a paused
   one look the same.
 - =16= is not a promise.  The contract is written for one producer per
-  log; today the second producer's writes land on top of the first's.  A
-  fix for #17 will change this recording, and that is expected.
+  log.  Paced line by line, each producer's records land whole and in
+  order; before the fix for #17 they landed on top of each other.  The
+  recording shows what the producer does, not what it guarantees.
 
 * What =expect.json= holds
 
@@ -63,7 +67,7 @@ Things the recordings show that a reader has to cope with:
 {
   "producer_exit": 0,
   "jq":              {"exit": 0, "lines": ["{\"e\":\"hello\",...}", "..."]},
-  "checker":         {"exit": 0, "output": {"event": "snapshot", "data": [...], "...": "..."}},
+  "checker":         {"expect": "1.2", "exit": 0, "output": {"event": "snapshot", "data": [...], "...": "..."}},
   "mock_get_stacks": {"status": 200, "body": "<the last line of the .jsonl, as served>"}
 }
 #+end_src
@@ -75,10 +79,14 @@ Things the recordings show that a reader has to cope with:
   =PROVENANCE=), which keeps a number's digits as written.  Older jq
   (1.6) turns every number into a double, so its lines differ for
   =05= (64-bit cells) and in how floats are spelt.
-- =checker= is =python3 pbt/consumers/checker.py NN-slug.jsonl schema.json=,
-  which expects contract 1.1 and refuses (exit 1) when the stream is not
-  one it will read.  =output= is its JSON result.  Compare it as a JSON
-  value, not as text.
+- =checker= is =python3 pbt/consumers/checker.py NN-slug.jsonl schema.json
+  --expect X=, where =X= is the schema's =x-contract= (1.2 here).  =expect=
+  records =X= (=null= for a schema with no =x-contract=: the checker as
+  frozen), and =PROVENANCE= says the same.  As frozen, the checker
+  expects 1.1 and stops (exit 1) on these streams; =--expect= is the bump
+  a consumer makes on purpose, so the corpus keeps the answer for the
+  current stacks.  It still refuses (exit 1) a stream it will not read.
+  =output= is its JSON result.  Compare it as a JSON value, not as text.
 - =mock_get_stacks= is =GET /stacks= against =pbt/consumers/mock_server.py=
   serving the =.jsonl=: the status, and the body as text.
 - =producer_exit= is gforth's exit status.  It is non-zero only in =15=.
@@ -105,11 +113,12 @@ parse each line, render the last one.
     (if (hash-table-p last-record)
         (list (gethash "data" last-record) (gethash "float" last-record))
       last-record)))
-;; => ([] [-0.0 0.0 nil nil nil 1.7976931348623157e+308 ...])
+;; => ([] [-0.0 0.0 "Infinity" "-Infinity" "NaN" 1.7976931348623157e+308 ...])
 #+end_src
 
-=16-two-producers.jsonl= returns =unparsable=. That is the case your
-dashboard must not crash on.  To test a dashboard against every scenario,
+No recording here has a damaged line (since the fix for #17, =16= is
+whole), but concurrent producers are best-effort, so a real log can end
+in one; keep the =unparsable= branch.  To test a dashboard against every scenario,
 loop over =(directory-files "corpus" t "^[0-9][0-9]-.*\\.jsonl$")= and
 compare what it renders with the =checker= output in the matching
 =.expect.json=.
@@ -157,9 +166,15 @@ The body equals =jq -j .mock_get_stacks.body corpus/09-log-id.expect.json=.
 An MCP reader, or any reader of its own, takes a log path: give it
 =corpus/NN-slug.jsonl= directly, or copy the file to
 =<dir>/stacks.jsonl= and set =GFORTH_INSPECT_LOG_DIR=<dir>=.  Its answer
-for "the current stacks" should match =checker.output=.  For
-=15-error-partial= the answer is the last snapshot, and for
-=16-two-producers= it should say that the log is damaged, not guess.
+for "the current stacks" should match =checker.output=, once the reader
+expects contract 1.2.  A checker still expecting 1.1 stops on these
+streams by design ([[file:../contract/CONSUMER-AGENTS.md][CONSUMER-AGENTS.md]], "A new version", step 2);
+=test_version_stop= in =pbt/test_004_reference_consumers.py= pins that.  For
+=15-error-partial= and =16-two-producers= the answer is the last snapshot;
+in =16= that is one producer's (=id= p1, which =checker.output= leaves out).
+A log whose last line is not JSON can still happen with concurrent
+producers; there the reader should say that the log is damaged, not
+guess.
 
 * Regenerating
 
@@ -186,4 +201,7 @@ or schema.  So a diff in =corpus/= is a contract question.  Before you
 commit one, sort it by the table in [[file:../docs/RELEASING.org][RELEASING.org]] ("Stable API, and
 what bumps what") and follow its checklist.  A change that would alter a
 reference consumer's output here (the =jq=, =checker= or
-=mock_get_stacks= values) is the kind that table calls MAJOR.
+=mock_get_stacks= values) is the kind that table calls MAJOR.  Before
+the first stable tag such a break costs a MINOR =x-contract= and a note
+instead (RELEASING.org, "Rulings"): 0.4.0's non-finite strings changed
+=04='s =jq= and =checker= values that way, under contract 1.2.

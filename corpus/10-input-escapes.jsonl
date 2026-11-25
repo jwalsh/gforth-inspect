@@ -1,2 +1,2 @@
-{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
+{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
 {"v":1,"event":"snapshot","t":0,"where":null,"src":null,"data":[1,2],"float":[],"rs":[],"input":{"file":"10-input-escapes.fs","line":5,"in":12,"text":"1\t2 .stacks \\ say \"hi\" \\\\ C:\\path \u0001\u001b end"}}
