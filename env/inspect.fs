@@ -487,17 +487,91 @@ variable n#  variable first?
     REPEAT 2drop ;
 : json-str ( c-addr u -- ) q json-chars q ;
 
+\ A finite float's 17 significant digits, correctly rounded (ties to
+\ even), worked out in exact integer arithmetic (issue #62).  0.7.3's
+\ fs. goes through represent, which calls the C library's ecvt; glibc's
+\ ecvt first divides by a power of ten in binary64, so on Linux its 17
+\ digits can be a neighbour's (22e logged as 2.2000000000000002E1) or
+\ overflow (DBL_MAX as 1.7976931348623160E308, which parses as inf).
+\ The float is the fraction N/D of two unsigned bignums, scaled by 10^k
+\ into [1,10); each digit is how many times D goes into N.  Limbs are 32
+\ bits, one to a cell, least significant first; N and D stay under
+\ 2^1100 (10^324 for the smallest subnormal), well inside (bn#) limbs.
+\ Limbs from (bn-top) up are 0 in all three, so loops stop there.  Cell
+\ loops, not erase or move: in 0.7.3's gforth-fast on x86_64 Linux a
+\ move of 256 bytes or more zeroes the top of the float stack (glibc's
+\ memmove uses the vector register that holds it).
+40 constant (bn#)
+create (bn-n) (bn#) cells allot  create (bn-d) (bn#) cells allot
+create (bn-t) (bn#) cells allot  variable (bn-top)
+create (f-bits) 1 floats allot  create (f-dig) 17 allot  variable (f-k)
+
+: (bn-init) ( u -- ) \ N := u (any 64-bit u), D := 1, T := 0
+    (bn#) 0 DO 0 (bn-n) i cells + !  0 (bn-d) i cells + !  0 (bn-t) i cells + ! LOOP
+    dup $FFFFFFFF and (bn-n) !  32 rshift (bn-n) cell+ !  1 (bn-d) !  2 (bn-top) ! ;
+: (bn-copy) ( a1 a2 -- ) \ a2 := a1
+    (bn-top) @ 0 DO over i cells + @ over i cells + ! LOOP 2drop ;
+: (bn*u) ( u a -- ) \ a := a * u, for u < 2^31
+    0 (bn-top) @ 0 DO ( u a carry )
+        over i cells + >r  r@ @ 3 pick * +  dup $FFFFFFFF and r> !  32 rshift
+    LOOP ?dup IF over (bn-top) @ cells + !  1 (bn-top) +! THEN 2drop ;
+: (bn*u^) ( n u a -- ) rot 0 ?DO 2dup (bn*u) LOOP 2drop ;  \ a := a * u^n
+: (bn*2^) ( n a -- ) >r 30 /mod 1 30 lshift r@ (bn*u^)  2 r> (bn*u^) ;
+: (bn*10^) ( n a -- ) >r 9 /mod 1000000000 r@ (bn*u^)  10 r> (bn*u^) ;
+: (bn-cmp) ( a1 a2 -- n ) \ -1, 0 or 1 as a1 <, = or > a2
+    0 (bn-top) @ 1- DO
+        over i cells + @  over i cells + @  2dup <> IF
+            u< IF -1 ELSE 1 THEN nip nip UNLOOP EXIT THEN 2drop
+    -1 +LOOP 2drop 0 ;
+: (bn-) ( a1 a2 -- ) \ a1 := a1 - a2, for a1 >= a2
+    0 (bn-top) @ 0 DO ( a1 a2 borrow )
+        2 pick i cells + @  2 pick i cells + @ -  swap -
+        dup 0< IF $100000000 + 1 ELSE 0 THEN  swap 3 pick i cells + !
+    LOOP drop 2drop ;
+
+: (f-scale) ( u-bits -- )
+    \ N/D := |r| / 10^k in [1,10), (f-k) := k, from r's bits (finite, not 0)
+    dup 52 rshift $7FF and  swap $FFFFFFFFFFFFF and  over IF 1 52 lshift + THEN
+    (bn-init)
+    1 max 1075 -  ( e: |r| = N * 2^e )
+    dup 0< IF dup negate (bn-d) (bn*2^) ELSE dup (bn-n) (bn*2^) THEN
+    52 + 78913 m* 262144 fm/mod nip
+    \ k is within one or so of floor log10 |r|; the two loops settle it
+    dup (f-k) !  dup 0< IF negate (bn-n) ELSE (bn-d) THEN (bn*10^)
+    BEGIN (bn-n) (bn-d) (bn-cmp) 0< WHILE 10 (bn-n) (bn*u) -1 (f-k) +! REPEAT
+    BEGIN (bn-d) (bn-t) (bn-copy)  10 (bn-t) (bn*u)
+        (bn-n) (bn-t) (bn-cmp) 0< 0= WHILE 10 (bn-d) (bn*u) 1 (f-k) +! REPEAT ;
+: (f-digit) ( -- n ) \ floor(N/D), N := N mod D
+    0 BEGIN (bn-n) (bn-d) (bn-cmp) 0< 0= WHILE (bn-n) (bn-d) (bn-) 1+ REPEAT ;
+: (f-up) ( -- ) \ add one in the 17th digit
+    0 16 DO (f-dig) i + dup c@ 1+ dup 10 < IF swap c! UNLOOP EXIT THEN
+        drop 0 swap c!  -1 +LOOP
+    1 (f-dig) c!  1 (f-k) +! ;
+: (f-digits) ( -- ) \ (f-dig) := 17 digits of N/D, rounded half to even
+    17 0 DO i IF 10 (bn-n) (bn*u) THEN (f-digit) (f-dig) i + c! LOOP
+    2 (bn-n) (bn*u)  (bn-n) (bn-d) (bn-cmp)
+    dup 0= IF drop (f-dig) 16 + c@ 1 and ELSE 0> THEN IF (f-up) THEN ;
+: (f-exact) ( r -- )
+    \ r in fs. notation at 17 digits (d.ddddddddddddddddEn and a space),
+    \ as 0.7.3's fs. prints it when represent is correctly rounded
+    (f-bits) f!  (f-bits) @  dup 0< IF [char] - emit THEN
+    (f-scale) (f-digits)
+    (f-dig) c@ [char] 0 + emit  [char] . emit
+    17 1 DO (f-dig) i + c@ [char] 0 + emit LOOP
+    [char] E emit  (f-k) @ 0 .r space ;
+
 : json-f ( r -- )
-    \ finite floats in fs. notation at 17 significant digits, which
-    \ round-trips every binary64 (and always gives digits after the point,
-    \ which JSON requires); -0 keeps its sign; NaN and the infinities are
-    \ the strings "NaN", "Infinity" and "-Infinity", protobuf's JSON mapping
-    \ (issue #66; any NaN, whatever its sign or payload, is "NaN")
+    \ finite floats in fs. notation at 17 significant digits, correctly
+    \ rounded, which round-trips every binary64 (and always gives digits
+    \ after the point, which JSON requires); -0 keeps its sign; NaN and the
+    \ infinities are the strings "NaN", "Infinity" and "-Infinity",
+    \ protobuf's JSON mapping (issue #66; any NaN, whatever its sign or
+    \ payload, is "NaN")
     fdup fdup f- f0= 0= IF  \ inf - inf and NaN - NaN are NaN, never 0
         fdup f0< IF s" -Infinity" ELSE fdup f0> IF s" Infinity" ELSE s" NaN" THEN THEN
         fdrop json-str EXIT THEN
     fdup f0= IF 1e fswap f/ f0< IF ." -0.0" ELSE ." 0.0" THEN EXIT THEN
-    precision >r 17 set-precision fs. r> set-precision ;
+    (f-exact) ;
 : sep ( -- ) first? @ IF first? off ELSE jc THEN ;
 
 : json-data ( -- )
