@@ -153,8 +153,8 @@ class Outcome:
         self.lines = self.run.log_lines
         records = [json.loads(line) for line in self.lines]
         self.snapshots = [record for record in records if record.get("event") == "snapshot"]
-        self.float_texts = [float_texts(line) for line, record in zip(self.lines, records)
-                            if record.get("event") == "snapshot"]
+        self.snapshot_lines = [line for line, record in zip(self.lines, records)
+                               if record.get("event") == "snapshot"]
         assert len(reads) == 2 * len(cases), (
             f"harness desync: {len(reads)} raw reads for {len(cases)} cases")
         assert len(self.snapshots) == len(cases), (
@@ -350,7 +350,8 @@ def test_p2_float(path, engine, batch):
         assert len(logged) == len(before[1]), (
             f"P2 float depth mismatch in {path} {engine}: logged {logged} read "
             f"{[hex(b) for b in before[1]]} | {outcome.repro(index)}")
-        for bits, value, text in zip(before[1], logged, outcome.float_texts[index]):
+        texts = float_texts(outcome.snapshot_lines[index])
+        for bits, value, text in zip(before[1], logged, texts):
             kind = classify(bits, value) or text_fault(bits, text)
             assert kind is None, (
                 f"P2 float {kind} mismatch in {path} {engine}: bits {bits:#018x} "
@@ -381,7 +382,7 @@ def test_p2_float_corpus(path, engine):
         if len(logged) != 1:
             kind, shown = "depth", f"{logged!r} (expected one value)"
         else:
-            text = outcome.float_texts[index][0]
+            text = float_texts(outcome.snapshot_lines[index])[0]
             kind = classify(expected_bits, logged[0]) or text_fault(expected_bits, text)
             shown = f"{text} want {correct_text(expected_bits)}"
         FLOAT_CLASSES[(path, engine)][kind or "exact"] += 1

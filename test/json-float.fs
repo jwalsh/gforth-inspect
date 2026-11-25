@@ -12,7 +12,8 @@ log-on
 $FFF8000000000000 bits>f  $7FF0000000000001 bits>f  1e 0e f/ fnegate  .stacks fclearstack
 \ f.s prints -0 as the C library does (glibc keeps the sign, macOS drops
 \ it), so the human line shows no floats here; the record's -0.0 is ours
-maxdepth-.s @  0 maxdepth-.s !  -0e 0e .stacks fclearstack  maxdepth-.s !
+variable shown  maxdepth-.s @ shown !  0 maxdepth-.s !
+-0e 0e .stacks fclearstack  shown @ maxdepth-.s !
 0.1e 1e-300 1.7976931348623157e308 -2.5e 1e 3e f/ .stacks fclearstack
 \ #62's neighbours on x86_64 Linux; a tie (ties to even: ...02, not ...03);
 \ the least subnormal, the greatest subnormal, the least normal

@@ -120,4 +120,5 @@ These are part of the gate in RELEASING.org:
 | 1.0      | 2026-11-21 | =hello=, =snapshot=                                      | initial |        |
 | 1.1      | 2026-11-21 | snapshot =id= (optional, =log-id=); =hello.contract=       | MINOR   | #3     |
 | 1.1      | 2026-11-21 | float values round-trip; =all-~~= fills =where= / =src=     | PATCH   | #1, #2 |
+| 1.2      | 2026-11-24 | a non-finite float is the string ="NaN"=, ="Infinity"= or ="-Infinity"=, not =null= | MINOR | #66 |
 | 1.2      | 2026-11-25 | float digits correctly rounded on every platform (x86_64 Linux logged neighbours) | PATCH | #62 |
