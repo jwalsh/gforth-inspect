@@ -42,7 +42,8 @@ release may change no contract at all.
    announced =MAJOR.MINOR=: one complete JSON object per line, append-only.
 2. Announce the contract in =hello=.
 3. Numbers decode to the values on the stacks: 17 significant digits,
-   =-0.0= kept. A non-finite float is the string ="NaN"=, ="Infinity"= or
+   correctly rounded, so the text is the same on every platform (since
+   inspect 0.4.1, #62), =-0.0= kept. A non-finite float is the string ="NaN"=, ="Infinity"= or
    ="-Infinity"= (since contract 1.2, #66; any NaN is ="NaN"=). Logs from
    inspect < 0.4.0 have =null= for all three.
 4. Anything that would break a reference consumer as it is today is a MAJOR
@@ -119,3 +120,5 @@ These are part of the gate in RELEASING.org:
 | 1.0      | 2026-11-21 | =hello=, =snapshot=                                      | initial |        |
 | 1.1      | 2026-11-21 | snapshot =id= (optional, =log-id=); =hello.contract=       | MINOR   | #3     |
 | 1.1      | 2026-11-21 | float values round-trip; =all-~~= fills =where= / =src=     | PATCH   | #1, #2 |
+| 1.2      | 2026-11-24 | a non-finite float is the string ="NaN"=, ="Infinity"= or ="-Infinity"=, not =null= | MINOR | #66 |
+| 1.2      | 2026-11-25 | float digits correctly rounded on every platform (x86_64 Linux logged neighbours) | PATCH | #62 |

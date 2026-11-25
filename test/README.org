@@ -103,6 +103,27 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 
 * Log
 
+** 2026-11-25 (0.4.1, contract 1.2)
+
+=json-f= works out its 17 digits itself, correctly rounded with ties to
+even (issue #62): through =fs.=, x86_64 Linux took them from glibc's
+=ecvt=, which divides by a power of ten in binary64 first, so =22e=
+logged as =2.2000000000000002E1= and =DBL_MAX= as a number that parses
+as =inf=.  =json-float= gains =22e 23e 27e 28e=, a tie
+(=1000000000000000.25e=, to even) and the least subnormal, greatest
+subnormal and least normal.  Its =-0e= snapshot now runs with
+=maxdepth-.s= at 0, so the human line shows no floats: =f.s= prints
+=-0= as the C library does (=-0.00000000000E0= under glibc,
+=0.000000000000E0= on macOS), which is gforth's display, not the
+inspector's record, and a cross-platform golden must not pin it.  The
+record still has =-0.0=.  pbt 001 now also checks each finite float's
+literal against Python's =%.16e= (calibrations 001-e and 001-f).
+
+=log-write= holds a scratch float while it builds and writes a record
+(#73): on CI, gforth-fast's P1 went red with record text in the user's
+top float.  No calibration: the fault needs an x86_64 CPU whose glibc
+picks an SSE2 or AVX2 memmove, and macOS never shows it.
+
 ** 2026-11-24 (0.4.0, contract 1.2)
 
 =json-f= writes NaN and the infinities as ="NaN"=, ="Infinity"= and
@@ -185,6 +206,7 @@ by running the suite against the previous =env/=):
 | =.rs= / =.cs= leave =BASE= at 10                                    | base-kept     |
 | log written in =BASE= (hex numbers in JSON)                         | base-kept     |
 | =1 set-precision= gives =3.E0= in JSON; =-0= loses its sign; 15 digits do not round-trip | json-float |
+| x86_64 glibc: the 17 digits from =fs.= are a neighbour's, =DBL_MAX= parses as =inf= (#62) | json-float |
 | control characters blanked, invalid UTF-8 passed raw                | json-escape   |
 | ="src"= not escaped                                                 | json-src      |
 | =.cs= reads below the stack                                         | cs-guard      |
