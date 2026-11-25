@@ -5,7 +5,7 @@
 create fbits 1 floats allot
 : bits>f ( u -- F: r ) fbits ! fbits f@ ;  \ a NaN of a sign and payload no division picks
 log-on
-0e 0e f/  1e 0e f/  -1e 0e f/  .stacks fclearstack
+0e 0e f/ fabs  1e 0e f/  -1e 0e f/  .stacks fclearstack
 $FFF8000000000000 bits>f  $7FF0000000000001 bits>f  1e 0e f/ fnegate  .stacks fclearstack
 -0e 0e 0.1e 1e-300 1.7976931348623157e308 -2.5e 1e 3e f/ .stacks fclearstack
 1 set-precision  3e 0.5e .stacks fclearstack

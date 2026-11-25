@@ -3,9 +3,9 @@ data   <0>
 float  <3> nan              inf              -inf             
 return <R:39> top first
   ... interpreter (rs-full on to see it)
-input  test/json-float.fs:8 >in=39
-0e 0e f/  1e 0e f/  -1e 0e f/  .stacks fclearstack
-                                       ^
+input  test/json-float.fs:8 >in=44
+0e 0e f/ fabs  1e 0e f/  -1e 0e f/  .stacks fclearstack
+                                            ^
 data   <0> 
 float  <3> -nan             nan              -inf             
 return <R:39> top first
@@ -30,7 +30,7 @@ input  test/json-float.fs:11 >in=33
 ## stderr
 ## log state/gforth-inspect/golden/checkout/main/stacks.jsonl
 {"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
-{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":["NaN","Infinity","-Infinity"],"rs":[],"input":{"file":"test/json-float.fs","line":8,"in":39,"text":"0e 0e f/  1e 0e f/  -1e 0e f/  .stacks fclearstack"}}
+{"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":["NaN","Infinity","-Infinity"],"rs":[],"input":{"file":"test/json-float.fs","line":8,"in":44,"text":"0e 0e f/ fabs  1e 0e f/  -1e 0e f/  .stacks fclearstack"}}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":["NaN","NaN","-Infinity"],"rs":[],"input":{"file":"test/json-float.fs","line":9,"in":78,"text":"$ADDR bits>f  $ADDR bits>f  1e 0e f/ fnegate  .stacks fclearstack"}}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[-0.0,0.0,1.0000000000000001E-1 ,1.0000000000000000E-300 ,1.7976931348623157E308 ,-2.5000000000000000E0 ,3.3333333333333331E-1 ],"rs":[],"input":{"file":"test/json-float.fs","line":10,"in":65,"text":"-0e 0e 0.1e 1e-300 1.7976931348623157e308 -2.5e 1e 3e f/ .stacks fclearstack"}}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[],"float":[3.0000000000000000E0 ,5.0000000000000000E-1 ],"rs":[],"input":{"file":"test/json-float.fs","line":11,"in":33,"text":"1 set-precision  3e 0.5e .stacks fclearstack"}}

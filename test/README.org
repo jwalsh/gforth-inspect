@@ -107,9 +107,10 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
 
 =json-f= writes NaN and the infinities as ="NaN"=, ="Infinity"= and
 ="-Infinity"= (issue #66), not =null=.  =json-float= gains a line of NaNs
-built from bit patterns (negative quiet, signalling with payload 1), so
-what =f.s= prints does not depend on the platform's default NaN; both log
-as ="NaN"=.  =test/contract/=: a good snapshot with the three strings and
+built from bit patterns (negative quiet, signalling with payload 1), and
+its =0e 0e f/= is taken =fabs= (x86 gives a negative default NaN, arm64 a
+positive one), so what =f.s= prints does not depend on the platform; every
+NaN logs as ="NaN"=.  =test/contract/=: a good snapshot with the three strings and
 =null= (older logs), bad ones with =nan=, =Inf=, =inf=, =+Infinity=,
 =-NaN=, =infinity=, ="1.5"=, =""= and =true=; a schema of type
 number / null / any string accepts eight of those nine, so the enum is
