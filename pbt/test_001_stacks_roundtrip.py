@@ -4,7 +4,9 @@ P1 non-interference: after the inspector word runs, the data and float
 stacks are bit-identical to before.
 P2 faithfulness: the snapshot record's `data` and `float` equal an
 independent read of the stacks, and every log line validates against
-contract/stacks-log.schema.json.
+contract/stacks-log.schema.json.  A finite float's literal is its 17
+significant digits correctly rounded (Python's %.16e), so it is the same
+text on every platform (issue #62: x86_64 glibc's ecvt was not).
 
 Three code paths x three engines.  The independent read is raw: `depth` +
 `pick` printed with `hex u.`, floats as their 64-bit patterns via
@@ -151,6 +153,8 @@ class Outcome:
         self.lines = self.run.log_lines
         records = [json.loads(line) for line in self.lines]
         self.snapshots = [record for record in records if record.get("event") == "snapshot"]
+        self.float_texts = [float_texts(line) for line, record in zip(self.lines, records)
+                            if record.get("event") == "snapshot"]
         assert len(reads) == 2 * len(cases), (
             f"harness desync: {len(reads)} raw reads for {len(cases)} cases")
         assert len(self.snapshots) == len(cases), (
@@ -200,6 +204,36 @@ def classify(expected_bits: int, logged) -> str | None:
     return "precision"
 
 
+FLOAT_ARRAY_RE = re.compile(r'"float":\[([^\]]*)\]')
+
+
+def float_texts(line: str) -> list[str]:
+    """The float array's items as written, before json.loads rounds them."""
+    match = FLOAT_ARRAY_RE.search(line)
+    assert match, f"no float array in {line[:200]!r}"
+    return [item.strip() for item in match.group(1).split(",")] if match.group(1).strip() else []
+
+
+def correct_text(bits: int) -> str | None:
+    """The literal json-f must write for a finite float: 17 significant
+    digits, correctly rounded with ties to even (Python's %.16e), in fs.
+    notation (d.dddddddddddddddd E exponent); 0.0 and -0.0 for the zeros;
+    None for a non-finite value, which classify() covers."""
+    value = bits_to_float(bits)
+    if not math.isfinite(value):
+        return None
+    if value == 0:
+        return "-0.0" if bits >> 63 else "0.0"
+    mantissa, exponent = ("%.16e" % value).split("e")
+    return f"{mantissa}E{int(exponent)}"
+
+
+def text_fault(bits: int, text: str) -> str | None:
+    """None if the literal is the correctly rounded one, else "digits"."""
+    want = correct_text(bits)
+    return None if want is None or text == want else "digits"
+
+
 # --- strategies ---------------------------------------------------------
 
 EDGE_CELLS = [0, 1, 2, CELL_MASK, 1 << 63, (1 << 63) - 1, (1 << 63) + 1, 0xFF, 1 << 32]
@@ -222,6 +256,11 @@ EDGE_FLOATS = [
     0x3FF0000000000001,  # 1 + ulp: needs 17 digits
     float_to_bits(0.1), float_to_bits(0.1 + 0.2), float_to_bits(1 / 3),
     float_to_bits(2 / 3), float_to_bits(math.pi), float_to_bits(-math.e),
+    # issue #62: x86_64 glibc logged these as a neighbour, or (1e-300) as
+    # one that parses to a different double
+    float_to_bits(22.0), float_to_bits(23.0), float_to_bits(27.0), float_to_bits(1e-300),
+    float_to_bits(1e23),  # the double under 10^23: 9.9999999999999992E22
+    float_to_bits(1000000000000000.25),  # a tie at 17 digits: to even, ...02
 ]
 float_bits = st.one_of(
     st.sampled_from(EDGE_FLOATS),
@@ -311,11 +350,12 @@ def test_p2_float(path, engine, batch):
         assert len(logged) == len(before[1]), (
             f"P2 float depth mismatch in {path} {engine}: logged {logged} read "
             f"{[hex(b) for b in before[1]]} | {outcome.repro(index)}")
-        for bits, value in zip(before[1], logged):
-            kind = classify(bits, value)
+        for bits, value, text in zip(before[1], logged, outcome.float_texts[index]):
+            kind = classify(bits, value) or text_fault(bits, text)
             assert kind is None, (
                 f"P2 float {kind} mismatch in {path} {engine}: bits {bits:#018x} "
-                f"({bits_to_float(bits)!r}) logged {value!r} | {outcome.repro(index)}")
+                f"({bits_to_float(bits)!r}) logged {text} want {correct_text(bits)} "
+                f"| {outcome.repro(index)}")
 
 
 @property_test
@@ -341,7 +381,9 @@ def test_p2_float_corpus(path, engine):
         if len(logged) != 1:
             kind, shown = "depth", f"{logged!r} (expected one value)"
         else:
-            kind, shown = classify(expected_bits, logged[0]), repr(logged[0])
+            text = outcome.float_texts[index][0]
+            kind = classify(expected_bits, logged[0]) or text_fault(expected_bits, text)
+            shown = f"{text} want {correct_text(expected_bits)}"
         FLOAT_CLASSES[(path, engine)][kind or "exact"] += 1
         if kind:
             failures.append(f"{kind}: {expected_bits:#018x} logged {shown}")
