@@ -14,6 +14,6 @@ input  test/all-tilde.fs:6 >in=10
 log-on f2 log-off
           ^
 ## log state/gforth-inspect/golden/checkout/main/stacks.jsonl
-{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
 {"v":1,"event":"snapshot","t":T,"where":"f1","src":"test/all-tilde.fs:2","data":[7,8],"float":[2.5000000000000000E0 ],"rs":[{"word":"f1","off":144},{"word":"f2","off":32}],"input":{"file":"test/all-tilde.fs","line":6,"in":10,"text":"log-on f2 log-off"}}
 ## exit 0
