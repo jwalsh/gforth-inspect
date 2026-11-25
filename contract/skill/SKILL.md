@@ -53,7 +53,9 @@ message.
 - Check the newest `hello` first. Its `contract` (`MAJOR.MINOR`) must be
   the one you were written for. If it differs, stop and say so. Don't
   guess.
-- Non-finite floats are `null`. `-0.0` and 17-digit values are exact.
+- Non-finite floats are the strings `"NaN"`, `"Infinity"` and `"-Infinity"`
+  (any NaN is `"NaN"`); logs from inspect < 0.4.0 have `null` for all three.
+  `-0.0` and 17-digit values are exact.
 - Run one producer per log directory. Several gforths writing to one log is
   best-effort, and lines can be lost.
 
