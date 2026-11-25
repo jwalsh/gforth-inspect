@@ -578,8 +578,9 @@ create (f-bits) 1 floats allot  create (f-dig) 17 allot  variable (f-k)
     [char] [ emit  depth n# !  first? on
     n# @ 0 ?DO sep n# @ 1- i - pick 0 .r LOOP  [char] ] emit ;
 : json-float ( -- )
-    [char] [ emit  fdepth n# !  first? on
-    n# @ 0 ?DO sep n# @ 1- i - fpick json-f LOOP  [char] ] emit ;
+    \ the float stack under log-write's scratch float, bottom first
+    [char] [ emit  fdepth 1- n# !  first? on
+    n# @ 0 ?DO sep n# @ i - fpick json-f LOOP  [char] ] emit ;
 : json-rs ( a-addr -- )
     [char] [ emit  first? on
     rp0 @ swap ?DO
@@ -657,12 +658,18 @@ variable log-buf-max  0 log-buf-max !  create log-char 1 allot
     log-buf @ log-buf# @ log-fid @ write-file throw
     log-fid @ flush-file throw ;
 
-: log-write ( xt -- )
-    \ build xt's record in memory, in decimal (BASE is restored after),
-    \ then append it to the log
+: (log-build) ( xt -- )
     0 log-buf# !  base @ >r decimal
     ['] (log-capture) catch
     r> base !  throw  (log-append) ;
+: log-write ( xt -- )
+    \ build xt's record in memory, in decimal (BASE is restored after),
+    \ then append it to the log.  A scratch 0e sits on the float stack
+    \ meanwhile (#73): 0.7.3's gforth-fast keeps the float stack's top in
+    \ xmm8, which glibc's memmove may clobber on a large copy (resize and
+    \ write-file make them), so the user's top waits in memory under it.
+    \ json-float reports the stack under the scratch
+    0e ['] (log-build) catch fdrop throw ;
 : log-snapshot ( -- ) logging @ IF ['] (snapshot) log-write THEN ;
 
 create (opened) (room) allot  variable (opened#)  0 (opened#) !
