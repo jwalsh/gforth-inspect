@@ -7,7 +7,7 @@
 set -u
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-ref=${MODEL_REF:-model}  # pinned in fixtures/refs/model/; ref_show reads it there first
+ref=${MODEL_REF:-5e3eede}  # pinned in fixtures/refs/5e3eede/, as _003_helpers.MODEL_PINNED
 ref_show "$ref" model/data/words.json | python3 -I -c '
 import json, sys
 model = json.load(sys.stdin)

@@ -1,12 +1,13 @@
 """Experiment 003: declared stack effects (model words.json) vs measured deltas.
 
-The model (words.json and live.tsv) is read at MODEL_REF, default `model`: from
-pbt/fixtures/refs/<ref>/ when it is pinned there, else from git.  The `model`
-branch is not public; its words.json is pinned with machine paths replaced by
-$GFORTH and $WORK (pbt/fixtures/refs/README.org).  WORDS_JSON (a path)
-replaces words.json; the calibration uses it.  Only names, kinds, flags,
-effects and call edges are used; the source paths in the model are never
-copied anywhere.
+The model (words.json and live.tsv) is read at MODEL_REF: from
+pbt/fixtures/refs/<ref>/ when it is pinned there, else from git.  The default
+is 5e3eede, the `model` branch commit pinned there; the branch is not public,
+and its words.json is pinned with machine paths replaced by $GFORTH and $WORK
+(pbt/fixtures/refs/README.org).  MODEL_REF=model reads the branch tip.
+WORDS_JSON (a path) replaces words.json; the calibration uses it.  Only names,
+kinds, flags, effects and call edges are used; the source paths in the model
+are never copied anywhere.
 
 The harness runs plain gforth (no inspect.fs): per call it clears both stacks,
 pushes typed inputs, records `depth fdepth`, runs the word under `catch`, and
@@ -39,6 +40,7 @@ def _git(*args: str) -> str:
 
 
 FIXTURES = REPO / "pbt" / "fixtures" / "refs"
+MODEL_PINNED = "5e3eede"  # the model branch commit in FIXTURES; keep in step with calibrate/003
 
 
 def _ref_show(ref: str, path: str) -> tuple[str, str]:
@@ -52,7 +54,7 @@ def _ref_show(ref: str, path: str) -> tuple[str, str]:
 
 def model_source() -> tuple[dict, str, str]:
     """(words.json as a dict, live.tsv text, provenance for the log)."""
-    ref = os.environ.get("MODEL_REF", "model")
+    ref = os.environ.get("MODEL_REF", MODEL_PINNED)
     try:
         live_text, where = _ref_show(ref, "model/data/live.tsv")
         explicit = os.environ.get("WORDS_JSON")
