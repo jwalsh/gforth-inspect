@@ -19,3 +19,12 @@
 {"v":1,"event":"hello","t":1,"gforth":"0.7.3","contract":"1.1.0"}
 {"v":1,"event":"hello","t":1,"gforth":"0.7.3","contract":1.1}
 {"v":1,"event":"snapshot","t":1,"id":7,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":["nan"],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":["Inf"],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":["inf"],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":["+Infinity"],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":["-NaN"],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":["infinity"],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":["1.5"],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[""],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[true],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}

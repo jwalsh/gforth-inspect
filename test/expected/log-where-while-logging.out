@@ -12,6 +12,6 @@ log-where  1 .stacks drop
 $TMP/state/gforth-inspect/acme/sw/after/stacks.jsonl
 ## stderr
 ## log state/gforth-inspect/acme/sw/before/stacks.jsonl
-{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
+{"v":1,"event":"hello","t":T,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
 {"v":1,"event":"snapshot","t":T,"where":null,"src":null,"data":[1],"float":[],"rs":[],"input":{"file":"test/log-where-while-logging.fs","line":12,"in":21,"text":"log-where  1 .stacks drop"}}
 ## exit 0

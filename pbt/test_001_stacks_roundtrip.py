@@ -170,11 +170,21 @@ FLOAT_CLASSES: dict = defaultdict(Counter)
 WHERE_SRC: dict = defaultdict(Counter)
 
 
+def nonfinite_name(value: float) -> str:
+    """The contract's string for a non-finite value (since 1.2, issue #66):
+    protobuf's JSON spelling, any NaN as "NaN" whatever its sign or payload."""
+    if math.isnan(value):
+        return "NaN"
+    return "Infinity" if value > 0 else "-Infinity"
+
+
 def classify(expected_bits: int, logged) -> str | None:
-    """None if the logged value is faithful, else sign / precision / non-finite."""
+    """None if the logged value is faithful, else sign / precision / non-finite.
+    A non-finite value is faithful only as its exact string (null, what
+    inspect < 0.4.0 wrote, or the other infinity's string is not)."""
     expected = bits_to_float(expected_bits)
     if not math.isfinite(expected):
-        return None if logged is None else "non-finite"
+        return None if isinstance(logged, str) and logged == nonfinite_name(expected) else "non-finite"
     if logged is None or not isinstance(logged, (int, float)) or isinstance(logged, bool):
         return "non-finite"
     try:

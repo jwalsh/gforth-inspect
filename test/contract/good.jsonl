@@ -4,3 +4,5 @@
 {"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"*terminal*","line":-1,"in":0,"text":"\t\"\\\u0001�λ"}}
 {"v":1,"event":"hello","t":1,"gforth":"0.7.3","inspect":"0.1.0","contract":"1.1"}
 {"v":1,"event":"snapshot","t":1,"id":"step \"3\"","where":null,"src":null,"data":[],"float":[],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}
+{"v":1,"event":"hello","t":1,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
+{"v":1,"event":"snapshot","t":1,"where":null,"src":null,"data":[],"float":["Infinity","-Infinity","NaN",1.5000000000000000E0 ,-0.0,null],"rs":[],"input":{"file":"f","line":1,"in":0,"text":""}}

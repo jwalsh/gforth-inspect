@@ -109,7 +109,8 @@ calibrate() {
     plant "inspect-version bumped alone" "inspect.fs's version (header, doc comment, inspect-version) disagree" bump_word
     plant "schema x-contract bumped alone" "the contract version (contract-version, schema x-contract) disagree" bump_contract
     plant "a stale =v1.2.3= marker wrapped across lines" "says 1.2.3 for this release" wrapped
-    plant "a stale contract marker" "says contract 1.0; this release announces 1.1" stale_contract
+    current_contract=$(sed -n 's/^ *"x-contract": "\(.*\)",*$/\1/p' "$top/contract/stacks-log.schema.json")
+    plant "a stale contract marker" "says contract 1.0; this release announces $current_contract" stale_contract
     plant "a marker after a word, not a version" "(this release) after one, not a version" unparsed
     plant "no marker at all" "no 'X.Y.Z (this release)'" none
     plant "a DOCS entry removed" "REVIEW.md is gone" gone

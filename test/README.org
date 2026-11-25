@@ -22,8 +22,9 @@ the =jsonschema= package; without it only by the built-in validator.
 =gmake test= is three steps, each of which fails the build:
 
 1. =test-contract=: =test/validate.py= accepts every line of
-   =test/contract/good.jsonl= and rejects every line of =bad.jsonl= (NaN,
-   Infinity, =3.E0=, raw tab, invalid UTF-8, duplicate key, wrong =v=,
+   =test/contract/good.jsonl= and rejects every line of =bad.jsonl= (bare
+   NaN and Infinity, a non-finite float spelt other than ="NaN"= / ="Infinity"= /
+   ="-Infinity"=, =3.E0=, raw tab, invalid UTF-8, duplicate key, wrong =v=,
    missing or extra keys, a malformed =contract=, ...).  Both validators
    run and must agree.  Then the consumer rule: =test/consumer.py= must
    accept =test/contract/streams/ok-*.jsonl= and refuse every =bad-*=
@@ -101,6 +102,21 @@ Header directives: =skip=, =stdin=, =noinspect=, =load=, =env=, =unset=,
   measured by experiment 005, not gated here.
 
 * Log
+
+** 2026-11-24 (0.4.0, contract 1.2)
+
+=json-f= writes NaN and the infinities as ="NaN"=, ="Infinity"= and
+="-Infinity"= (issue #66), not =null=.  =json-float= gains a line of NaNs
+built from bit patterns (negative quiet, signalling with payload 1), and
+its =0e 0e f/= is taken =fabs= (x86 gives a negative default NaN, arm64 a
+positive one), so what =f.s= prints does not depend on the platform; every
+NaN logs as ="NaN"=.  =test/contract/=: a good snapshot with the three strings and
+=null= (older logs), bad ones with =nan=, =Inf=, =inf=, =+Infinity=,
+=-NaN=, =infinity=, ="1.5"=, =""= and =true=; a schema of type
+number / null / any string accepts eight of those nine, so the enum is
+what rejects them.  The consumer-rule streams move up one MINOR
+(=ok-1.1= is now =ok-current=).  Re-recorded goldens changed only in the
+version, the contract and =json-float=.
 
 ** 2026-11-22 (0.3.0)
 

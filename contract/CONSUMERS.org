@@ -32,8 +32,8 @@ The schema carries =x-version= (equal to =v=) and =x-contract= (equal to
 =hello.contract=). A producer writes exactly one contract version. It never
 writes an old and a new version side by side.
 
-Contract versions are not release versions. inspect 0.3.1 (this release)
-announces contract 1.1. A PATCH release changes neither number, and a
+Contract versions are not release versions. inspect 0.4.0 (this release)
+announces contract 1.2. A PATCH release changes neither number, and a
 release may change no contract at all.
 
 * Producer obligations
@@ -42,7 +42,9 @@ release may change no contract at all.
    announced =MAJOR.MINOR=: one complete JSON object per line, append-only.
 2. Announce the contract in =hello=.
 3. Numbers decode to the values on the stacks: 17 significant digits,
-   =-0.0= kept, and =null= for a non-finite value.
+   =-0.0= kept. A non-finite float is the string ="NaN"=, ="Infinity"= or
+   ="-Infinity"= (since contract 1.2, #66; any NaN is ="NaN"=). Logs from
+   inspect < 0.4.0 have =null= for all three.
 4. Anything that would break a reference consumer as it is today is a MAJOR
    change. That includes removing or renaming a key or an event, changing a
    type or what =null= means, splitting a record across lines, changing the
@@ -50,7 +52,9 @@ release may change no contract at all.
    keys and new event types that consumers can ignore are MINOR. Value-only
    fixes are PATCH, with no contract change. The one exception is the
    version stop under consumer obligation 2: it is the designed response to
-   an announced change, not a break.
+   an announced change, not a break. Before the first stable tag a break
+   costs a change-log row and a MINOR instead (RELEASING.org, "Rulings"):
+   contract 1.2 (#66) changed what =null= means in =float= under =v= 1.
 5. Every MAJOR or MINOR change follows the checklist in RELEASING.org: issue,
    schema (=x-contract=, plus =v= and =x-version= for a MAJOR), the prose
    change log, and the release notes. None is made silently.

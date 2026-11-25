@@ -48,8 +48,8 @@ execution (tests, scripts, CI, experiments).
   #+end_example
 - =inspect-version ( -- c-addr u )= returns ="X.Y.Z"=, and the =hello= record
   carries ="inspect":"X.Y.Z"= and ="contract":"MAJOR.MINOR"=, the latter equal
-  to the schema's =x-contract=. inspect 0.3.1 (this release) announces
-  contract 1.1. A consumer that follows CONSUMERS.org refuses a stream that
+  to the schema's =x-contract=. inspect 0.4.0 (this release) announces
+  contract 1.2. A consumer that follows CONSUMERS.org refuses a stream that
   has no =contract=.
 
 * Stable API, and what bumps what
@@ -106,7 +106,7 @@ experiment 004:
 The stable words: =.stacks .rs .input ~~~ .cs all-~~ dbg-fix dbg+ rs-full
 fclearstack log-on log-off log-where log-id inspect-version
 contract-version=. =contract-version ( -- c-addr u )= returns the announced
-contract, the string in the hello record's ="contract":"1.1"=.
+contract, the string in the hello record's ="contract":"1.2"=.
 
 =log-id ( c-addr u -- )= (issue #3) copies up to 63 characters. Each later
 snapshot carries ="id":"<tag>"=, and =s" " log-id= clears it, after which
@@ -257,6 +257,7 @@ in this order. Each step is done before the next one starts:
 
 | version     | date       | change                                                                      | issue  |
 |-------------+------------+-----------------------------------------------------------------------------+--------|
+| 0.4.0       | 2026-11-24 | a non-finite float is logged as ="NaN"=, ="Infinity"= or ="-Infinity"= (protobuf's JSON spelling), not =null=; contract 1.1 -> 1.2, =v= and =x-version= stay 1, the schema still accepts =null= for older logs. This changes what =null= means, a MAJOR row, but before the first stable tag a break costs this note (Rulings): a consumer comparing float slots to =null= must now also accept the three strings, and =hello.contract= is 1.2, so a checker that follows CONSUMER-AGENTS.md stops until it is bumped on purpose | #66    |
 | 0.3.1       | 2026-11-23 | no change to words or records; =stacks-log.org= cites the commit for #38 by its id after the history rewrite (=b1c162e=) | #38    |
 | 0.3.0       | 2026-11-22 | default log per project and worktree (=<owner>/<repo>/<worktree>=, =.env= opt-out); gforth >= 1.0 fails the dependency check at load; CONSUMER-AGENTS.md lists required and optional assets | #50    |
 | 0.1.1       | 2026-11-22 | after =dbg-fix=, =dbg= of a DEFER or DOES> word nests (it stepped over); =n= on a compiled defer or does> call still steps over | #39    |

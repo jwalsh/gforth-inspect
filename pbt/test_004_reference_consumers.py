@@ -16,6 +16,11 @@ Every difference gets one class:
                      it is reported so the verdict can rule on it
   fix-#2             where/src on the ~~ path: null in the old record, the
                      word and prog.fs:line of the ~~ in the new one (#2)
+  #66-nonfinite      a non-finite float: null in the old record, its exact
+                     string in the new one ("NaN", "Infinity", "-Infinity",
+                     contract 1.2), checked against the true value read via
+                     fp@; the other infinity's string, or any other value,
+                     is breaking
   ignorable-new-key  a key only the new record has (hello.inspect,
                      hello.contract)
   breaking           anything else
@@ -129,11 +134,13 @@ def run_jq(lines: list[str]) -> list[dict]:
     return [_strict_json(out) for out in proc.stdout.splitlines()]
 
 
-def checker_check(path: Path, schema: dict, version_stop: bool) -> dict:
+def checker_check(path: Path, schema: dict, version_stop: bool,
+                  expected: str = checker.EXPECTED_CONTRACT) -> dict:
     """The frozen checker; a crash is recorded as its output (a real editor
-    checker that throws shows the user nothing), so it gets classified."""
+    checker that throws shows the user nothing), so it gets classified.
+    `expected` other than the checker's own is a checker bumped on purpose."""
     try:
-        return checker.check(path, schema, version_stop=version_stop)
+        return checker.check(path, schema, expected=expected, version_stop=version_stop)
     except Exception as error:  # noqa: BLE001
         return {"error": f"checker crashed: {type(error).__name__} {error}"}
 
@@ -329,10 +336,17 @@ class Context:
     earlier_invalid_utf8: bool = False  # some line before this one is not UTF-8
 
 
+def _nonfinite_name(value: float) -> str:
+    """The contract's string for a non-finite value (since 1.2, #66)."""
+    if math.isnan(value):
+        return "NaN"
+    return "Infinity" if value > 0 else "-Infinity"
+
+
 def _float_exact(value, truth_bits: int) -> bool:
     truth = _float(truth_bits)
     if not math.isfinite(truth):
-        return value is None
+        return isinstance(value, str) and value == _nonfinite_name(truth)
     return isinstance(value, (int, float)) and not isinstance(value, bool) \
         and struct.pack("<d", float(value)) == struct.pack("<d", truth)
 
@@ -346,7 +360,9 @@ def _classify_floats(old, new, ctx: Context | None):
         if _same(old_value, new_value) or (old_value is None and new_value is None):
             continue
         truth = _float(truth_bits)
-        if _float_exact(new_value, truth_bits) and not _float_exact(old_value, truth_bits):
+        if not math.isfinite(truth) and old_value is None and _float_exact(new_value, truth_bits):
+            cls = "#66-nonfinite"
+        elif _float_exact(new_value, truth_bits) and not _float_exact(old_value, truth_bits):
             cls = "#1-float"
         elif (math.isfinite(truth) and isinstance(new_value, (int, float))
               and isinstance(old_value, (int, float))
@@ -516,19 +532,42 @@ def test_zz_volume():
 
 def test_version_stop():
     """The checker as it is today (expects contract 1.1) refuses a producer
-    that announces no contract, and accepts one announcing 1.1.  Expected:
-    b1c162e refused, c0cab02 accepted.  The differential above runs with
-    the stop bypassed, so this asymmetry is not counted as a difference."""
-    messages = {}
+    that announces no contract.  Expected: b1c162e refused.  The differential
+    above runs with the stop bypassed, so this asymmetry is not counted as a
+    difference.
+
+    The new side announces the contract its schema states (x-contract).
+    While that is 1.1, the checker as it is today accepts it (c0cab02).  Once
+    it is another MINOR (1.2 since inspect 0.4.0, #66), today's checker must
+    stop with a minor update, which is the consumer obligation working, and
+    the same checker bumped on purpose (--expect the new x-contract) must
+    accept.  The checker itself is not edited."""
+    announced = helpers.schema("new")["x-contract"]
+    frozen = checker.EXPECTED_CONTRACT
+    messages, bumped = {}, "not run"
     for side in ("old", "new"):
         result = helpers.run(side, "log-on 1 2 .stacks log-off")
         out = checker_check(_tmp_log(result.log_lines), helpers.schema(side), True)
-        messages[side] = out.get("stopped", "accepted")
+        messages[side] = out.get("stopped", out.get("error", "accepted"))
+        if side == "new" and announced != frozen:
+            out = checker_check(_tmp_log(result.log_lines), helpers.schema(side), True,
+                                expected=announced)
+            bumped = out.get("stopped", out.get("error", "accepted"))
     STATS.setdefault("gate_lines", []).append(
-        f"version stop (checker expects {checker.EXPECTED_CONTRACT}): old -> {messages['old']}; "
-        f"new -> {messages['new']}")
+        f"version stop (checker expects {frozen}): old -> {messages['old']}; "
+        f"new -> {messages['new']}" + (f"; checker bumped to {announced} -> {bumped}"
+                                       if announced != frozen else ""))
     assert messages["old"].startswith("contract (none) from the producer"), messages["old"]
-    assert messages["new"] == "accepted", f"version stop on new: {messages['new']}"
+    if announced == frozen:
+        assert messages["new"] == "accepted", f"version stop on new: {messages['new']}"
+    else:
+        assert announced.split(".")[0] == frozen.split(".")[0], (
+            f"new schema states contract {announced}: a MAJOR change, not covered here")
+        want = (f"contract {announced} from the producer, this consumer expects {frozen} "
+                f"(minor update)")
+        assert messages["new"].startswith(want), (
+            f"version stop on new: want {want!r}, got {messages['new']!r}")
+        assert bumped == "accepted", f"version stop on new, checker bumped to {announced}: {bumped}"
 
 
 # --- default location (gate 4, the moved-log plant) -----------------------
