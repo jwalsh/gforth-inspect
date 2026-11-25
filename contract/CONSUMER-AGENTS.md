@@ -137,8 +137,9 @@ You **never**:
 
 **How you learn about it:** the producer coordinator messages every
 registered consumer with the version, the contract, the issues closed, and
-the change-log rows. The release notes say the same (`Fixed: #N, ...`). Releases
-before the first stable tag (v0.5.0 or v1.0.0) are prereleases. Until the
+the change-log rows. The release notes say the same (`Fixed: #N, ...`). From
+v0.3.1 on, each release is a full GitHub release, marked Latest, but none
+before the first stable tag (v0.5.0 or v1.0.0) promises a stable API. Until the
 first stable tag, you may keep your local copy.
 
 **Before you upgrade, your session runs these steps:**
