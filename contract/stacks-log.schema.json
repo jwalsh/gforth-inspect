@@ -4,7 +4,7 @@
   "title": "gforth stacks log record",
   "description": "One line of <dir>/stacks.jsonl, where <dir> is $GFORTH_INSPECT_LOG_DIR or ${XDG_STATE_HOME:-~/.local/state}/gforth-inspect. Producer: env/inspect.fs (log-on). Prose: stacks-log.org.",
   "x-version": 1,
-  "x-contract": "1.1",
+  "x-contract": "1.2",
   "type": "object",
   "required": [
     "v",
@@ -79,9 +79,22 @@
         "float": {
           "type": "array",
           "items": {
-            "type": [
-              "number",
-              "null"
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "enum": [
+                  "NaN",
+                  "Infinity",
+                  "-Infinity"
+                ],
+                "description": "a non-finite value (since contract 1.2, inspect 0.4.0), protobuf's JSON spelling; any NaN is \"NaN\""
+              },
+              {
+                "type": "null",
+                "description": "what inspect < 0.4.0 wrote for any non-finite value (NaN, +inf or -inf alike); kept so older logs validate"
+              }
             ]
           }
         },

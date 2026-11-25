@@ -1,4 +1,4 @@
-\ gforth-inspect v0.3.1
+\ gforth-inspect v0.4.0
 \ stacks-log schema v1
 \ SPDX-License-Identifier: GPL-3.0-or-later
 \
@@ -18,8 +18,8 @@
 \             including n (nest) into colon words
 \   dbg+      dbg-fix, and print .s f.s and return words at every step
 \   log-id    ( c-addr u -- )  tag following snapshots with "id"; s" " log-id clears
-\   inspect-version  ( -- c-addr u )  "0.3.1"
-\ The hello record announces "contract":"1.1" (contract/stacks-log.org).
+\   inspect-version  ( -- c-addr u )  "0.4.0"
+\ The hello record announces "contract":"1.2" (contract/stacks-log.org).
 \
 \ Works in gforth, gforth-fast and gforth-itc 0.7.3.  The words, their stack
 \ effects and output formats: contract/WORDS.org.  None of these words
@@ -52,7 +52,7 @@ version-string s" 0.7.3" compare [IF]
 \ ~~ (debugs.fs) and dbg (debug.fs) are already in the 0.7.3 image;
 \ REQUIRE-ing them again would redefine half the system.
 
-: inspect-version ( -- c-addr u ) s" 0.3.1" ;
+: inspect-version ( -- c-addr u ) s" 0.4.0" ;
 
 \ --- naming addresses ------------------------------------------------
 
@@ -490,8 +490,12 @@ variable n#  variable first?
 : json-f ( r -- )
     \ finite floats in fs. notation at 17 significant digits, which
     \ round-trips every binary64 (and always gives digits after the point,
-    \ which JSON requires); -0 keeps its sign; NaN and infinities -> null
-    fdup fdup f- f0= 0= IF fdrop ." null" EXIT THEN
+    \ which JSON requires); -0 keeps its sign; NaN and the infinities are
+    \ the strings "NaN", "Infinity" and "-Infinity", protobuf's JSON mapping
+    \ (issue #66; any NaN, whatever its sign or payload, is "NaN")
+    fdup fdup f- f0= 0= IF  \ inf - inf and NaN - NaN are NaN, never 0
+        fdup f0< IF s" -Infinity" ELSE fdup f0> IF s" Infinity" ELSE s" NaN" THEN THEN
+        fdrop json-str EXIT THEN
     fdup f0= IF 1e fswap f/ f0< IF ." -0.0" ELSE ." 0.0" THEN EXIT THEN
     precision >r 17 set-precision fs. r> set-precision ;
 : sep ( -- ) first? @ IF first? off ELSE jc THEN ;
@@ -520,7 +524,7 @@ variable n#  variable first?
     [char] { emit  s" v" jkey 1 0 .r  jc s" event" jkey json-str
     jc s" t" jkey utime 1000000 um/mod nip 0 .r ;
 
-: contract-version ( -- c-addr u ) s" 1.1" ;  \ MAJOR.MINOR of the log contract
+: contract-version ( -- c-addr u ) s" 1.2" ;  \ MAJOR.MINOR of the log contract
 
 create snap-id 64 allot  0 snap-id c!
 : log-id ( c-addr u -- )
