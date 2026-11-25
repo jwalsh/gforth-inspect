@@ -134,11 +134,13 @@ def run_jq(lines: list[str]) -> list[dict]:
     return [_strict_json(out) for out in proc.stdout.splitlines()]
 
 
-def checker_check(path: Path, schema: dict, version_stop: bool) -> dict:
+def checker_check(path: Path, schema: dict, version_stop: bool,
+                  expected: str = checker.EXPECTED_CONTRACT) -> dict:
     """The frozen checker; a crash is recorded as its output (a real editor
-    checker that throws shows the user nothing), so it gets classified."""
+    checker that throws shows the user nothing), so it gets classified.
+    `expected` other than the checker's own is a checker bumped on purpose."""
     try:
-        return checker.check(path, schema, version_stop=version_stop)
+        return checker.check(path, schema, expected=expected, version_stop=version_stop)
     except Exception as error:  # noqa: BLE001
         return {"error": f"checker crashed: {type(error).__name__} {error}"}
 
@@ -546,10 +548,11 @@ def test_version_stop():
     for side in ("old", "new"):
         result = helpers.run(side, "log-on 1 2 .stacks log-off")
         out = checker_check(_tmp_log(result.log_lines), helpers.schema(side), True)
-        messages[side] = out.get("stopped", "accepted")
+        messages[side] = out.get("stopped", out.get("error", "accepted"))
         if side == "new" and announced != frozen:
-            bumped = checker.check(_tmp_log(result.log_lines), helpers.schema(side),
-                                   expected=announced).get("stopped", "accepted")
+            out = checker_check(_tmp_log(result.log_lines), helpers.schema(side), True,
+                                expected=announced)
+            bumped = out.get("stopped", out.get("error", "accepted"))
     STATS.setdefault("gate_lines", []).append(
         f"version stop (checker expects {frozen}): old -> {messages['old']}; "
         f"new -> {messages['new']}" + (f"; checker bumped to {announced} -> {bumped}"
