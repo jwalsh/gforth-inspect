@@ -17,4 +17,5 @@ differs); =live.tsv= (names, flags and xt addresses from a live 0.7.3) is
 pinned byte for byte.
 =_003_helpers.model_source= and =calibrate/003-declared-effects.sh= take
 5e3eede as the default =MODEL_REF= and read it here, so =test_003= runs on a
-fresh clone (#60); =MODEL_REF=model= reads the branch tip where it exists.
+fresh clone (#60); =MODEL_REF=model= (or =origin/model=) reads the branch
+tip in a clone that has that ref.

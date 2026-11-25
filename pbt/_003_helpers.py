@@ -4,7 +4,8 @@ The model (words.json and live.tsv) is read at MODEL_REF: from
 pbt/fixtures/refs/<ref>/ when it is pinned there, else from git.  The default
 is 5e3eede, the `model` branch commit pinned there; the branch is not public,
 and its words.json is pinned with machine paths replaced by $GFORTH and $WORK
-(pbt/fixtures/refs/README.org).  MODEL_REF=model reads the branch tip.
+(pbt/fixtures/refs/README.org).  MODEL_REF=model (or origin/model) reads the
+branch tip where that ref exists.
 WORDS_JSON (a path) replaces words.json; the calibration uses it.  Only names,
 kinds, flags, effects and call edges are used; the source paths in the model
 are never copied anywhere.
@@ -45,16 +46,21 @@ MODEL_PINNED = "5e3eede"  # the model branch commit in FIXTURES; keep in step wi
 
 def _ref_show(ref: str, path: str) -> tuple[str, str]:
     """(PATH's text at REF, where it came from): fixtures/refs/REF/ first, as
-    calibrate/ref-show.lib does, else git."""
-    fixture = FIXTURES / ref / Path(path).name
-    if fixture.is_file():
+    calibrate/ref-show.lib does, else git.  A file missing from a pinned
+    REF/ dir is missing at REF (as 009's ledger.py takes it), not read from
+    git, so one run never pairs a pinned file with an unpinned one."""
+    pinned = FIXTURES / ref
+    if pinned.is_dir():
+        fixture = pinned / Path(path).name
+        if not fixture.is_file():
+            raise RuntimeError(f"{ref} is pinned in {pinned.relative_to(REPO)} without {fixture.name}")
         return fixture.read_text(), f"{ref}@fixture"
     return _git("show", f"{ref}:{path}"), f"{ref}@{_git('rev-parse', '--short', ref).strip()}"
 
 
 def model_source() -> tuple[dict, str, str]:
     """(words.json as a dict, live.tsv text, provenance for the log)."""
-    ref = os.environ.get("MODEL_REF", MODEL_PINNED)
+    ref = os.environ.get("MODEL_REF") or MODEL_PINNED
     try:
         live_text, where = _ref_show(ref, "model/data/live.tsv")
         explicit = os.environ.get("WORDS_JSON")

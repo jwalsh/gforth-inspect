@@ -21,7 +21,7 @@ assert planted, "no dup record to plant into"
 json.dump(model, open(sys.argv[1], "w"))
 ' "$tmp/words.json" || { echo "calibrate 003: could not plant the fault"; exit 1; }
 
-WORDS_JSON="$tmp/words.json" EFFECTS_REPORT="$tmp/report.json" \
+MODEL_REF="$ref" WORDS_JSON="$tmp/words.json" EFFECTS_REPORT="$tmp/report.json" \
     uv run --no-project --with hypothesis --with jsonschema --with pytest \
     pytest -q -p no:cacheprovider --hypothesis-profile=default test_003_declared_effects.py \
     > "$tmp/pytest.out" 2>&1
