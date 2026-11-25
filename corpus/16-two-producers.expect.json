@@ -12,6 +12,7 @@
     ]
   },
   "checker": {
+    "expect": "1.2",
     "exit": 0,
     "output": {
       "event": "snapshot",

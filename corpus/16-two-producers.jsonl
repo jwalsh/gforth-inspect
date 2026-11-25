@@ -1,5 +1,5 @@
-{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
-{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
+{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
+{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
 {"v":1,"event":"snapshot","t":0,"id":"p0","where":null,"src":null,"data":[100,1],"float":[],"rs":[],"input":{"file":"","line":5,"in":28,"text":"s\" p0\" log-id 100 1 .stacks clearstack"}}
 {"v":1,"event":"snapshot","t":0,"id":"p1","where":null,"src":null,"data":[200,1],"float":[],"rs":[],"input":{"file":"","line":5,"in":28,"text":"s\" p1\" log-id 200 1 .stacks clearstack"}}
 {"v":1,"event":"snapshot","t":0,"id":"p0","where":null,"src":null,"data":[100,2],"float":[],"rs":[],"input":{"file":"","line":7,"in":14,"text":"100 2 .stacks clearstack"}}

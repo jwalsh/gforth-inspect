@@ -1,3 +1,4 @@
-inspect.fs blob a42052e8484fe4c3bfad581f1ddf98ad60d92d14
-stacks-log.schema.json blob 0a84bb3b69738afcfe22210335d7908ac5f06b30
+inspect.fs blob c998b7e3326bb811444c8bf4ca6724b8adfbe00e
+stacks-log.schema.json blob 165854bd22024b6d7c57838b60b2e014d3aa30dd
 recorded with gforth 0.7.3 and jq-1.7.1
+checker run with --expect 1.2, the schema's x-contract

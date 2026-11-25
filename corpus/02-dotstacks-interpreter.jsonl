@@ -1,2 +1,2 @@
-{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
+{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
 {"v":1,"event":"snapshot","t":0,"where":null,"src":null,"data":[1,2,3],"float":[1.5000000000000000E0 ,-2.2500000000000000E0 ],"rs":[],"input":{"file":"02-dotstacks-interpreter.fs","line":5,"in":25,"text":"1 2 3 1.5e -2.25e .stacks"}}

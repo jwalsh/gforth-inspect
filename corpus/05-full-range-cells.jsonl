@@ -1,2 +1,2 @@
-{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
+{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
 {"v":1,"event":"snapshot","t":0,"where":null,"src":null,"data":[0,1,-1,9223372036854775807,-9223372036854775808,255,-256],"float":[],"rs":[],"input":{"file":"05-full-range-cells.fs","line":5,"in":12,"text":"hex .stacks decimal"}}

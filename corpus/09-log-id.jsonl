@@ -1,4 +1,4 @@
-{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.3.1","contract":"1.1"}
+{"v":1,"event":"hello","t":0,"gforth":"0.7.3","inspect":"0.4.0","contract":"1.2"}
 {"v":1,"event":"snapshot","t":0,"where":null,"src":null,"data":[1],"float":[],"rs":[],"input":{"file":"09-log-id.fs","line":4,"in":10,"text":"1 .stacks drop"}}
 {"v":1,"event":"snapshot","t":0,"id":"step-1","where":null,"src":null,"data":[2],"float":[],"rs":[],"input":{"file":"09-log-id.fs","line":5,"in":28,"text":"s\" step-1\" log-id 2 .stacks drop"}}
 {"v":1,"event":"snapshot","t":0,"id":"tag \"quoted\"","where":null,"src":null,"data":[3],"float":[],"rs":[],"input":{"file":"09-log-id.fs","line":6,"in":37,"text":"s\\\" tag \\\"quoted\\\"\" log-id 3 .stacks drop"}}
