@@ -169,3 +169,36 @@ held, 27 of 30, mostly alternatives and the end-struct synthesis.
   zeroed memory, so =find= and friends always take the not-found branch.
   Those words show up as model parse here; with other inputs they would
   also be data-dependent.
+
+** 2026-11-25 Linux: pick and fpick threw; the harness typed =...= as nothing (#72)
+
+On Linux (CI run 45677558495, x86_64; Docker linux/arm64) =pick= and
+=fpick= were in =threw=, so the exact comparison with the macOS sets was
+red. Cause: a harness typing fault, made visible by a platform difference.
+Their effects are =S:... u -- S:... w= and =f:... u -- f:... r=; the
+harness typed =...= as no items, so =u= (1..8) always indexed past an
+empty stack. gforth 0.7.3 mmaps its stacks RWX between PROT_NONE guard
+pages (engine/main.c, =alloc_stacks=), and its SIGSEGV handler turns a
+fault just past a stack into -4 (data) or -45 (float) (engine/signals.c).
+macOS arm64 refuses the RWX mmap (=gforth --debug=: "mmap ... failed:
+Permission denied") and gforth falls back to malloc, so there is no guard
+page and the read returns garbage: pick "agreed" on macOS by luck.
+Reproducer: =gforth -e "clearstack 3 ' pick catch . bye"= prints 0 on
+macOS arm64 and -4 on Linux. That breaks the hypothesis's "small and in
+range".
+
+Fix: a =...= input is typed as =COUNT_MAX + 1= (9) constant items on its
+stack (=_003_helpers.DATA_FILLER=, =FLOAT_FILLER=); constant, so no other
+input of the word changes. pick and fpick are now tested and agree on all
+three platforms: 796 tested, 766 agree (96.2%), unchanged. The exclusion
+sets are now per platform (=MEASURED_EXCLUSIONS=, keyed
+=sys.platform-platform.machine()=), each measured on its own platform and
+compared exactly, with no fallback: darwin-arm64 (unchanged), linux-aarch64
+(Docker on Apple silicon), linux-x86_64 (CI run 45694760373). All three
+are equal today. =Type!= crashing under amd64 emulation did not happen on
+real x86_64 and is not recorded. Default and ci profiles both 5 passed on
+darwin-arm64 and linux-aarch64. Calibration adds =003-b-unknown-platform.sh=
+(an unlisted platform is red with the measure-and-add message, the other
+four green) and =003-c-exclusion-dropped.sh= (?CSP loses its declared
+effect; red on exactly =threw= missing ?CSP, which a subset or union check
+would miss). =003-declared-effects.sh= is still red on exactly =dup=.

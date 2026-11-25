@@ -120,6 +120,20 @@ MEASURED_EXCLUSIONS: dict[str, dict[str, set[str]]] = {
                   "parser", "parser1", "scope?", "ticking-compile-only-error", "Type!", "wcall"},
         "wrote": {".", "?", "c-source-file", "dec.", "dobacktrace", "vlist"},
     },
+    # GitHub ubuntu-latest (Ubuntu 26.04) x86_64, apt gforth 0.7.3, with
+    # DATA_FILLER: CI run 45694760373, 2026-11-25.  Without it, pick and
+    # fpick threw here too (run 45677558495, #72)
+    "linux-x86_64": {
+        "crashed": {"!does", "(;code)", "(does>2)", "(endtry)", "(reveal)", "clearhash",
+                    "compile-only", "del-string", "open-lib", "restrict", "unkey", "unkeys"},
+        "threw": {"#>>", "(compile)", "(hashlfind)", "(tablelfind)", ",Branch", "?CSP", "?struc",
+                  'c(abort")', "c-library-incomplete", "c-source-file", "char-append-buffer",
+                  "compile-only-error", "compiler-notfound1", "cs-item?", "CS-PICK", "def?",
+                  "dest?", "do-dest?", "interpreter-notfound1", "interpreter1", "lib-sym",
+                  "MyBranch", "new-locals-reveal", "no.extensions", "non-orig?", "orig?",
+                  "parser", "parser1", "scope?", "ticking-compile-only-error", "Type!", "wcall"},
+        "wrote": {".", "?", "c-source-file", "dec.", "dobacktrace", "vlist"},
+    },
 }
 MEASURE_HOWTO = (
     "measure it there: `gmake -C pbt check` (or pytest -q test_003_declared_effects.py "
