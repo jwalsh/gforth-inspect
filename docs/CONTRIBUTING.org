@@ -48,10 +48,10 @@ gforth 0.7.3 from apt. When the root Makefile is present, CI runs
 =gmake verify=; without it, only the privacy scan, =scripts/check-guides.sh=
 and the =pbt/= checks. Its check, =verify=, is not yet required before a PR
 can merge: it was dropped while GitHub Actions billing stopped every job
-(D-40), and it comes back once CI is green on =main=, as part of 0.4.1. It
-is red there today, from #62 (floats on Linux) and #60 (a test that needs a
-branch the public remote lacks); see RELEASING.org, "Mainline protection".
-Until then the gate is the summary line of a local =gmake verify= on the
+(D-40), and it comes back once CI is green on =main=, as part of 0.4.1. As
+of 2026-11-25 it is red there, from #62 (floats on Linux) and #60 (a test
+that needs a branch the public remote lacks); RELEASING.org, "Mainline
+protection", has the live state. Until then the gate is the summary line of a local =gmake verify= on the
 PR's head, pasted into the PR body. A green CI run does not replace it.
 
 Keep a baseline. Record the summary line of a green =gmake verify= on
