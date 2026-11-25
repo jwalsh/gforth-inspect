@@ -499,8 +499,9 @@ variable n#  variable first?
 \ 2^1100 (10^324 for the smallest subnormal), well inside (bn#) limbs.
 \ Limbs from (bn-top) up are 0 in all three, so loops stop there.  Cell
 \ loops, not erase or move: in 0.7.3's gforth-fast on x86_64 Linux a
-\ move of 256 bytes or more zeroes the top of the float stack (glibc's
-\ memmove uses the vector register that holds it).
+\ large move can overwrite the top of the float stack (#73; glibc's
+\ memmove uses the vector register that holds it).  log-write's scratch
+\ float already guards a record, so this only keeps json-f safe alone.
 40 constant (bn#)
 create (bn-n) (bn#) cells allot  create (bn-d) (bn#) cells allot
 create (bn-t) (bn#) cells allot  variable (bn-top)
@@ -536,7 +537,8 @@ create (f-bits) 1 floats allot  create (f-dig) 17 allot  variable (f-k)
     1 max 1075 -  ( e: |r| = N * 2^e )
     dup 0< IF dup negate (bn-d) (bn*2^) ELSE dup (bn-n) (bn*2^) THEN
     52 + 78913 m* 262144 fm/mod nip
-    \ k is within one or so of floor log10 |r|; the two loops settle it
+    \ k is floor log10 |r| or one off for a normal r; for a subnormal,
+    \ whose log2 is below e+52, up to 16 too high; the two loops settle it
     dup (f-k) !  dup 0< IF negate (bn-n) ELSE (bn-d) THEN (bn*10^)
     BEGIN (bn-n) (bn-d) (bn-cmp) 0< WHILE 10 (bn-n) (bn*u) -1 (f-k) +! REPEAT
     BEGIN (bn-d) (bn-t) (bn-copy)  10 (bn-t) (bn*u)
@@ -577,9 +579,10 @@ create (f-bits) 1 floats allot  create (f-dig) 17 allot  variable (f-k)
 : json-data ( -- )
     [char] [ emit  depth n# !  first? on
     n# @ 0 ?DO sep n# @ 1- i - pick 0 .r LOOP  [char] ] emit ;
-: json-float ( -- )
-    \ the float stack under log-write's scratch float, bottom first
-    [char] [ emit  fdepth 1- n# !  first? on
+: json-float ( F: r*n r-scratch -- r*n r-scratch )
+    \ the float stack under log-write's scratch float, bottom first; only
+    \ log-write calls it (by way of (snapshot))
+    [char] [ emit  fdepth 1- 0 max n# !  first? on
     n# @ 0 ?DO sep n# @ i - fpick json-f LOOP  [char] ] emit ;
 : json-rs ( a-addr -- )
     [char] [ emit  first? on

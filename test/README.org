@@ -119,6 +119,11 @@ inspector's record, and a cross-platform golden must not pin it.  The
 record still has =-0.0=.  pbt 001 now also checks each finite float's
 literal against Python's =%.16e= (calibrations 001-e and 001-f).
 
+=log-write= holds a scratch float while it builds and writes a record
+(#73): on CI, gforth-fast's P1 went red with record text in the user's
+top float.  No calibration: the fault needs an x86_64 CPU whose glibc
+picks an SSE2 or AVX2 memmove, and macOS never shows it.
+
 ** 2026-11-24 (0.4.0, contract 1.2)
 
 =json-f= writes NaN and the infinities as ="NaN"=, ="Infinity"= and
